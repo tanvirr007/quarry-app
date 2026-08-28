@@ -4,9 +4,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -15,19 +16,25 @@ import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ZoomOutMap
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CenterFocusStrong
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -47,20 +55,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.treemap.TreemapNode
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
- * Responsive, hardware-accelerated Treemap Canvas with fluid touch-and-move
- * (single-finger drag/pan, multi-touch pinch zoom, double-tap zoom/reset, and tap selection).
- * Every individual file is rendered with a distinct, vibrant, harmonized color.
+ * Responsive, hardware-accelerated Treemap Canvas with Google Maps-style interactive navigation
+ * (fluid single-finger pan, focal-point pinch-to-zoom, double-tap zoom/reset, and floating zoom controls).
+ * Every individual file and folder is rendered with distinct, vibrant, harmonized colors.
  */
 @Composable
 fun TreemapCanvas(
@@ -76,7 +86,7 @@ fun TreemapCanvas(
     val scaleAnim = remember { Animatable(1f) }
     val offsetAnim = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
 
-    // Reset zoom and pan whenever the node list (current directory) changes
+    // Reset zoom and pan whenever the directory nodes change
     LaunchedEffect(nodes) {
         if (scaleAnim.value != 1f || offsetAnim.value != Offset.Zero) {
             launch { scaleAnim.snapTo(1f) }
@@ -86,9 +96,9 @@ fun TreemapCanvas(
 
     val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
     val borderColor = if (isDark) {
-        Color.White.copy(alpha = 0.18f)
+        Color.White.copy(alpha = 0.20f)
     } else {
-        Color.Black.copy(alpha = 0.12f)
+        Color.Black.copy(alpha = 0.14f)
     }
 
     val textPaint = remember(density, isDark) {
@@ -103,7 +113,7 @@ fun TreemapCanvas(
 
     val subtextPaint = remember(density, isDark) {
         android.graphics.Paint().apply {
-            color = android.graphics.Color.argb(235, 255, 255, 255)
+            color = android.graphics.Color.argb(240, 255, 255, 255)
             textSize = density.run { 10.dp.toPx() }
             isAntiAlias = true
             setShadowLayer(3f, 0f, 1f, android.graphics.Color.argb(200, 0, 0, 0))
@@ -112,7 +122,7 @@ fun TreemapCanvas(
 
     val dirBadgePaint = remember(density) {
         android.graphics.Paint().apply {
-            color = android.graphics.Color.argb(240, 255, 255, 255)
+            color = android.graphics.Color.argb(245, 255, 255, 255)
             textSize = density.run { 9.dp.toPx() }
             isAntiAlias = true
             isFakeBoldText = true
@@ -164,46 +174,56 @@ fun TreemapCanvas(
 
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
+                        val downTime = System.currentTimeMillis()
                         val downPos = down.position
-                        var isDragOrZoom = false
-                        var accumulatedPan = Offset.Zero
+                        var isTransforming = false
+                        var totalPan = Offset.Zero
+                        val touchSlop = viewConfiguration.touchSlop
 
                         do {
                             val event = awaitPointerEvent()
-                            val canceled = event.changes.any { it.isConsumed }
-                            if (canceled) break
+                            if (event.changes.any { it.isConsumed }) break
 
-                            val pointerCount = event.changes.count { it.pressed }
-                            if (pointerCount == 0) break
+                            val pressedCount = event.changes.count { it.pressed }
+                            if (pressedCount == 0) break
 
                             val pan = event.calculatePan()
                             val zoom = event.calculateZoom()
+                            val centroid = event.calculateCentroid(useCurrent = false)
 
-                            accumulatedPan += pan
+                            totalPan += pan
 
-                            // Touch-and-move: handle 1-finger drag and 2-finger zoom/pan
-                            if (accumulatedPan.getDistance() > 8f || abs(zoom - 1f) > 0.02f) {
-                                isDragOrZoom = true
+                            // Determine if gesture is a pan or pinch-to-zoom
+                            if (!isTransforming) {
+                                if (pressedCount > 1 || totalPan.getDistance() > touchSlop || abs(zoom - 1f) > 0.015f) {
+                                    isTransforming = true
+                                }
                             }
 
-                            if (isDragOrZoom) {
+                            if (isTransforming) {
                                 coroutineScope.launch {
-                                    val currentScale = scaleAnim.value
-                                    val newScale = (currentScale * zoom).coerceIn(1f, 8f)
-                                    scaleAnim.snapTo(newScale)
+                                    val s0 = scaleAnim.value
+                                    val t0 = offsetAnim.value
+                                    val s1 = (s0 * zoom).coerceIn(1f, 10f)
+                                    val r = s1 / s0
+                                    val center = Offset(widthPx / 2f, heightPx / 2f)
 
-                                    val maxOffsetX = (widthPx * (newScale - 1f) / 2f).coerceAtLeast(0f)
-                                    val maxOffsetY = (heightPx * (newScale - 1f) / 2f).coerceAtLeast(0f)
+                                    // Focal-point pinch zoom & pan transformation math
+                                    val t1 = pan + (centroid - center) * (1f - r) + t0 * r
+                                    val maxOffsetX = (widthPx * (s1 - 1f) / 2f).coerceAtLeast(0f)
+                                    val maxOffsetY = (heightPx * (s1 - 1f) / 2f).coerceAtLeast(0f)
 
-                                    val newOffset = offsetAnim.value + pan
-                                    val clampedX = newOffset.x.coerceIn(-maxOffsetX, maxOffsetX)
-                                    val clampedY = newOffset.y.coerceIn(-maxOffsetY, maxOffsetY)
-
-                                    if (newScale <= 1.01f) {
-                                        offsetAnim.snapTo(Offset.Zero)
+                                    val clampedOffset = if (s1 <= 1.001f) {
+                                        Offset.Zero
                                     } else {
-                                        offsetAnim.snapTo(Offset(clampedX, clampedY))
+                                        Offset(
+                                            t1.x.coerceIn(-maxOffsetX, maxOffsetX),
+                                            t1.y.coerceIn(-maxOffsetY, maxOffsetY)
+                                        )
                                     }
+
+                                    scaleAnim.snapTo(s1)
+                                    offsetAnim.snapTo(clampedOffset)
                                 }
 
                                 event.changes.forEach {
@@ -212,17 +232,17 @@ fun TreemapCanvas(
                             }
                         } while (event.changes.any { it.pressed })
 
-                        // If the user tapped without dragging
-                        if (!isDragOrZoom) {
+                        // Tap handling when no dragging/zooming occurred
+                        if (!isTransforming) {
                             val currentTime = System.currentTimeMillis()
+                            val elapsed = currentTime - downTime
                             val isDoubleTap = (currentTime - lastTapTime < 320L) &&
-                                    ((downPos - lastTapPos).getDistance() < 60f)
+                                    ((downPos - lastTapPos).getDistance() < touchSlop * 2.5f)
 
                             if (isDoubleTap) {
                                 lastTapTime = 0L
                                 coroutineScope.launch {
                                     if (scaleAnim.value > 1.2f) {
-                                        // Reset zoom smoothly
                                         launch {
                                             scaleAnim.animateTo(
                                                 1f,
@@ -236,13 +256,13 @@ fun TreemapCanvas(
                                             )
                                         }
                                     } else {
-                                        // Zoom in to 2.8x centered at the tapped location
                                         val targetScale = 2.8f
-                                        val centerX = widthPx / 2f
-                                        val centerY = heightPx / 2f
+                                        val center = Offset(widthPx / 2f, heightPx / 2f)
+                                        val maxOffsetX = (widthPx * (targetScale - 1f) / 2f).coerceAtLeast(0f)
+                                        val maxOffsetY = (heightPx * (targetScale - 1f) / 2f).coerceAtLeast(0f)
                                         val targetOffset = Offset(
-                                            x = (centerX - downPos.x) * (targetScale - 1f),
-                                            y = (centerY - downPos.y) * (targetScale - 1f)
+                                            x = ((center.x - downPos.x) * (targetScale - 1f)).coerceIn(-maxOffsetX, maxOffsetX),
+                                            y = ((center.y - downPos.y) * (targetScale - 1f)).coerceIn(-maxOffsetY, maxOffsetY)
                                         )
                                         launch {
                                             scaleAnim.animateTo(
@@ -258,11 +278,11 @@ fun TreemapCanvas(
                                         }
                                     }
                                 }
-                            } else {
+                            } else if (elapsed < 350L) {
                                 lastTapTime = currentTime
                                 lastTapPos = downPos
 
-                                // Single tap detection
+                                // Convert screen touch coordinates back to local untransformed canvas coordinates
                                 val currentScale = scaleAnim.value
                                 val currentOffset = offsetAnim.value
                                 val centerX = widthPx / 2f
@@ -337,32 +357,32 @@ fun TreemapCanvas(
                         )
 
                         // Draw Text and Badges if rectangle is large enough
-                        if (w > 48.dp.toPx() && h > 30.dp.toPx()) {
+                        if (w > 36.dp.toPx() && h > 22.dp.toPx()) {
                             drawContext.canvas.nativeCanvas.apply {
                                 val paddingPx = density.run { 6.dp.toPx() }
-                                val maxChars = (w / density.run { 7.5.dp.toPx() }).toInt().coerceAtLeast(4)
+                                val maxChars = (w / density.run { 7.dp.toPx() }).toInt().coerceAtLeast(3)
                                 val displayName = if (node.name.length > maxChars) {
-                                    node.name.take(maxChars - 2) + "…"
+                                    node.name.take(maxChars - 1) + "…"
                                 } else {
                                     node.name
                                 }
 
                                 val sizeText = StorageFormatter.formatBytes(node.size)
                                 val xPos = rect.left + paddingPx
-                                var yPos = rect.top + density.run { 15.dp.toPx() }
+                                var yPos = rect.top + density.run { 14.dp.toPx() }
 
-                                if (node.isDirectory && h > 42.dp.toPx()) {
+                                if (node.isDirectory && h > 38.dp.toPx()) {
                                     drawText("DIR", xPos, yPos - density.run { 2.dp.toPx() }, dirBadgePaint)
-                                    yPos += density.run { 12.dp.toPx() }
+                                    yPos += density.run { 11.dp.toPx() }
                                 }
 
                                 drawText(displayName, xPos, yPos, textPaint)
 
-                                if (h > 46.dp.toPx()) {
+                                if (h > 42.dp.toPx()) {
                                     drawText(
                                         sizeText,
                                         xPos,
-                                        yPos + density.run { 13.dp.toPx() },
+                                        yPos + density.run { 12.dp.toPx() },
                                         subtextPaint
                                     )
                                 }
@@ -373,44 +393,155 @@ fun TreemapCanvas(
             }
         }
 
-        // Floating Reset Zoom Button when zoomed in
-        val isZoomed by remember { derivedStateOf { scaleAnim.value > 1.15f } }
-        AnimatedVisibility(
-            visible = isZoomed,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(150)),
+        // Google Maps-style Interactive Floating Map Controls (Zoom In, Zoom Out, Reset, Zoom Indicator)
+        val currentScale = scaleAnim.value
+        val isZoomed by remember { derivedStateOf { currentScale > 1.05f } }
+
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(12.dp)
+                .padding(12.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FloatingActionButton(
-                onClick = {
-                    coroutineScope.launch {
-                        launch {
-                            scaleAnim.animateTo(
-                                1f,
-                                animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
-                            )
-                        }
-                        launch {
-                            offsetAnim.animateTo(
-                                Offset.Zero,
-                                animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.size(40.dp),
-                shape = CircleShape,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
+            // Reset / Fit to Screen Button (visible when zoomed)
+            AnimatedVisibility(
+                visible = isZoomed,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.ZoomOutMap,
-                    contentDescription = "Reset Zoom",
-                    modifier = Modifier.size(20.dp)
-                )
+                Surface(
+                    onClick = {
+                        coroutineScope.launch {
+                            launch {
+                                scaleAnim.animateTo(
+                                    1f,
+                                    animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
+                                )
+                            }
+                            launch {
+                                offsetAnim.animateTo(
+                                    Offset.Zero,
+                                    animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
+                                )
+                            }
+                        }
+                    },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.CenterFocusStrong,
+                            contentDescription = "Fit to Screen",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            // Compact Zoom In / Out Pill Control
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                modifier = Modifier.shadow(6.dp, RoundedCornerShape(20.dp))
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp)
+                ) {
+                    // Zoom In Button (+)
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val targetScale = (scaleAnim.value * 1.5f).coerceIn(1f, 10f)
+                                val maxOffsetX = (widthPx * (targetScale - 1f) / 2f).coerceAtLeast(0f)
+                                val maxOffsetY = (heightPx * (targetScale - 1f) / 2f).coerceAtLeast(0f)
+                                val targetOffset = Offset(
+                                    offsetAnim.value.x.coerceIn(-maxOffsetX, maxOffsetX),
+                                    offsetAnim.value.y.coerceIn(-maxOffsetY, maxOffsetY)
+                                )
+                                launch {
+                                    scaleAnim.animateTo(
+                                        targetScale,
+                                        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
+                                    )
+                                }
+                                launch {
+                                    offsetAnim.animateTo(
+                                        targetOffset,
+                                        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = "Zoom In",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Zoom Percentage Indicator
+                    Text(
+                        text = "${(currentScale * 100).roundToInt()}%",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = if (isZoomed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+
+                    // Zoom Out Button (-)
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val targetScale = (scaleAnim.value / 1.5f).coerceIn(1f, 10f)
+                                val maxOffsetX = (widthPx * (targetScale - 1f) / 2f).coerceAtLeast(0f)
+                                val maxOffsetY = (heightPx * (targetScale - 1f) / 2f).coerceAtLeast(0f)
+                                val targetOffset = if (targetScale <= 1.05f) {
+                                    Offset.Zero
+                                } else {
+                                    Offset(
+                                        offsetAnim.value.x.coerceIn(-maxOffsetX, maxOffsetX),
+                                        offsetAnim.value.y.coerceIn(-maxOffsetY, maxOffsetY)
+                                    )
+                                }
+                                launch {
+                                    scaleAnim.animateTo(
+                                        targetScale,
+                                        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
+                                    )
+                                }
+                                launch {
+                                    offsetAnim.animateTo(
+                                        targetOffset,
+                                        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)
+                                    )
+                                }
+                            }
+                        },
+                        enabled = currentScale > 1.01f,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Remove,
+                            contentDescription = "Zoom Out",
+                            tint = if (currentScale > 1.01f) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
         }
     }
