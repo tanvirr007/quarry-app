@@ -166,6 +166,7 @@ fun SettingsScreen(
         ExclusionsDialog(
             excludedFolders = uiState.excludedFolders,
             onAddExclusion = { viewModel.addExclusion(it) },
+            onAddExclusions = { viewModel.addExclusions(it) },
             onRemoveExclusion = { viewModel.removeExclusion(it) },
             onDismiss = { viewModel.hideExclusionsDialog() }
         )

@@ -155,6 +155,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun addExclusions(paths: Collection<String>) {
+        viewModelScope.launch {
+            prefsRepo.addExcludedFolders(paths)
+        }
+    }
+
     fun removeExclusion(path: String) {
         viewModelScope.launch {
             prefsRepo.removeExcludedFolder(path)

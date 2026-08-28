@@ -89,9 +89,20 @@ class UserPreferencesRepository private constructor(private val context: Context
     }
 
     suspend fun addExcludedFolder(path: String) {
+        val trimmed = path.trim()
+        if (trimmed.isBlank()) return
         context.dataStore.edit { preferences ->
             val current = preferences[EXCLUDED_FOLDERS_KEY] ?: emptySet()
-            preferences[EXCLUDED_FOLDERS_KEY] = current + path
+            preferences[EXCLUDED_FOLDERS_KEY] = current + trimmed
+        }
+    }
+
+    suspend fun addExcludedFolders(paths: Collection<String>) {
+        val cleaned = paths.map { it.trim() }.filter { it.isNotBlank() }
+        if (cleaned.isEmpty()) return
+        context.dataStore.edit { preferences ->
+            val current = preferences[EXCLUDED_FOLDERS_KEY] ?: emptySet()
+            preferences[EXCLUDED_FOLDERS_KEY] = current + cleaned
         }
     }
 
