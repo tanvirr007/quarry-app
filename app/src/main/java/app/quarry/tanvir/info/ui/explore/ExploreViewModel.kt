@@ -163,24 +163,34 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         return false
     }
 
+    private var lastBoundsWidth: Float = 0f
+    private var lastBoundsHeight: Float = 0f
+
     private fun loadDirectory(path: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
             val children = db.fileDao().getChildrenSync(path)
             _directoryFiles.value = children
 
-            // Compute Treemap layout for this folder
+            // Compute Treemap layout for this folder with latest known bounds
+            val w = if (lastBoundsWidth > 0f) lastBoundsWidth else 1000f
+            val h = if (lastBoundsHeight > 0f) lastBoundsHeight else 1000f
             val tree = TreemapEngine.buildTree(children, path)
             val layout = TreemapEngine.layoutSquarified(
                 items = tree.children,
-                bounds = TreemapRect(0f, 0f, 1000f, 1000f)
+                bounds = TreemapRect(0f, 0f, w, h)
             )
             _treemapLayoutNodes.value = layout
         }
     }
 
     fun recalculateTreemap(widthPx: Float, heightPx: Float) {
-        if (widthPx <= 0 || heightPx <= 0) return
+        if (widthPx <= 0f || heightPx <= 0f) return
+        if (kotlin.math.abs(lastBoundsWidth - widthPx) < 1f && kotlin.math.abs(lastBoundsHeight - heightPx) < 1f && _treemapLayoutNodes.value.isNotEmpty()) {
+            return
+        }
+        lastBoundsWidth = widthPx
+        lastBoundsHeight = heightPx
         val currentChildren = _directoryFiles.value
         if (currentChildren.isEmpty()) return
 
