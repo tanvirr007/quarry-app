@@ -1,0 +1,106 @@
+name: Bug Report
+description: Report a bug, crash, or unexpected behavior in Quarry
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue. Please fill out the sections below with as much detail as possible to help us investigate and fix the problem.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to Reproduce
+      description: Provide step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Open Quarry
+        2. Navigate to '...'
+        3. Tap on '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: Describe what should have happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior
+      description: Describe what actually happened instead.
+      placeholder: Describe the observed result...
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Quarry Version
+      description: The version of Quarry you are running (e.g., v1.0.0 or build number from Settings).
+      placeholder: e.g. v1.0.0 (Build 5)
+    validations:
+      required: true
+
+  - type: input
+    id: device_info
+    attributes:
+      label: Device Model & Manufacturer
+      description: What device are you using?
+      placeholder: e.g. Google Pixel 8, Samsung Galaxy S24
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android Version / ROM
+      description: Android OS version and custom ROM (if applicable).
+      placeholder: e.g. Android 14 (One UI 6.1) / LineageOS 21
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: permissions
+    attributes:
+      label: Storage Permissions
+      description: Confirm the storage permission status granted to Quarry.
+      options:
+        - label: All Files Access (MANAGE_EXTERNAL_STORAGE) was granted
+        - label: Standard Media / Storage permission was granted
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs / Stack Trace
+      description: Paste any logcat output or crash stack traces here.
+      placeholder: |
+        ```text
+        Paste logs or stack traces here
+        ```
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or screen recordings about the problem.
+    validations:
+      required: false
