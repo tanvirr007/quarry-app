@@ -121,18 +121,12 @@ fun CleanupScreen(
                         )
                     }
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Smart Storage Cleanup",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Real storage candidates only. No fake RAM booster.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = "Storage Cleanup",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 if (uiState.totalRecoverableBytes > 0) {
