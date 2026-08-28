@@ -18,14 +18,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CompareArrows
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.HelpOutline
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.SdStorage
-import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.AlertDialog
@@ -96,7 +93,7 @@ fun SettingsScreen(
         // 2. Security & Biometrics
         SettingsSwitchItem(
             icon = Icons.Rounded.Fingerprint,
-            title = "Biometriac",
+            title = "Biometric Protection",
             subtitle = "Require authentication for file deletion and rename",
             checked = uiState.isBiometricEnabled,
             onCheckedChange = { viewModel.toggleBiometricProtection(activity, it) }
@@ -127,22 +124,6 @@ fun SettingsScreen(
             onClick = { viewModel.showVolumesDialog() }
         )
 
-        // 6. Historical Snapshots & Compare
-        SettingsActionItem(
-            icon = Icons.Rounded.History,
-            title = "Storage Snapshots & Comparison",
-            subtitle = "${uiState.snapshots.size} historical snapshots saved",
-            onClick = { viewModel.showComparisonDialog() }
-        )
-
-        // 7. Export Storage Report
-        SettingsActionItem(
-            icon = Icons.Rounded.Share,
-            title = "Export Storage Report",
-            subtitle = "Generate & share local diagnostic storage summary",
-            onClick = { viewModel.exportReport(context) }
-        )
-
         Text(
             text = "About & Help",
             style = MaterialTheme.typography.titleMedium,
@@ -150,7 +131,7 @@ fun SettingsScreen(
             modifier = Modifier.padding(start = 4.dp, top = 8.dp)
         )
 
-        // 8. Onboarding Guide
+        // 6. Onboarding Guide
         SettingsActionItem(
             icon = Icons.Rounded.HelpOutline,
             title = "Quarry Walkthrough",
@@ -158,7 +139,7 @@ fun SettingsScreen(
             onClick = { viewModel.showOnboarding() }
         )
 
-        // 9. About Quarry
+        // 7. About Quarry
         SettingsActionItem(
             icon = Icons.Rounded.Info,
             title = "Quarry v1.0.0",
@@ -181,14 +162,6 @@ fun SettingsScreen(
         StorageVolumesDialog(
             volumes = uiState.detectedVolumes,
             onDismiss = { viewModel.hideVolumesDialog() }
-        )
-    }
-
-    // Scan Comparison Dialog
-    if (uiState.isComparisonDialogVisible) {
-        ScanComparisonDialog(
-            snapshots = uiState.snapshots,
-            onDismiss = { viewModel.hideComparisonDialog() }
         )
     }
 
