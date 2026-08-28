@@ -78,9 +78,10 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
 
     val uiState: StateFlow<CleanupUiState> = combine(
         combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems, prefsRepo.isBiometricAuthEnabled) { dupState, dupGroups, candGroups, trash, biometric ->
+            val trashRecoverable = trash.sumOf { it.size }
             val dupRecoverable = dupGroups.sumOf { it.recoverableBytes }
-            val candRecoverable = candGroups.sumOf { it.totalBytes }
-            val totalRecoverable = dupRecoverable + candRecoverable
+            val candRecoverable = candGroups.flatMap { it.items }.distinctBy { it.path }.sumOf { it.size }
+            val totalRecoverable = trashRecoverable + dupRecoverable + candRecoverable
 
             CleanupUiState(
                 duplicateScanState = dupState,
@@ -111,13 +112,17 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     )
 
     init {
-        loadCandidates()
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.getAllFiles().collect { allFiles ->
+                val candidates = cleanupEngine.getCandidatesFromEntities(allFiles)
+                _candidateGroups.value = candidates
+            }
+        }
     }
 
     fun loadCandidates() {
         viewModelScope.launch(Dispatchers.IO) {
-            val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
-            val allFiles = db.fileDao().getChildrenSync("")
+            val allFiles = repository.getAllFilesSync()
             val candidates = cleanupEngine.getCandidatesFromEntities(allFiles)
             _candidateGroups.value = candidates
         }

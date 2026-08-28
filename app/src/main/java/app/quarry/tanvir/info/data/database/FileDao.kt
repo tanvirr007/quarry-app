@@ -25,8 +25,14 @@ interface FileDao {
     @Query("SELECT * FROM files")
     fun getAllFiles(): Flow<List<FileEntity>>
 
+    @Query("SELECT * FROM files")
+    suspend fun getAllFilesSync(): List<FileEntity>
+
     @Query("SELECT * FROM files WHERE isDirectory = 0")
     fun getAllNonDirectoryFiles(): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE isDirectory = 0")
+    suspend fun getAllNonDirectoryFilesSync(): List<FileEntity>
 
     @Query("SELECT COUNT(*) FROM files WHERE isDirectory = 0")
     fun getTotalFileCount(): Flow<Long>
