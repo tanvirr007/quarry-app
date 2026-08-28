@@ -47,6 +47,7 @@ out/
 *.keystore
 *.p12
 *.key
+key.properties
 
 # Google Services / Crashlytics keys (if added in future)
 # google-services.json
