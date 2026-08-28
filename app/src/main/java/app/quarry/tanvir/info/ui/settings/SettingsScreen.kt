@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.SdStorage
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -149,9 +150,9 @@ fun SettingsScreen(
 
         // 4. Hidden Files & Folders
         SettingsSwitchItem(
-            icon = Icons.Rounded.Visibility,
-            title = "Hidden Files",
-            subtitle = "Include dotfiles in scans",
+            icon = if (uiState.scanHiddenFiles) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+            title = "Show Hidden Files",
+            subtitle = if (uiState.scanHiddenFiles) "Showing dotfiles and hidden folders" else "Hiding dotfiles and hidden folders",
             checked = uiState.scanHiddenFiles,
             onCheckedChange = { viewModel.setScanHiddenFiles(it) }
         )
