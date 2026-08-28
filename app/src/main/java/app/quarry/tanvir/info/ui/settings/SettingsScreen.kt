@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.SdStorage
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -98,7 +99,16 @@ fun SettingsScreen(
             onClick = { viewModel.showExclusionsDialog() }
         )
 
-        // 4. Storage Volumes
+        // 4. Hidden Files & Folders
+        SettingsSwitchItem(
+            icon = Icons.Rounded.Visibility,
+            title = "Scan Hidden Files & Folders",
+            subtitle = "Include files and directories starting with a dot (e.g. .temp, .thumbnails)",
+            checked = uiState.scanHiddenFiles,
+            onCheckedChange = { viewModel.setScanHiddenFiles(it) }
+        )
+
+        // 5. Storage Volumes
         SettingsActionItem(
             icon = Icons.Rounded.SdStorage,
             title = "Storage Volumes",
@@ -106,7 +116,7 @@ fun SettingsScreen(
             onClick = { viewModel.showVolumesDialog() }
         )
 
-        // 5. Historical Snapshots & Compare
+        // 6. Historical Snapshots & Compare
         SettingsActionItem(
             icon = Icons.Rounded.History,
             title = "Storage Snapshots & Comparison",
@@ -114,7 +124,7 @@ fun SettingsScreen(
             onClick = { viewModel.showComparisonDialog() }
         )
 
-        // 6. Export Storage Report
+        // 7. Export Storage Report
         SettingsActionItem(
             icon = Icons.Rounded.Share,
             title = "Export Storage Report",
@@ -129,7 +139,7 @@ fun SettingsScreen(
             modifier = Modifier.padding(start = 4.dp, top = 8.dp)
         )
 
-        // 7. Onboarding Guide
+        // 8. Onboarding Guide
         SettingsActionItem(
             icon = Icons.Rounded.HelpOutline,
             title = "Quarry Walkthrough",
@@ -137,7 +147,7 @@ fun SettingsScreen(
             onClick = { viewModel.showOnboarding() }
         )
 
-        // 8. About Quarry
+        // 9. About Quarry
         SettingsActionItem(
             icon = Icons.Rounded.Info,
             title = "Quarry v1.0.0",

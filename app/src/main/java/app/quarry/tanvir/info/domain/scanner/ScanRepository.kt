@@ -9,6 +9,7 @@ import app.quarry.tanvir.info.data.database.ScanSnapshotEntity
 import app.quarry.tanvir.info.data.filesystem.FastStorageScanner
 import app.quarry.tanvir.info.data.filesystem.ScanProgressUpdate
 import app.quarry.tanvir.info.domain.model.StorageCategory
+import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,13 +19,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
 class ScanRepository(
     private val database: QuarryDatabase,
-    private val scanner: FastStorageScanner = FastStorageScanner()
+    private val scanner: FastStorageScanner = FastStorageScanner(),
+    private val userPreferences: UserPreferencesRepository? = null
 ) {
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var scanJob: Job? = null
@@ -61,8 +64,15 @@ class ScanRepository(
                 )
 
                 val estimatedTotalBytes = FastStorageScanner.getUsedStorageBytes(rootDirectory)
+                val scanHidden = try { userPreferences?.scanHiddenFiles?.first() ?: false } catch (e: Exception) { false }
+                val excluded = try { userPreferences?.excludedFolders?.first() ?: emptySet() } catch (e: Exception) { emptySet() }
 
-                scanner.scanStorage(rootDirectory, estimatedTotalBytes).collect { update ->
+                scanner.scanStorage(
+                    rootDirectory = rootDirectory,
+                    estimatedTotalBytes = estimatedTotalBytes,
+                    includeHiddenFiles = scanHidden,
+                    excludedPaths = excluded
+                ).collect { update ->
                     when (update) {
                         is ScanProgressUpdate.Progress -> {
                             _scanState.value = ScanState.Scanning(update.progress)
@@ -130,7 +140,8 @@ class ScanRepository(
         fun getInstance(context: Context): ScanRepository {
             return INSTANCE ?: synchronized(this) {
                 val db = QuarryDatabase.getInstance(context)
-                val instance = ScanRepository(db)
+                val prefs = UserPreferencesRepository.getInstance(context)
+                val instance = ScanRepository(db, userPreferences = prefs)
                 INSTANCE = instance
                 instance
             }

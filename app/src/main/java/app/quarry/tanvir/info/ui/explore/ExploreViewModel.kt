@@ -13,12 +13,14 @@ import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
 import app.quarry.tanvir.info.domain.treemap.TreemapEngine
 import app.quarry.tanvir.info.domain.treemap.TreemapNode
 import app.quarry.tanvir.info.domain.treemap.TreemapRect
+import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -55,6 +57,7 @@ data class ExploreUiState(
     val searchQuery: String = "",
     val selectedCategory: StorageCategory? = null,
     val sortOrder: FileSortOrder = FileSortOrder.SIZE_DESC,
+    val showHiddenFiles: Boolean = false,
     val currentDirectoryFiles: List<FileEntity> = emptyList(),
     val treemapNodes: List<TreemapNode> = emptyList(),
     val largestFiles: List<FileEntity> = emptyList(),
@@ -71,6 +74,7 @@ data class ExploreUiState(
 class ExploreViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ScanRepository.getInstance(application)
+    private val prefsRepo = UserPreferencesRepository.getInstance(application)
     private val fileOps = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
 
@@ -89,13 +93,14 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _userMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<ExploreUiState> = combine(
-        combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder) { path, mode, query, cat, sort ->
+        combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder, prefsRepo.scanHiddenFiles) { path, mode, query, cat, sort, hidden ->
             ExploreUiState(
                 currentPath = path,
                 viewMode = mode,
                 searchQuery = query,
                 selectedCategory = cat,
-                sortOrder = sort
+                sortOrder = sort,
+                showHiddenFiles = hidden
             )
         },
         combine(_selectedPaths, _activeDetailsFile, _activeRenameFile, _activeDeleteCandidates, _isDeleteCountdownVisible) { selected, details, rename, deleteCandidates, deleteVisible ->
@@ -129,6 +134,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         loadDirectory(defaultRootPath)
+        viewModelScope.launch {
+            prefsRepo.scanHiddenFiles.collect {
+                loadDirectory(_currentPath.value)
+            }
+        }
     }
 
     fun setViewMode(mode: ExploreViewMode) {
@@ -170,17 +180,30 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) {
             val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
             val children = db.fileDao().getChildrenSync(path)
-            _directoryFiles.value = children
+            val showHidden = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
+            val visibleChildren = if (showHidden) {
+                children
+            } else {
+                children.filterNot { it.name.startsWith(".") }
+            }
+            _directoryFiles.value = visibleChildren
 
             // Compute Treemap layout for this folder with latest known bounds
             val w = if (lastBoundsWidth > 0f) lastBoundsWidth else 1000f
             val h = if (lastBoundsHeight > 0f) lastBoundsHeight else 1000f
-            val tree = TreemapEngine.buildTree(children, path)
+            val tree = TreemapEngine.buildTree(visibleChildren, path)
             val layout = TreemapEngine.layoutSquarified(
                 items = tree.children,
                 bounds = TreemapRect(0f, 0f, w, h)
             )
             _treemapLayoutNodes.value = layout
+        }
+    }
+
+    fun toggleShowHiddenFiles() {
+        viewModelScope.launch {
+            val current = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
+            prefsRepo.setScanHiddenFiles(!current)
         }
     }
 
@@ -195,7 +218,13 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         if (currentChildren.isEmpty()) return
 
         viewModelScope.launch(Dispatchers.Default) {
-            val tree = TreemapEngine.buildTree(currentChildren, _currentPath.value)
+            val showHidden = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
+            val visibleChildren = if (showHidden) {
+                currentChildren
+            } else {
+                currentChildren.filterNot { it.name.startsWith(".") }
+            }
+            val tree = TreemapEngine.buildTree(visibleChildren, _currentPath.value)
             val layout = TreemapEngine.layoutSquarified(
                 items = tree.children,
                 bounds = TreemapRect(0f, 0f, widthPx, heightPx)

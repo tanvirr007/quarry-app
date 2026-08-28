@@ -27,6 +27,7 @@ class UserPreferencesRepository private constructor(private val context: Context
     private val BIOMETRIC_AUTH_KEY = booleanPreferencesKey("biometric_auth_enabled")
     private val DELETE_COUNTDOWN_KEY = intPreferencesKey("delete_countdown_seconds")
     private val EXCLUDED_FOLDERS_KEY = stringSetPreferencesKey("excluded_folders")
+    private val SCAN_HIDDEN_FILES_KEY = booleanPreferencesKey("scan_hidden_files")
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
         val raw = preferences[THEME_KEY] ?: ThemeMode.SYSTEM.name
@@ -35,6 +36,10 @@ class UserPreferencesRepository private constructor(private val context: Context
         } catch (e: Exception) {
             ThemeMode.SYSTEM
         }
+    }
+
+    val scanHiddenFiles: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SCAN_HIDDEN_FILES_KEY] ?: false
     }
 
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -56,6 +61,12 @@ class UserPreferencesRepository private constructor(private val context: Context
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_KEY] = mode.name
+        }
+    }
+
+    suspend fun setScanHiddenFiles(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SCAN_HIDDEN_FILES_KEY] = enabled
         }
     }
 

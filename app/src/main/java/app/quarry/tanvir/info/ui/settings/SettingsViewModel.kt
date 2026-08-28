@@ -29,6 +29,7 @@ data class SettingsUiState(
     val isBiometricEnabled: Boolean = true,
     val deleteCountdownSeconds: Int = 5,
     val excludedFolders: Set<String> = emptySet(),
+    val scanHiddenFiles: Boolean = false,
     val detectedVolumes: List<StorageVolumeInfo> = emptyList(),
     val snapshots: List<ScanSnapshotEntity> = emptyList(),
     val isThemeDialogVisible: Boolean = false,
@@ -56,13 +57,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             prefsRepo.themeMode,
             prefsRepo.isBiometricAuthEnabled,
             prefsRepo.deleteCountdownSeconds,
-            prefsRepo.excludedFolders
-        ) { theme, biometric, countdown, exclusions ->
+            prefsRepo.excludedFolders,
+            prefsRepo.scanHiddenFiles
+        ) { theme, biometric, countdown, exclusions, scanHidden ->
             SettingsUiState(
                 themeMode = theme,
                 isBiometricEnabled = biometric,
                 deleteCountdownSeconds = countdown,
-                excludedFolders = exclusions
+                excludedFolders = exclusions,
+                scanHiddenFiles = scanHidden
             )
         },
         _detectedVolumes,
@@ -110,6 +113,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setBiometricEnabled(enabled: Boolean) {
         viewModelScope.launch {
             prefsRepo.setBiometricAuthEnabled(enabled)
+        }
+    }
+
+    fun setScanHiddenFiles(enabled: Boolean) {
+        viewModelScope.launch {
+            prefsRepo.setScanHiddenFiles(enabled)
         }
     }
 

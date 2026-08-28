@@ -26,7 +26,9 @@ class FastStorageScanner {
 
     fun scanStorage(
         rootDirectory: File = Environment.getExternalStorageDirectory(),
-        estimatedTotalBytes: Long = getUsedStorageBytes(rootDirectory)
+        estimatedTotalBytes: Long = getUsedStorageBytes(rootDirectory),
+        includeHiddenFiles: Boolean = false,
+        excludedPaths: Set<String> = emptySet()
     ): Flow<ScanProgressUpdate> = flow {
         val startTime = System.currentTimeMillis()
         var scannedFilesCount = 0L
@@ -46,7 +48,9 @@ class FastStorageScanner {
         // Top level folder status tracker for visual progress (e.g. Download, DCIM, Pictures, Android, etc.)
         val topLevelFolders = mutableMapOf<String, Boolean>()
         rootDirectory.listFiles()?.filter { it.isDirectory }?.forEach {
-            topLevelFolders[it.name] = false
+            if (includeHiddenFiles || (!it.name.startsWith(".") && !it.isHidden)) {
+                topLevelFolders[it.name] = false
+            }
         }
 
         while (queue.isNotEmpty()) {
@@ -74,6 +78,17 @@ class FastStorageScanner {
                 for (child in children) {
                     if (!currentCoroutineContext().isActive) {
                         throw CancellationException("Scan cancelled by user")
+                    }
+
+                    // Check if hidden files/folders should be skipped
+                    val isHiddenItem = child.name.startsWith(".") || child.isHidden
+                    if (!includeHiddenFiles && isHiddenItem) {
+                        continue
+                    }
+
+                    // Check if folder is explicitly excluded
+                    if (excludedPaths.contains(child.absolutePath)) {
+                        continue
                     }
 
                     if (child.isDirectory) {
