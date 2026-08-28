@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.home
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -24,8 +25,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,19 +41,32 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.R
+import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.scanner.ScanState
+import app.quarry.tanvir.info.ui.explore.FileDetailsBottomSheet
+import app.quarry.tanvir.info.ui.explore.RenameDialog
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(),
-    onNavigateToCategory: (StorageCategory) -> Unit = {},
-    onNavigateToInsight: (QuickInsight) -> Unit = {}
+    onNavigateToCategory: ((StorageCategory) -> Unit)? = null,
+    onNavigateToInsight: ((QuickInsight) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    var renamingFile by remember { mutableStateOf<FileEntity?>(null) }
+
+    // User Message Toast
+    LaunchedEffect(uiState.userMessage) {
+        uiState.userMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            viewModel.clearUserMessage()
+        }
+    }
 
     // Refresh permission status when activity resumes
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -129,15 +148,69 @@ fun HomeScreen(
         // Quick Insights Section
         QuickInsightsSection(
             insights = uiState.overview.quickInsights,
-            onInsightClick = onNavigateToInsight
+            onInsightClick = { insight ->
+                if (onNavigateToInsight != null) {
+                    onNavigateToInsight(insight)
+                } else {
+                    viewModel.selectInsight(insight)
+                }
+            }
         )
 
         // 8 Storage Categories Grid
         CategoryGrid(
             categories = uiState.overview.categoryBreakdown,
-            onCategoryClick = onNavigateToCategory
+            onCategoryClick = { category ->
+                if (onNavigateToCategory != null) {
+                    onNavigateToCategory(category)
+                } else {
+                    viewModel.selectCategory(category)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
+    }
+
+    // Category / Insight Files Detail Sheet (Stays on Home)
+    uiState.activeSheetData?.let { sheetData ->
+        HomeItemListBottomSheet(
+            title = sheetData.title,
+            category = sheetData.category,
+            files = sheetData.files,
+            onFileClick = { file ->
+                viewModel.selectDetailFile(file)
+            },
+            onDismiss = {
+                viewModel.dismissSheet()
+            }
+        )
+    }
+
+    // Individual File Details Sheet (Stays on Home)
+    uiState.selectedDetailFile?.let { file ->
+        FileDetailsBottomSheet(
+            file = file,
+            onDismiss = { viewModel.selectDetailFile(null) },
+            onOpen = { viewModel.openFile(it) },
+            onShare = { viewModel.shareFile(it) },
+            onRename = { renamingFile = it },
+            onDelete = { viewModel.deleteFile(it) },
+            onOpenContainingFolder = {
+                viewModel.selectDetailFile(null)
+            }
+        )
+    }
+
+    // Rename Dialog
+    renamingFile?.let { file ->
+        RenameDialog(
+            file = file,
+            onDismiss = { renamingFile = null },
+            onConfirm = { newName ->
+                viewModel.renameFile(file, newName)
+                renamingFile = null
+            }
+        )
     }
 }

@@ -21,18 +21,7 @@ fun QuarryNavHost(
         modifier = modifier
     ) {
         composable(Screen.Home.route) {
-            HomeScreen(
-                onNavigateToCategory = { category ->
-                    navController.navigate(Screen.Explore.route)
-                },
-                onNavigateToInsight = { insight ->
-                    if (insight.id == "duplicates" || insight.id == "large_files" || insight.id == "apks") {
-                        navController.navigate(Screen.Cleanup.route)
-                    } else {
-                        navController.navigate(Screen.Explore.route)
-                    }
-                }
-            )
+            HomeScreen()
         }
         composable(Screen.Explore.route) {
             ExploreScreen()
