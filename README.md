@@ -44,6 +44,7 @@ Quarry is built following **Clean Architecture** and **Unidirectional Data Flow 
 | :--- | :--- |
 | **Language** | [Kotlin 2.0.21](https://kotlinlang.org/) |
 | **UI Framework** | [Jetpack Compose](https://developer.android.com/jetpack/compose) (BOM `2024.12.01`) + Material 3 |
+| **Typography** | [Google Sans Rounded](https://fonts.google.com/) (Embedded `res/font/`) |
 | **Navigation** | [Compose Navigation](https://developer.android.com/guide/navigation/navigation-compose) |
 | **Local Database** | [Room Database 2.6.1](https://developer.android.com/training/data-storage/room) with [KSP](https://kotlinlang.org/docs/ksp-overview.html) |
 | **User Preferences** | [Jetpack DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore) |

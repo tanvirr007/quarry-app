@@ -18,6 +18,7 @@ Welcome to **Quarry** (`app.quarry.tanvir.info`). This document outlines reposit
 - **Language & Runtime**: Kotlin `2.0.21`, Java `21`, Gradle Kotlin DSL (`build.gradle.kts`)
 - **Android Target**: `compileSdk = 36`, `targetSdk = 36`, `minSdk = 31`
 - **UI Framework**: Jetpack Compose (BOM `2024.12.01`), Material 3, Compose Navigation `2.8.5`
+- **Typography**: Google Sans Rounded embedded font family (`res/font/google_sans_rounded.ttf`)
 - **Local Persistence**:
   - **Room Database** `2.6.1` (with KSP `2.0.21-1.0.28`) for file metadata indexing and cache.
   - **DataStore Preferences** `1.1.1` for user settings (theme, sort preferences, onboarding flags).

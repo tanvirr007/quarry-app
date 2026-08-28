@@ -10,10 +10,10 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import app.quarry.tanvir.info.data.preferences.ThemeMode
 
 private val DarkColorScheme = darkColorScheme(
     primary = Teal80,
@@ -47,7 +47,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = LightOnSurface,
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = LightOnSurfaceVariant
-import app.quarry.tanvir.info.data.preferences.ThemeMode
+)
 
 @Composable
 fun QuarryTheme(
