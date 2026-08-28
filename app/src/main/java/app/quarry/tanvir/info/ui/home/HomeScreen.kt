@@ -41,6 +41,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.R
+import androidx.fragment.app.FragmentActivity
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
 import app.quarry.tanvir.info.domain.model.StorageCategory
@@ -58,6 +59,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val activity = context as? FragmentActivity
     var renamingFile by remember { mutableStateOf<FileEntity?>(null) }
 
     // User Message Toast
@@ -195,7 +197,7 @@ fun HomeScreen(
             onOpen = { viewModel.openFile(it) },
             onShare = { viewModel.shareFile(it) },
             onRename = { renamingFile = it },
-            onDelete = { viewModel.deleteFile(it) },
+            onDelete = { viewModel.deleteFile(activity, it) },
             onOpenContainingFolder = {
                 viewModel.selectDetailFile(null)
             }
@@ -208,7 +210,7 @@ fun HomeScreen(
             file = file,
             onDismiss = { renamingFile = null },
             onConfirm = { newName ->
-                viewModel.renameFile(file, newName)
+                viewModel.renameFile(activity, file, newName)
                 renamingFile = null
             }
         )

@@ -58,6 +58,7 @@ data class ExploreUiState(
     val selectedCategory: StorageCategory? = null,
     val sortOrder: FileSortOrder = FileSortOrder.SIZE_DESC,
     val showHiddenFiles: Boolean = false,
+    val isBiometricEnabled: Boolean = true,
     val currentDirectoryFiles: List<FileEntity> = emptyList(),
     val treemapNodes: List<TreemapNode> = emptyList(),
     val largestFiles: List<FileEntity> = emptyList(),
@@ -93,14 +94,15 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _userMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<ExploreUiState> = combine(
-        combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder, prefsRepo.scanHiddenFiles) { path, mode, query, cat, sort, hidden ->
+        combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder, prefsRepo.scanHiddenFiles, prefsRepo.isBiometricAuthEnabled) { path, mode, query, cat, sort, hidden, biometric ->
             ExploreUiState(
                 currentPath = path,
                 viewMode = mode,
                 searchQuery = query,
                 selectedCategory = cat,
                 sortOrder = sort,
-                showHiddenFiles = hidden
+                showHiddenFiles = hidden,
+                isBiometricEnabled = biometric
             )
         },
         combine(_selectedPaths, _activeDetailsFile, _activeRenameFile, _activeDeleteCandidates, _isDeleteCountdownVisible) { selected, details, rename, deleteCandidates, deleteVisible ->
@@ -269,31 +271,44 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun executeRename(
-        activity: FragmentActivity,
+        activity: FragmentActivity?,
         file: FileEntity,
         newName: String
     ) {
-        securityManager.authenticate(
-            activity = activity,
-            title = "Confirm File Rename",
-            subtitle = "Authenticate to rename ${file.name}",
-            onSuccess = {
-                viewModelScope.launch {
-                    val result = fileOps.renameFile(file.path, newName)
-                    if (result.isSuccess) {
-                        _userMessage.value = "Renamed to $newName"
-                        _activeRenameFile.value = null
-                        _activeDetailsFile.value = null
-                        loadDirectory(_currentPath.value)
-                    } else {
-                        _userMessage.value = result.exceptionOrNull()?.message ?: "Rename failed"
-                    }
+        val performRename = {
+            viewModelScope.launch {
+                val result = fileOps.renameFile(file.path, newName)
+                if (result.isSuccess) {
+                    _userMessage.value = "Renamed to $newName"
+                    _activeRenameFile.value = null
+                    _activeDetailsFile.value = null
+                    loadDirectory(_currentPath.value)
+                } else {
+                    _userMessage.value = result.exceptionOrNull()?.message ?: "Rename failed"
                 }
-            },
-            onError = { error ->
-                _userMessage.value = error
             }
-        )
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performRename()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm File Rename",
+                    subtitle = "Authenticate to rename ${file.name}",
+                    onSuccess = performRename,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
     }
 
     fun promptDeleteSingle(file: FileEntity) {
@@ -316,33 +331,47 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun executeAuthenticatedDelete(
-        activity: FragmentActivity,
+        activity: FragmentActivity?,
         candidates: List<FileEntity>
     ) {
-        val title = if (candidates.size == 1) "Confirm Deletion" else "Confirm Bulk Deletion"
-        val subtitle = if (candidates.size == 1) "Authenticate to delete ${candidates[0].name}" else "Authenticate to delete ${candidates.size} files"
-
-        securityManager.authenticate(
-            activity = activity,
-            title = title,
-            subtitle = subtitle,
-            onSuccess = {
-                viewModelScope.launch {
-                    val paths = candidates.map { it.path }
-                    val results = fileOps.bulkDelete(paths)
-                    val successCount = results.count { it.value }
-                    _userMessage.value = "Deleted $successCount items"
-                    _isDeleteCountdownVisible.value = false
-                    _activeDeleteCandidates.value = emptyList()
-                    _activeDetailsFile.value = null
-                    clearSelection()
-                    loadDirectory(_currentPath.value)
-                }
-            },
-            onError = { error ->
-                _userMessage.value = error
+        val performDelete = {
+            viewModelScope.launch {
+                val paths = candidates.map { it.path }
+                val results = fileOps.bulkDelete(paths)
+                val successCount = results.count { it.value }
+                _userMessage.value = "Deleted $successCount items"
+                _isDeleteCountdownVisible.value = false
+                _activeDeleteCandidates.value = emptyList()
+                _activeDetailsFile.value = null
+                clearSelection()
+                loadDirectory(_currentPath.value)
             }
-        )
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performDelete()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                val title = if (candidates.size == 1) "Confirm Deletion" else "Confirm Bulk Deletion"
+                val subtitle = if (candidates.size == 1) "Authenticate to delete ${candidates[0].name}" else "Authenticate to delete ${candidates.size} files"
+
+                securityManager.authenticate(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle,
+                    onSuccess = performDelete,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
+    }
     fun moveToTrash(file: FileEntity) {
         viewModelScope.launch {
             val result = fileOps.moveToTrash(file.path)

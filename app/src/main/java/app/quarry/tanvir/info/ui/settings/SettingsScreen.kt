@@ -51,6 +51,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 import app.quarry.tanvir.info.ui.onboarding.OnboardingDialog
 
+import android.widget.Toast
+import androidx.fragment.app.FragmentActivity
+
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
@@ -59,6 +62,14 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val activity = context as? FragmentActivity
+
+    LaunchedEffect(uiState.userMessage) {
+        uiState.userMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            viewModel.clearUserMessage()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -74,10 +85,10 @@ fun SettingsScreen(
             modifier = Modifier.padding(start = 4.dp)
         )
 
-        // 1. Appearance & Theme
+        // 1. Appearance
         SettingsActionItem(
             icon = Icons.Rounded.DarkMode,
-            title = "Appearance & Theme",
+            title = "Appearance",
             subtitle = uiState.themeMode.displayName,
             onClick = { viewModel.showThemeDialog() }
         )
@@ -85,10 +96,10 @@ fun SettingsScreen(
         // 2. Security & Biometrics
         SettingsSwitchItem(
             icon = Icons.Rounded.Fingerprint,
-            title = "Biometric & PIN Protection",
+            title = "Biometriac",
             subtitle = "Require authentication for file deletion and rename",
             checked = uiState.isBiometricEnabled,
-            onCheckedChange = { viewModel.setBiometricEnabled(it) }
+            onCheckedChange = { viewModel.toggleBiometricProtection(activity, it) }
         )
 
         // 3. Scan & Exclusions
@@ -302,7 +313,10 @@ private fun SettingsSwitchItem(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onCheckedChange(!checked) },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

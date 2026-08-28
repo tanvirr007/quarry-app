@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.fragment.app.FragmentActivity
 import app.quarry.tanvir.info.data.database.CategoryStat
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.data.database.ScanSnapshotEntity
@@ -13,6 +14,7 @@ import app.quarry.tanvir.info.data.preferences.ThemeMode
 import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import app.quarry.tanvir.info.domain.report.StorageReportGenerator
 import app.quarry.tanvir.info.domain.scanner.ScanRepository
+import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
 import app.quarry.tanvir.info.domain.volume.StorageVolumeInfo
 import app.quarry.tanvir.info.domain.volume.StorageVolumeManager
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +38,8 @@ data class SettingsUiState(
     val isVolumesDialogVisible: Boolean = false,
     val isComparisonDialogVisible: Boolean = false,
     val isExclusionsDialogVisible: Boolean = false,
-    val isOnboardingVisible: Boolean = false
+    val isOnboardingVisible: Boolean = false,
+    val userMessage: String? = null
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -44,6 +47,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
     private val repository = ScanRepository.getInstance(application)
     private val volumeManager = StorageVolumeManager(application)
+    private val securityManager = BiometricSecurityManager(application)
 
     private val _detectedVolumes = MutableStateFlow<List<StorageVolumeInfo>>(emptyList())
     private val _isThemeDialogVisible = MutableStateFlow(false)
@@ -51,6 +55,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isComparisonDialogVisible = MutableStateFlow(false)
     private val _isExclusionsDialogVisible = MutableStateFlow(false)
     private val _isOnboardingVisible = MutableStateFlow(false)
+    private val _userMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
@@ -78,8 +83,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isOnboardingVisible
         ) { themeD, volD, compD, exclD, onbD ->
             listOf(themeD, volD, compD, exclD, onbD)
-        }
-    ) { baseState, volumes, snapshots, dialogStates ->
+        },
+        _userMessage
+    ) { baseState, volumes, snapshots, dialogStates, userMsg ->
         baseState.copy(
             detectedVolumes = volumes,
             snapshots = snapshots,
@@ -87,7 +93,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isVolumesDialogVisible = dialogStates[1],
             isComparisonDialogVisible = dialogStates[2],
             isExclusionsDialogVisible = dialogStates[3],
-            isOnboardingVisible = dialogStates[4]
+            isOnboardingVisible = dialogStates[4],
+            userMessage = userMsg
         )
     }.stateIn(
         scope = viewModelScope,
@@ -110,10 +117,52 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun setBiometricEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            prefsRepo.setBiometricAuthEnabled(enabled)
+    fun toggleBiometricProtection(activity: FragmentActivity?, enable: Boolean) {
+        if (activity == null) {
+            _userMessage.value = "Unable to start authentication"
+            return
         }
+
+        if (enable) {
+            if (!securityManager.canAuthenticate(activity)) {
+                _userMessage.value = "No screen lock or biometric enrolled. Please configure a PIN, pattern, or fingerprint in Android Settings."
+                return
+            }
+
+            securityManager.authenticate(
+                activity = activity,
+                title = "Enable Protection",
+                subtitle = "Authenticate to turn on Biometric & PIN Protection",
+                onSuccess = {
+                    viewModelScope.launch {
+                        prefsRepo.setBiometricAuthEnabled(true)
+                        _userMessage.value = "Biometric & PIN protection enabled"
+                    }
+                },
+                onError = { error ->
+                    _userMessage.value = error
+                }
+            )
+        } else {
+            securityManager.authenticate(
+                activity = activity,
+                title = "Disable Protection",
+                subtitle = "Authenticate to turn off Biometric & PIN Protection",
+                onSuccess = {
+                    viewModelScope.launch {
+                        prefsRepo.setBiometricAuthEnabled(false)
+                        _userMessage.value = "Biometric & PIN protection disabled"
+                    }
+                },
+                onError = { error ->
+                    _userMessage.value = error
+                }
+            )
+        }
+    }
+
+    fun clearUserMessage() {
+        _userMessage.value = null
     }
 
     fun setScanHiddenFiles(enabled: Boolean) {

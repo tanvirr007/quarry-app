@@ -33,8 +33,20 @@ class BiometricSecurityManager(private val context: Context) : SecurityManager {
         val canAuth = biometricManager.canAuthenticate(allowedAuthenticators)
 
         if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
-            // Device has no screen lock / biometrics configured, allow operation directly
-            onSuccess()
+            when (canAuth) {
+                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                    onError("No screen lock or biometric enrolled on this device")
+                }
+                BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
+                    onError("Biometric hardware not available")
+                }
+                BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
+                    onError("Biometric hardware is currently unavailable")
+                }
+                else -> {
+                    onError("Authentication is not available on this device")
+                }
+            }
             return
         }
 

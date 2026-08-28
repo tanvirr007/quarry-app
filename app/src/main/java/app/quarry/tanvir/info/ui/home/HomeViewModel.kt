@@ -4,10 +4,12 @@ import android.app.Application
 import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.fragment.app.FragmentActivity
 import app.quarry.tanvir.info.data.database.CategoryStat
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.data.database.ScanSnapshotEntity
 import app.quarry.tanvir.info.data.filesystem.FastStorageScanner
+import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
 import app.quarry.tanvir.info.domain.analyzer.StorageAnalyzer
 import app.quarry.tanvir.info.domain.analyzer.StorageOverviewData
@@ -15,12 +17,14 @@ import app.quarry.tanvir.info.domain.file.FileOperationsManager
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.scanner.ScanRepository
 import app.quarry.tanvir.info.domain.scanner.ScanState
+import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -43,7 +47,9 @@ data class HomeUiState(
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ScanRepository.getInstance(application)
+    private val prefsRepo = UserPreferencesRepository.getInstance(application)
     private val fileOperationsManager = FileOperationsManager(application, repository)
+    private val securityManager = BiometricSecurityManager(application)
     private val _permissionState = MutableStateFlow(checkHasStoragePermission())
     private val _activeSheetData = MutableStateFlow<HomeSheetData?>(null)
     private val _selectedDetailFile = MutableStateFlow<FileEntity?>(null)
@@ -179,26 +185,72 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         fileOperationsManager.shareFile(file.path)
     }
 
-    fun renameFile(file: FileEntity, newName: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = fileOperationsManager.renameFile(file.path, newName)
-            if (result.isSuccess) {
-                _userMessage.value = "Renamed successfully"
-                _selectedDetailFile.value = null
+    fun renameFile(activity: FragmentActivity?, file: FileEntity, newName: String) {
+        val performRename = {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = fileOperationsManager.renameFile(file.path, newName)
+                if (result.isSuccess) {
+                    _userMessage.value = "Renamed successfully"
+                    _selectedDetailFile.value = null
+                } else {
+                    _userMessage.value = "Rename failed: ${result.exceptionOrNull()?.message}"
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performRename()
             } else {
-                _userMessage.value = "Rename failed: ${result.exceptionOrNull()?.message}"
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm File Rename",
+                    subtitle = "Authenticate to rename ${file.name}",
+                    onSuccess = performRename,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
             }
         }
     }
 
-    fun deleteFile(file: FileEntity) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = fileOperationsManager.deletePermanently(file.path)
-            if (result.isSuccess) {
-                _userMessage.value = "File deleted"
-                _selectedDetailFile.value = null
+    fun deleteFile(activity: FragmentActivity?, file: FileEntity) {
+        val performDelete = {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = fileOperationsManager.deletePermanently(file.path)
+                if (result.isSuccess) {
+                    _userMessage.value = "File deleted"
+                    _selectedDetailFile.value = null
+                } else {
+                    _userMessage.value = "Delete failed: ${result.exceptionOrNull()?.message}"
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performDelete()
             } else {
-                _userMessage.value = "Delete failed: ${result.exceptionOrNull()?.message}"
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm File Deletion",
+                    subtitle = "Authenticate to delete ${file.name}",
+                    onSuccess = performDelete,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
             }
         }
     }

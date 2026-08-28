@@ -5,6 +5,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.quarry.tanvir.info.data.database.FileEntity
+import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import app.quarry.tanvir.info.domain.cleanup.CleanupCandidateGroup
 import app.quarry.tanvir.info.domain.cleanup.DefaultCleanupEngine
 import app.quarry.tanvir.info.domain.duplicates.DuplicateGroup
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -37,6 +39,7 @@ data class CleanupUiState(
     val candidateGroups: List<CleanupCandidateGroup> = emptyList(),
     val totalRecoverableBytes: Long = 0L,
     val trashItems: List<TrashItem> = emptyList(),
+    val isBiometricEnabled: Boolean = true,
     val activeCandidateGroup: CleanupCandidateGroup? = null,
     val selectedItemPaths: Set<String> = emptySet(),
     val activeDeleteItems: List<StorageItem> = emptyList(),
@@ -48,6 +51,7 @@ data class CleanupUiState(
 class CleanupViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ScanRepository.getInstance(application)
+    private val prefsRepo = UserPreferencesRepository.getInstance(application)
     private val duplicateDetector = FastDuplicateDetector()
     private val cleanupEngine = DefaultCleanupEngine(duplicateDetector)
     private val trashManager = TrashManager.getInstance(application, repository)
@@ -73,7 +77,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     )
 
     val uiState: StateFlow<CleanupUiState> = combine(
-        combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems) { dupState, dupGroups, candGroups, trash ->
+        combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems, prefsRepo.isBiometricAuthEnabled) { dupState, dupGroups, candGroups, trash, biometric ->
             val dupRecoverable = dupGroups.sumOf { it.recoverableBytes }
             val candRecoverable = candGroups.sumOf { it.totalBytes }
             val totalRecoverable = dupRecoverable + candRecoverable
@@ -83,7 +87,8 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
                 duplicateGroups = dupGroups,
                 candidateGroups = candGroups,
                 totalRecoverableBytes = totalRecoverable,
-                trashItems = trash
+                trashItems = trash,
+                isBiometricEnabled = biometric
             )
         },
         combine(_activeCandidateGroup, _selectedItemPaths, _activeDeleteItems, _isDeleteCountdownVisible, _isTrashDialogVisible) { group, paths, deleteItems, deleteVis, trashVis ->
@@ -215,35 +220,48 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun executeAuthenticatedDelete(
-        activity: FragmentActivity,
+        activity: FragmentActivity?,
         items: List<StorageItem>
     ) {
-        val title = if (items.size == 1) "Confirm Deletion" else "Confirm Cleanup Deletion"
-        val subtitle = "Authenticate to delete ${items.size} files (${app.quarry.tanvir.info.domain.model.StorageFormatter.formatBytes(items.sumOf { it.size })})"
-
-        securityManager.authenticate(
-            activity = activity,
-            title = title,
-            subtitle = subtitle,
-            onSuccess = {
-                viewModelScope.launch {
-                    val paths = items.map { it.path }
-                    val results = fileOps.bulkDelete(paths)
-                    val count = results.count { it.value }
-                    _userMessage.value = "Cleaned up $count files"
-                    _isDeleteCountdownVisible.value = false
-                    _activeDeleteItems.value = emptyList()
-                    _selectedItemPaths.value = emptySet()
-                    loadCandidates()
-                    if (_duplicateScanState.value is DuplicateScanState.Completed) {
-                        scanForDuplicates()
-                    }
+        val performDelete = {
+            viewModelScope.launch {
+                val paths = items.map { it.path }
+                val results = fileOps.bulkDelete(paths)
+                val count = results.count { it.value }
+                _userMessage.value = "Cleaned up $count files"
+                _isDeleteCountdownVisible.value = false
+                _activeDeleteItems.value = emptyList()
+                _selectedItemPaths.value = emptySet()
+                loadCandidates()
+                if (_duplicateScanState.value is DuplicateScanState.Completed) {
+                    scanForDuplicates()
                 }
-            },
-            onError = { error ->
-                _userMessage.value = error
             }
-        )
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performDelete()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                val title = if (items.size == 1) "Confirm Deletion" else "Confirm Cleanup Deletion"
+                val subtitle = "Authenticate to delete ${items.size} files (${app.quarry.tanvir.info.domain.model.StorageFormatter.formatBytes(items.sumOf { it.size })})"
+
+                securityManager.authenticate(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle,
+                    onSuccess = performDelete,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
     }
 
     fun openTrashDialog() {
@@ -277,68 +295,107 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun deleteTrashItemForever(
-        activity: FragmentActivity,
+        activity: FragmentActivity?,
         trashId: String
     ) {
-        securityManager.authenticate(
-            activity = activity,
-            title = "Confirm Permanent Delete",
-            subtitle = "Authenticate to permanently remove this file",
-            onSuccess = {
-                viewModelScope.launch {
-                    val result = trashManager.deletePermanently(trashId)
-                    if (result.isSuccess) {
-                        _userMessage.value = "Deleted forever"
-                    } else {
-                        _userMessage.value = "Failed to delete"
-                    }
+        val performDelete = {
+            viewModelScope.launch {
+                val result = trashManager.deletePermanently(trashId)
+                if (result.isSuccess) {
+                    _userMessage.value = "Deleted forever"
+                } else {
+                    _userMessage.value = "Failed to delete"
                 }
-            },
-            onError = { error ->
-                _userMessage.value = error
             }
-        )
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performDelete()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Permanent Delete",
+                    subtitle = "Authenticate to permanently remove this file",
+                    onSuccess = performDelete,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
     }
 
     fun deleteSelectedTrashItemsForever(
-        activity: FragmentActivity,
+        activity: FragmentActivity?,
         trashIds: List<String>
     ) {
         if (trashIds.isEmpty()) return
-        securityManager.authenticate(
-            activity = activity,
-            title = "Confirm Permanent Delete",
-            subtitle = "Authenticate to permanently remove ${trashIds.size} files",
-            onSuccess = {
-                viewModelScope.launch {
-                    val results = trashManager.deletePermanentlyBatch(trashIds)
-                    val count = results.count { it.value }
-                    _userMessage.value = "Permanently deleted $count files"
-                }
-            },
-            onError = { error ->
-                _userMessage.value = error
+        val performDelete = {
+            viewModelScope.launch {
+                val results = trashManager.deletePermanentlyBatch(trashIds)
+                val count = results.count { it.value }
+                _userMessage.value = "Permanently deleted $count files"
             }
-        )
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performDelete()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Permanent Delete",
+                    subtitle = "Authenticate to permanently remove ${trashIds.size} files",
+                    onSuccess = performDelete,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
     }
 
-    fun emptyTrash(activity: FragmentActivity) {
-        securityManager.authenticate(
-            activity = activity,
-            title = "Empty Trash",
-            subtitle = "Authenticate to permanently delete all items in Trash",
-            onSuccess = {
-                viewModelScope.launch {
-                    val result = trashManager.emptyTrash()
-                    if (result.isSuccess) {
-                        _userMessage.value = "Emptied trash (${result.getOrDefault(0)} items)"
-                    }
+    fun emptyTrash(activity: FragmentActivity?) {
+        val performEmpty = {
+            viewModelScope.launch {
+                val result = trashManager.emptyTrash()
+                if (result.isSuccess) {
+                    _userMessage.value = "Emptied trash (${result.getOrDefault(0)} items)"
                 }
-            },
-            onError = { error ->
-                _userMessage.value = error
             }
-        )
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performEmpty()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Empty Trash",
+                    subtitle = "Authenticate to permanently delete all items in Trash",
+                    onSuccess = performEmpty,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
     }
 
     fun clearUserMessage() {

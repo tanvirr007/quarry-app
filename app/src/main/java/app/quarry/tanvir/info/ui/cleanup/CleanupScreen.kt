@@ -420,13 +420,13 @@ fun CleanupScreen(
             onRestoreItem = { viewModel.restoreTrashItem(it) },
             onRestoreSelected = { viewModel.restoreSelectedTrashItems(it) },
             onDeleteForever = { trashId ->
-                activity?.let { viewModel.deleteTrashItemForever(it, trashId) }
+                viewModel.deleteTrashItemForever(activity, trashId)
             },
             onDeleteSelectedForever = { trashIds ->
-                activity?.let { viewModel.deleteSelectedTrashItemsForever(it, trashIds) }
+                viewModel.deleteSelectedTrashItemsForever(activity, trashIds)
             },
             onEmptyTrash = {
-                activity?.let { viewModel.emptyTrash(it) }
+                viewModel.emptyTrash(activity)
             },
             onDismiss = { viewModel.closeTrashDialog() }
         )
@@ -449,11 +449,10 @@ fun CleanupScreen(
 
         DeleteCountdownDialog(
             candidates = fileEntities,
+            isBiometricAuthRequired = uiState.isBiometricEnabled,
             onDismiss = { viewModel.dismissDeleteDialog() },
             onConfirmAuthenticatedDelete = {
-                activity?.let {
-                    viewModel.executeAuthenticatedDelete(it, uiState.activeDeleteItems)
-                }
+                viewModel.executeAuthenticatedDelete(activity, uiState.activeDeleteItems)
             }
         )
     }

@@ -371,9 +371,7 @@ fun ExploreScreen(
             file = file,
             onDismiss = { viewModel.dismissRename() },
             onConfirm = { newName ->
-                activity?.let {
-                    viewModel.executeRename(it, file, newName)
-                }
+                viewModel.executeRename(activity, file, newName)
             }
         )
     }
@@ -382,11 +380,10 @@ fun ExploreScreen(
     if (uiState.isDeleteCountdownVisible && uiState.activeDeleteCandidates.isNotEmpty()) {
         DeleteCountdownDialog(
             candidates = uiState.activeDeleteCandidates,
+            isBiometricAuthRequired = uiState.isBiometricEnabled,
             onDismiss = { viewModel.dismissDeleteDialog() },
             onConfirmAuthenticatedDelete = {
-                activity?.let {
-                    viewModel.executeAuthenticatedDelete(it, uiState.activeDeleteCandidates)
-                }
+                viewModel.executeAuthenticatedDelete(activity, uiState.activeDeleteCandidates)
             }
         )
     }

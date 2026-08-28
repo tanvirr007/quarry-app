@@ -40,6 +40,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun DeleteCountdownDialog(
     candidates: List<FileEntity>,
+    isBiometricAuthRequired: Boolean = true,
     onDismiss: () -> Unit,
     onConfirmAuthenticatedDelete: () -> Unit
 ) {
@@ -137,11 +138,13 @@ fun DeleteCountdownDialog(
                     )
                 }
 
-                Text(
-                    text = "Requires biometric or device PIN authentication.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (isBiometricAuthRequired) {
+                    Text(
+                        text = "Requires biometric or device PIN authentication.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         },
         confirmButton = {
