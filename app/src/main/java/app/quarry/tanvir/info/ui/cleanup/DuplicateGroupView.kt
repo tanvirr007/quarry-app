@@ -14,14 +14,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Difference
 import androidx.compose.material.icons.rounded.ExpandLess
@@ -33,7 +31,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -88,7 +85,8 @@ fun DuplicateGroupView(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         groups.forEachIndexed { groupIndex, group ->
-            var isExpanded by remember(group) { mutableStateOf(true) }
+            // Keep collapsed by default so users can expand on demand
+            var isExpanded by remember(group) { mutableStateOf(false) }
             var selectedPaths by remember(group) {
                 // By default select all duplicates except the first (oldest/original) item
                 mutableStateOf(group.items.drop(1).map { it.path }.toSet())
@@ -96,9 +94,12 @@ fun DuplicateGroupView(
 
             val selectedItems = group.items.filter { selectedPaths.contains(it.path) }
             val selectedBytes = selectedItems.size * group.size
+            val primaryFileName = group.items.firstOrNull()?.name ?: "Duplicate Set #${groupIndex + 1}"
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -110,18 +111,19 @@ fun DuplicateGroupView(
                         .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Header
+                    // Header Row (clean & spacious)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { isExpanded = !isExpanded },
+                            .clickable { isExpanded = !isExpanded }
+                            .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.tertiaryContainer),
                             contentAlignment = Alignment.Center
@@ -130,59 +132,48 @@ fun DuplicateGroupView(
                                 imageVector = Icons.Rounded.Difference,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Duplicate Set #${groupIndex + 1}",
+                                text = primaryFileName,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${group.items.size} copies · ${StorageFormatter.formatBytes(group.recoverableBytes)}",
+                                text = "${group.items.size} copies · ${StorageFormatter.formatBytes(group.recoverableBytes)} recoverable",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
 
-                        if (selectedItems.isNotEmpty()) {
-                            Button(
-                                onClick = { onDeleteItems(selectedItems) },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError
-                                ),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(imageVector = Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(14.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Clean (${StorageFormatter.formatBytes(selectedBytes)})",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1
-                                )
-                            }
-                        }
-
-                        IconButton(
-                            onClick = { isExpanded = !isExpanded },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                                contentDescription = if (isExpanded) "Collapse" else "Expand",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        if (group.recoverableBytes > 0) {
+                            Text(
+                                text = "-${StorageFormatter.formatBytes(group.recoverableBytes)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                        RoundedCornerShape(6.dp)
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 3.dp)
                             )
                         }
+
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                            contentDescription = if (isExpanded) "Collapse" else "Expand",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
                     AnimatedVisibility(
@@ -196,6 +187,47 @@ fun DuplicateGroupView(
                         ) {
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
+                            // Quick Selection Controls Bar
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "${selectedItems.size} of ${group.items.size} copies selected",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    TextButton(
+                                        onClick = {
+                                            selectedPaths = group.items.drop(1).map { it.path }.toSet()
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text("Keep Original", style = MaterialTheme.typography.labelSmall)
+                                    }
+
+                                    TextButton(
+                                        onClick = {
+                                            selectedPaths = if (selectedPaths.size == group.items.size) {
+                                                emptySet()
+                                            } else {
+                                                group.items.map { it.path }.toSet()
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            if (selectedPaths.size == group.items.size) "Deselect All" else "Select All",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+                            }
+
                             // Duplicate Copies List
                             group.items.forEachIndexed { itemIndex, item ->
                                 val isOriginal = itemIndex == 0
@@ -204,6 +236,7 @@ fun DuplicateGroupView(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
                                         .clickable {
                                             val newSet = selectedPaths.toMutableSet()
                                             if (newSet.contains(item.path)) newSet.remove(item.path) else newSet.add(item.path)
@@ -263,6 +296,31 @@ fun DuplicateGroupView(
                                     Text(
                                         text = StorageFormatter.formatBytes(item.size),
                                         style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            // Full-width Clean button inside the expanded view
+                            if (selectedItems.isNotEmpty()) {
+                                Button(
+                                    onClick = { onDeleteItems(selectedItems) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Delete,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Clean ${selectedItems.size} ${if (selectedItems.size == 1) "Copy" else "Copies"} (${StorageFormatter.formatBytes(selectedBytes)})",
+                                        style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
