@@ -54,7 +54,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -231,9 +233,9 @@ fun DeveloperInfoDialog(
 
                 // 2. Telegram
                 DevInfoItemCard(
-                    icon = Icons.AutoMirrored.Rounded.Send,
+                    painter = painterResource(id = R.drawable.ic_telegram),
                     label = "Telegram",
-                    value = "@tanvirr007",
+                    value = "tanvir",
                     actionUrl = "https://t.me/tanvirr007",
                     onPrimaryClick = {
                         openUrl(context, "https://t.me/tanvirr007")
@@ -255,7 +257,7 @@ fun DeveloperInfoDialog(
                 DevInfoItemCard(
                     icon = Icons.Rounded.Code,
                     label = "Source Code",
-                    value = "github.com/tanvirr007/quarry-app",
+                    value = "quarry-app",
                     actionUrl = "https://github.com/tanvirr007/quarry-app",
                     onPrimaryClick = {
                         openUrl(context, "https://github.com/tanvirr007/quarry-app")
@@ -264,9 +266,9 @@ fun DeveloperInfoDialog(
 
                 // 5. GitHub Profile
                 DevInfoItemCard(
-                    icon = Icons.Rounded.Person,
-                    label = "GitHub Profile",
-                    value = "github.com/tanvirr007",
+                    painter = painterResource(id = R.drawable.ic_github),
+                    label = "GitHub",
+                    value = "tanvir",
                     actionUrl = "https://github.com/tanvirr007",
                     onPrimaryClick = {
                         openUrl(context, "https://github.com/tanvirr007")
@@ -298,7 +300,7 @@ fun DeveloperInfoDialog(
 
 @Composable
 private fun DevInfoItemCard(
-    icon: ImageVector,
+    painter: Painter,
     label: String,
     value: String,
     actionUrl: String? = null,
@@ -329,7 +331,7 @@ private fun DevInfoItemCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = icon,
+                    painter = painter,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
@@ -366,6 +368,23 @@ private fun DevInfoItemCard(
             )
         }
     }
+}
+
+@Composable
+private fun DevInfoItemCard(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    actionUrl: String? = null,
+    onPrimaryClick: () -> Unit
+) {
+    DevInfoItemCard(
+        painter = rememberVectorPainter(icon),
+        label = label,
+        value = value,
+        actionUrl = actionUrl,
+        onPrimaryClick = onPrimaryClick
+    )
 }
 
 private fun openUrl(context: Context, url: String) {
