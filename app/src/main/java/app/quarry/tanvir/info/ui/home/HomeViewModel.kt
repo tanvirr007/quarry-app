@@ -124,6 +124,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         initialValue = HomeUiState()
     )
 
+    init {
+        checkAndTriggerInitialScan()
+    }
+
     fun startScan() {
         repository.startScan()
     }
@@ -133,7 +137,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun refreshPermissionState() {
-        _permissionState.value = checkHasStoragePermission()
+        val hasPermission = checkHasStoragePermission()
+        val previous = _permissionState.value
+        _permissionState.value = hasPermission
+        if (hasPermission && (!previous || repository.scanState.value is ScanState.Idle)) {
+            checkAndTriggerInitialScan()
+        }
+    }
+
+    private fun checkAndTriggerInitialScan() {
+        if (!checkHasStoragePermission()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val totalFiles = repository.totalFiles.first()
+                if (totalFiles == 0L && repository.scanState.value is ScanState.Idle) {
+                    repository.startScan()
+                }
+            } catch (e: Exception) {
+                // Ignore failure during initial check
+            }
+        }
     }
 
     fun selectCategory(category: StorageCategory) {

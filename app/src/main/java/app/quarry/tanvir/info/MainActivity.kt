@@ -24,16 +24,10 @@ import app.quarry.tanvir.info.ui.navigation.QuarryNavHost
 import app.quarry.tanvir.info.ui.navigation.Screen
 import app.quarry.tanvir.info.ui.theme.QuarryTheme
 
+import androidx.activity.viewModels
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
-
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.quarry.tanvir.info.data.preferences.ThemeMode
-import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
-
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import app.quarry.tanvir.info.ui.onboarding.OnboardingScreen
 
 import androidx.compose.material.icons.Icons
@@ -43,35 +37,35 @@ import androidx.compose.material3.IconButton
 import androidx.navigation.NavGraph.Companion.findStartDestination
 
 class MainActivity : FragmentActivity() {
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val prefsRepo = UserPreferencesRepository.getInstance(applicationContext)
+        splashScreen.setKeepOnScreenCondition {
+            viewModel.uiState.value is MainUiState.Loading
+        }
 
         setContent {
-            val themeMode by prefsRepo.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
-            val isOnboardingCompleted by prefsRepo.isOnboardingCompleted.collectAsStateWithLifecycle(initialValue = null)
-            val scope = rememberCoroutineScope()
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-            QuarryTheme(themeMode = themeMode) {
-                when (isOnboardingCompleted) {
-                    null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.background)
-                        )
-                    }
-                    false -> {
-                        OnboardingScreen(
-                            onCompleted = {
-                                scope.launch { prefsRepo.setOnboardingCompleted(true) }
-                            }
-                        )
-                    }
-                    true -> {
-                        QuarryMainApp()
+            when (val state = uiState) {
+                is MainUiState.Loading -> {
+                    // Retained by splash screen
+                }
+                is MainUiState.Success -> {
+                    QuarryTheme(themeMode = state.themeMode) {
+                        if (!state.isOnboardingCompleted) {
+                            OnboardingScreen(
+                                onCompleted = {
+                                    viewModel.completeOnboarding()
+                                }
+                            )
+                        } else {
+                            QuarryMainApp()
+                        }
                     }
                 }
             }

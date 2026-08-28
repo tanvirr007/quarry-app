@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -131,35 +132,36 @@ fun SettingsScreen(
         // 2. Security & Biometrics
         SettingsSwitchItem(
             icon = Icons.Rounded.Fingerprint,
-            title = "Biometric Protection",
-            subtitle = "Require authentication for file deletion and rename",
+            title = "Biometric Lock",
+            subtitle = "Protect delete and rename",
             checked = uiState.isBiometricEnabled,
             onCheckedChange = { viewModel.toggleBiometricProtection(activity, it) }
         )
 
         // 3. Scan & Exclusions
+        val exclusionsSubtitle = if (uiState.excludedFolders.isEmpty()) "None excluded" else "${uiState.excludedFolders.size} excluded"
         SettingsActionItem(
             icon = Icons.Rounded.Tune,
-            title = "Scan & Exclusions",
-            subtitle = "${uiState.excludedFolders.size} custom excluded paths",
+            title = "Excluded Folders",
+            subtitle = exclusionsSubtitle,
             onClick = { viewModel.showExclusionsDialog() }
         )
 
         // 4. Hidden Files & Folders
         SettingsSwitchItem(
             icon = Icons.Rounded.Visibility,
-            title = "Scan Hidden Files & Folders",
-            subtitle = "Include files and directories starting with a dot (e.g. .temp, .thumbnails)",
+            title = "Hidden Files",
+            subtitle = "Include dotfiles in scans",
             checked = uiState.scanHiddenFiles,
             onCheckedChange = { viewModel.setScanHiddenFiles(it) }
         )
 
         // 5. Storage Volumes
         val volumeCount = uiState.detectedVolumes.size
-        val volumesSubtitle = if (volumeCount == 1) {
-            "1 drive detected (${uiState.detectedVolumes.firstOrNull()?.name ?: "Internal Storage"})"
+        val volumesSubtitle = if (volumeCount <= 1) {
+            "Internal Storage"
         } else {
-            "$volumeCount drives detected (${uiState.detectedVolumes.joinToString { it.name }})"
+            "$volumeCount volumes detected"
         }
         SettingsActionItem(
             icon = Icons.Rounded.SdStorage,
@@ -178,8 +180,8 @@ fun SettingsScreen(
         // 6. About Quarry
         SettingsActionItem(
             icon = Icons.Rounded.Info,
-            title = "Quarry v$versionName (Build $versionCode)",
-            subtitle = null,
+            title = "About Quarry",
+            subtitle = "Version $versionName (Build $versionCode)",
             onClick = { viewModel.showDevInfo() }
         )
     }
@@ -304,13 +306,17 @@ private fun SettingsActionItem(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (!subtitle.isNullOrBlank()) {
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -369,12 +375,16 @@ private fun SettingsSwitchItem(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
