@@ -453,7 +453,7 @@ fun TreemapCanvas(
                 modifier = Modifier.shadow(6.dp, RoundedCornerShape(20.dp))
             ) {
                 Column(
-                    horizontalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp)
                 ) {
                     // Zoom In Button (+)
