@@ -32,7 +32,9 @@ import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-import app.quarry.tanvir.info.ui.onboarding.OnboardingDialog
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import app.quarry.tanvir.info.ui.onboarding.OnboardingScreen
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,21 +45,28 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val themeMode by prefsRepo.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
-            val isOnboardingCompleted by prefsRepo.isOnboardingCompleted.collectAsStateWithLifecycle(initialValue = true)
+            val isOnboardingCompleted by prefsRepo.isOnboardingCompleted.collectAsStateWithLifecycle(initialValue = null)
             val scope = rememberCoroutineScope()
 
             QuarryTheme(themeMode = themeMode) {
-                QuarryMainApp()
-
-                if (!isOnboardingCompleted) {
-                    OnboardingDialog(
-                        onDismiss = {
-                            scope.launch { prefsRepo.setOnboardingCompleted(true) }
-                        },
-                        onCompleted = {
-                            scope.launch { prefsRepo.setOnboardingCompleted(true) }
-                        }
-                    )
+                when (isOnboardingCompleted) {
+                    null -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        )
+                    }
+                    false -> {
+                        OnboardingScreen(
+                            onCompleted = {
+                                scope.launch { prefsRepo.setOnboardingCompleted(true) }
+                            }
+                        )
+                    }
+                    true -> {
+                        QuarryMainApp()
+                    }
                 }
             }
         }
