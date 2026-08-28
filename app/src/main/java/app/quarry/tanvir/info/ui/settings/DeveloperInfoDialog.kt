@@ -33,7 +33,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Code
-import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Person
@@ -174,24 +173,12 @@ fun DeveloperInfoDialog(
                             )
                         }
 
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "TANVIR HASAN",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "OWNER",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        Text(
+                            text = "TANVIR HASAN",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
 
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -237,9 +224,6 @@ fun DeveloperInfoDialog(
                     value = "tanvirhasan2005@proton.me",
                     onPrimaryClick = {
                         openEmail(context, "tanvirhasan2005@proton.me")
-                    },
-                    onCopyClick = {
-                        copyToClipboard(context, "tanvirhasan2005@proton.me", "Email copied")
                     }
                 )
 
@@ -251,9 +235,6 @@ fun DeveloperInfoDialog(
                     actionUrl = "https://t.me/tanvirr007",
                     onPrimaryClick = {
                         openUrl(context, "https://t.me/tanvirr007")
-                    },
-                    onCopyClick = {
-                        copyToClipboard(context, "https://t.me/tanvirr007", "Telegram link copied")
                     }
                 )
 
@@ -265,9 +246,6 @@ fun DeveloperInfoDialog(
                     actionUrl = "https://tanvir.info",
                     onPrimaryClick = {
                         openUrl(context, "https://tanvir.info")
-                    },
-                    onCopyClick = {
-                        copyToClipboard(context, "https://tanvir.info", "Website URL copied")
                     }
                 )
 
@@ -279,9 +257,6 @@ fun DeveloperInfoDialog(
                     actionUrl = "https://github.com/tanvirr007/quarry-app",
                     onPrimaryClick = {
                         openUrl(context, "https://github.com/tanvirr007/quarry-app")
-                    },
-                    onCopyClick = {
-                        copyToClipboard(context, "https://github.com/tanvirr007/quarry-app", "Source code URL copied")
                     }
                 )
 
@@ -293,9 +268,6 @@ fun DeveloperInfoDialog(
                     actionUrl = "https://github.com/tanvirr007",
                     onPrimaryClick = {
                         openUrl(context, "https://github.com/tanvirr007")
-                    },
-                    onCopyClick = {
-                        copyToClipboard(context, "https://github.com/tanvirr007", "GitHub profile URL copied")
                     }
                 )
 
@@ -328,8 +300,7 @@ private fun DevInfoItemCard(
     label: String,
     value: String,
     actionUrl: String? = null,
-    onPrimaryClick: () -> Unit,
-    onCopyClick: () -> Unit
+    onPrimaryClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -385,17 +356,12 @@ private fun DevInfoItemCard(
                 )
             }
 
-            IconButton(
-                onClick = onCopyClick,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.ContentCopy,
-                    contentDescription = "Copy $label",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                contentDescription = "Open $label",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -429,3 +395,4 @@ private fun copyToClipboard(context: Context, text: String, message: String) {
     clipboard?.setPrimaryClip(clip)
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
+
