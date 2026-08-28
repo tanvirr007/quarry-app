@@ -270,7 +270,7 @@ fun ExploreScreen(
                             Icon(imageVector = Icons.Rounded.SelectAll, contentDescription = "Select All")
                         }
                         FilledTonalButton(
-                            onClick = { viewModel.moveToTrashSelected() },
+                            onClick = { viewModel.moveToTrashSelected(activity) },
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(imageVector = Icons.Rounded.RestoreFromTrash, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -383,7 +383,7 @@ fun ExploreScreen(
             onOpen = { viewModel.openFile(file) },
             onShare = { viewModel.shareFile(file) },
             onRename = { viewModel.startRename(file) },
-            onMoveToTrash = { viewModel.moveToTrash(file) },
+            onMoveToTrash = { viewModel.moveToTrash(activity, file) },
             onDelete = { viewModel.promptDeleteSingle(file) },
             onOpenContainingFolder = { folderPath ->
                 viewModel.navigateToDirectory(folderPath)

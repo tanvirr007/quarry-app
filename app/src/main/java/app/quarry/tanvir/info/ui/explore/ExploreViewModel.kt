@@ -389,29 +389,75 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-    fun moveToTrash(file: FileEntity) {
+    fun moveToTrash(activity: FragmentActivity?, file: FileEntity) {
+        val performMoveToTrash: () -> Unit = {
+            viewModelScope.launch {
+                val result = fileOps.moveToTrash(file.path)
+                if (result.isSuccess) {
+                    _userMessage.value = "Moved \"${file.name}\" to Trash"
+                    _activeDetailsFile.value = null
+                    loadDirectory(_currentPath.value)
+                } else {
+                    _userMessage.value = result.exceptionOrNull()?.message ?: "Failed to move to Trash"
+                }
+            }
+        }
+
         viewModelScope.launch {
-            val result = fileOps.moveToTrash(file.path)
-            if (result.isSuccess) {
-                _userMessage.value = "Moved \"${file.name}\" to Trash"
-                _activeDetailsFile.value = null
-                loadDirectory(_currentPath.value)
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performMoveToTrash()
             } else {
-                _userMessage.value = result.exceptionOrNull()?.message ?: "Failed to move to Trash"
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Move to Trash",
+                    subtitle = "Authenticate to move ${file.name} to Trash",
+                    onSuccess = performMoveToTrash,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
             }
         }
     }
 
-    fun moveToTrashSelected() {
+    fun moveToTrashSelected(activity: FragmentActivity?) {
         val paths = _selectedPaths.value.toList()
         if (paths.isEmpty()) return
 
+        val performBulkMoveToTrash: () -> Unit = {
+            viewModelScope.launch {
+                val results = fileOps.bulkMoveToTrash(paths)
+                val successCount = results.count { it.value }
+                _userMessage.value = "Moved $successCount items to Trash"
+                clearSelection()
+                loadDirectory(_currentPath.value)
+            }
+        }
+
         viewModelScope.launch {
-            val results = fileOps.bulkMoveToTrash(paths)
-            val successCount = results.count { it.value }
-            _userMessage.value = "Moved $successCount items to Trash"
-            clearSelection()
-            loadDirectory(_currentPath.value)
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performBulkMoveToTrash()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Move to Trash",
+                    subtitle = "Authenticate to move ${paths.size} files to Trash",
+                    onSuccess = performBulkMoveToTrash,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
         }
     }
 

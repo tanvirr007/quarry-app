@@ -133,7 +133,7 @@ fun SettingsScreen(
         SettingsSwitchItem(
             icon = Icons.Rounded.Fingerprint,
             title = "Biometric Lock",
-            subtitle = "Protect delete and rename",
+            subtitle = "Protect trash, delete, rename",
             checked = uiState.isBiometricEnabled,
             onCheckedChange = { viewModel.toggleBiometricProtection(activity, it) }
         )

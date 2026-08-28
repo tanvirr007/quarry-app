@@ -199,22 +199,45 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         _activeDeleteItems.value = emptyList()
     }
 
-    fun moveSelectedCandidatesToTrash() {
+    fun moveSelectedCandidatesToTrash(activity: FragmentActivity?) {
         val group = _activeCandidateGroup.value ?: return
         val selectedPaths = _selectedItemPaths.value
         val itemsToTrash = group.items.filter { selectedPaths.contains(it.path) }
         if (itemsToTrash.isEmpty()) return
 
+        val performMoveToTrash: () -> Unit = {
+            viewModelScope.launch {
+                val paths = itemsToTrash.map { it.path }
+                val results = fileOps.bulkMoveToTrash(paths)
+                val successCount = results.count { it.value }
+                _userMessage.value = "Moved $successCount items to Trash"
+                _selectedItemPaths.value = emptySet()
+                _activeCandidateGroup.value = null
+                loadCandidates()
+                if (_duplicateScanState.value is DuplicateScanState.Completed) {
+                    scanForDuplicates()
+                }
+            }
+        }
+
         viewModelScope.launch {
-            val paths = itemsToTrash.map { it.path }
-            val results = fileOps.bulkMoveToTrash(paths)
-            val successCount = results.count { it.value }
-            _userMessage.value = "Moved $successCount items to Trash"
-            _selectedItemPaths.value = emptySet()
-            _activeCandidateGroup.value = null
-            loadCandidates()
-            if (_duplicateScanState.value is DuplicateScanState.Completed) {
-                scanForDuplicates()
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performMoveToTrash()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Move to Trash",
+                    subtitle = "Authenticate to move ${itemsToTrash.size} files to Trash",
+                    onSuccess = performMoveToTrash,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
             }
         }
     }

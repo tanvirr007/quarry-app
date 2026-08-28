@@ -243,14 +243,37 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun moveToTrash(file: FileEntity) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = fileOperationsManager.moveToTrash(file.path)
-            if (result.isSuccess) {
-                _userMessage.value = "Moved \"${file.name}\" to Trash"
-                _selectedDetailFile.value = null
+    fun moveToTrash(activity: FragmentActivity?, file: FileEntity) {
+        val performMoveToTrash: () -> Unit = {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = fileOperationsManager.moveToTrash(file.path)
+                if (result.isSuccess) {
+                    _userMessage.value = "Moved \"${file.name}\" to Trash"
+                    _selectedDetailFile.value = null
+                } else {
+                    _userMessage.value = "Failed to move to Trash: ${result.exceptionOrNull()?.message}"
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performMoveToTrash()
             } else {
-                _userMessage.value = "Failed to move to Trash: ${result.exceptionOrNull()?.message}"
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Move to Trash",
+                    subtitle = "Authenticate to move ${file.name} to Trash",
+                    onSuccess = performMoveToTrash,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
             }
         }
     }

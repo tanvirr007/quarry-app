@@ -421,7 +421,7 @@ fun CleanupScreen(
             onToggleSelect = { viewModel.toggleItemSelection(it) },
             onSelectAll = { viewModel.selectAllCandidates() },
             onDeselectAll = { viewModel.deselectAllCandidates() },
-            onMoveToTrashSelected = { viewModel.moveSelectedCandidatesToTrash() },
+            onMoveToTrashSelected = { viewModel.moveSelectedCandidatesToTrash(activity) },
             onDeleteSelected = { viewModel.promptDeleteSelectedCandidates() },
             onDismiss = { viewModel.closeCandidateGroup() }
         )
