@@ -67,6 +67,7 @@ fun ExploreScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val directoryFiles by viewModel.directoryFiles.collectAsStateWithLifecycle()
+    val allCategorizedFiles by viewModel.allCategorizedFiles.collectAsStateWithLifecycle()
     val treemapNodes by viewModel.treemapLayoutNodes.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context as? FragmentActivity
@@ -333,8 +334,13 @@ fun ExploreScreen(
                 }
 
                 ExploreViewMode.TYPES -> {
+                    val filesToCategorize = if (uiState.searchQuery.isNotEmpty()) {
+                        allCategorizedFiles.filter { it.name.contains(uiState.searchQuery, ignoreCase = true) }
+                    } else {
+                        allCategorizedFiles
+                    }
                     FileTypeGroupView(
-                        files = displayedFiles,
+                        files = filesToCategorize,
                         onFileClick = { file -> viewModel.showDetails(file) }
                     )
                 }

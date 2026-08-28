@@ -98,7 +98,7 @@ class ScanRepository(
                                 totalFiles = update.result.totalFiles,
                                 videosBytes = statsMap[StorageCategory.VIDEOS.name] ?: 0L,
                                 imagesBytes = statsMap[StorageCategory.IMAGES.name] ?: 0L,
-                                appsBytes = statsMap[StorageCategory.APPS.name] ?: 0L,
+                                appsBytes = 0L,
                                 documentsBytes = statsMap[StorageCategory.DOCUMENTS.name] ?: 0L,
                                 audioBytes = statsMap[StorageCategory.AUDIO.name] ?: 0L,
                                 archivesBytes = statsMap[StorageCategory.ARCHIVES.name] ?: 0L,

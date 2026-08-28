@@ -131,6 +131,13 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _directoryFiles = MutableStateFlow<List<FileEntity>>(emptyList())
     val directoryFiles: StateFlow<List<FileEntity>> = _directoryFiles.asStateFlow()
 
+    val allCategorizedFiles: StateFlow<List<FileEntity>> = repository.getAllNonDirectoryFiles()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     private val _treemapLayoutNodes = MutableStateFlow<List<TreemapNode>>(emptyList())
     val treemapLayoutNodes: StateFlow<List<TreemapNode>> = _treemapLayoutNodes.asStateFlow()
 

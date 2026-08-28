@@ -58,11 +58,6 @@ object ScanComparisonEngine {
                 formatDelta(latest.imagesBytes - previous.imagesBytes)
             ),
             CategoryDelta(
-                StorageCategory.APPS,
-                latest.appsBytes - previous.appsBytes,
-                formatDelta(latest.appsBytes - previous.appsBytes)
-            ),
-            CategoryDelta(
                 StorageCategory.DOCUMENTS,
                 latest.documentsBytes - previous.documentsBytes,
                 formatDelta(latest.documentsBytes - previous.documentsBytes)

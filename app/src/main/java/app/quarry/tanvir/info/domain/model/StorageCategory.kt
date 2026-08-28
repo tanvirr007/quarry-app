@@ -5,7 +5,6 @@ import java.util.Locale
 enum class StorageCategory(val displayName: String) {
     VIDEOS("Videos"),
     IMAGES("Images"),
-    APPS("Apps"),
     DOCUMENTS("Documents"),
     AUDIO("Audio"),
     ARCHIVES("Archives"),

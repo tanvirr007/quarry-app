@@ -174,6 +174,9 @@ class FileOperationsManager(
 
     private fun getMimeType(file: File): String {
         val extension = file.extension.lowercase(Locale.ROOT)
-        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "*/*"
+        return when (extension) {
+            "apk", "xapk", "apkm", "apks" -> "application/vnd.android.package-archive"
+            else -> MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "*/*"
+        }
     }
 }

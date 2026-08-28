@@ -24,7 +24,6 @@ import app.quarry.tanvir.info.ui.theme.CategoryVideo
 fun StorageCategory.getColor(): Color = when (this) {
     StorageCategory.VIDEOS -> CategoryVideo
     StorageCategory.IMAGES -> CategoryImage
-    StorageCategory.APPS -> CategoryApp
     StorageCategory.DOCUMENTS -> CategoryDocument
     StorageCategory.AUDIO -> CategoryAudio
     StorageCategory.ARCHIVES -> CategoryArchive
@@ -35,7 +34,6 @@ fun StorageCategory.getColor(): Color = when (this) {
 fun StorageCategory.getIcon(): ImageVector = when (this) {
     StorageCategory.VIDEOS -> Icons.Rounded.Movie
     StorageCategory.IMAGES -> Icons.Rounded.Image
-    StorageCategory.APPS -> Icons.Rounded.Widgets
     StorageCategory.DOCUMENTS -> Icons.Rounded.Description
     StorageCategory.AUDIO -> Icons.Rounded.Headphones
     StorageCategory.ARCHIVES -> Icons.Rounded.FolderZip
