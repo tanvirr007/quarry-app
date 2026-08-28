@@ -20,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Fingerprint
-import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.SdStorage
 import androidx.compose.material.icons.rounded.Tune
@@ -46,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.data.preferences.ThemeMode
-import app.quarry.tanvir.info.ui.onboarding.OnboardingDialog
 
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
@@ -137,15 +135,7 @@ fun SettingsScreen(
             modifier = Modifier.padding(start = 4.dp, top = 8.dp)
         )
 
-        // 6. Onboarding Guide
-        SettingsActionItem(
-            icon = Icons.Rounded.HelpOutline,
-            title = "Quarry Walkthrough",
-            subtitle = "Revisit the 4-step feature tour & privacy guide",
-            onClick = { viewModel.showOnboarding() }
-        )
-
-        // 7. About Quarry
+        // 6. About Quarry
         SettingsActionItem(
             icon = Icons.Rounded.Info,
             title = "Quarry v1.0.0",
@@ -178,14 +168,6 @@ fun SettingsScreen(
             onAddExclusion = { viewModel.addExclusion(it) },
             onRemoveExclusion = { viewModel.removeExclusion(it) },
             onDismiss = { viewModel.hideExclusionsDialog() }
-        )
-    }
-
-    // Onboarding Dialog
-    if (uiState.isOnboardingVisible) {
-        OnboardingDialog(
-            onDismiss = { viewModel.hideOnboarding() },
-            onCompleted = { viewModel.hideOnboarding() }
         )
     }
 }
