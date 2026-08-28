@@ -33,7 +33,6 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.RestoreFromTrash
-import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -334,42 +333,6 @@ fun CleanupScreen(
                 totalBytes = group.totalBytes,
                 onClick = { viewModel.openCandidateGroup(group) }
             )
-        }
-
-        // Security Status Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Security,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Column {
-                    Text(
-                        text = "Protected with Biometrics & 5s Countdown",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Permanent file cleanup requires device PIN or fingerprint confirmation.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
