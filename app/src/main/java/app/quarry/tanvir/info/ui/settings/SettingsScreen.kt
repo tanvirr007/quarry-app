@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,15 +24,12 @@ import androidx.compose.material.icons.rounded.SdStorage
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -115,13 +111,6 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Preferences",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 4.dp)
-        )
-
         // 1. Appearance
         SettingsActionItem(
             icon = Icons.Rounded.DarkMode,
@@ -170,18 +159,10 @@ fun SettingsScreen(
             subtitle = volumesSubtitle,
             onClick = { viewModel.showVolumesDialog() }
         )
-
-        Text(
-            text = "About & Help",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-        )
-
-        // 6. About Quarry
+        // 6. About
         SettingsActionItem(
             icon = Icons.Rounded.Info,
-            title = "About Quarry",
+            title = "About",
             subtitle = "Version $versionName (Build $versionCode)",
             onClick = { viewModel.showDevInfo() }
         )
@@ -194,9 +175,9 @@ fun SettingsScreen(
         )
     }
 
-    // Theme Selection Dialog
+    // Appearance Full-Screen Dialog
     if (uiState.isThemeDialogVisible) {
-        ThemeSelectionDialog(
+        AppearanceDialog(
             currentTheme = uiState.themeMode,
             onSelectTheme = { viewModel.setThemeMode(it) },
             onDismiss = { viewModel.hideThemeDialog() }
@@ -221,44 +202,6 @@ fun SettingsScreen(
             onDismiss = { viewModel.hideExclusionsDialog() }
         )
     }
-}
-
-@Composable
-private fun ThemeSelectionDialog(
-    currentTheme: ThemeMode,
-    onSelectTheme: (ThemeMode) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Choose Theme") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ThemeMode.entries.forEach { mode ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = (mode == currentTheme),
-                                onClick = { onSelectTheme(mode) }
-                            )
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        RadioButton(
-                            selected = (mode == currentTheme),
-                            onClick = { onSelectTheme(mode) }
-                        )
-                        Text(text = mode.displayName, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
 }
 
 @Composable
