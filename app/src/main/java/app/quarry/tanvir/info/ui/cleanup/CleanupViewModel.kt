@@ -1,0 +1,295 @@
+package app.quarry.tanvir.info.ui.cleanup
+
+import android.app.Application
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import app.quarry.tanvir.info.data.database.FileEntity
+import app.quarry.tanvir.info.domain.cleanup.CleanupCandidateGroup
+import app.quarry.tanvir.info.domain.cleanup.DefaultCleanupEngine
+import app.quarry.tanvir.info.domain.duplicates.DuplicateGroup
+import app.quarry.tanvir.info.domain.duplicates.FastDuplicateDetector
+import app.quarry.tanvir.info.domain.file.FileOperationsManager
+import app.quarry.tanvir.info.domain.file.TrashItem
+import app.quarry.tanvir.info.domain.file.TrashManager
+import app.quarry.tanvir.info.domain.model.StorageItem
+import app.quarry.tanvir.info.domain.scanner.ScanRepository
+import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+sealed interface DuplicateScanState {
+    data object Idle : DuplicateScanState
+    data class Scanning(val message: String) : DuplicateScanState
+    data class Completed(val groups: List<DuplicateGroup>) : DuplicateScanState
+    data class Error(val message: String) : DuplicateScanState
+}
+
+data class CleanupUiState(
+    val duplicateScanState: DuplicateScanState = DuplicateScanState.Idle,
+    val duplicateGroups: List<DuplicateGroup> = emptyList(),
+    val candidateGroups: List<CleanupCandidateGroup> = emptyList(),
+    val totalRecoverableBytes: Long = 0L,
+    val trashItems: List<TrashItem> = emptyList(),
+    val activeCandidateGroup: CleanupCandidateGroup? = null,
+    val selectedItemPaths: Set<String> = emptySet(),
+    val activeDeleteItems: List<StorageItem> = emptyList(),
+    val isDeleteCountdownVisible: Boolean = false,
+    val isTrashDialogVisible: Boolean = false,
+    val userMessage: String? = null
+)
+
+class CleanupViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val repository = ScanRepository.getInstance(application)
+    private val duplicateDetector = FastDuplicateDetector()
+    private val cleanupEngine = DefaultCleanupEngine(duplicateDetector)
+    private val trashManager = TrashManager(application, repository)
+    private val fileOps = FileOperationsManager(application, repository)
+    private val securityManager = BiometricSecurityManager(application)
+
+    private val _duplicateScanState = MutableStateFlow<DuplicateScanState>(DuplicateScanState.Idle)
+    private val _duplicateGroups = MutableStateFlow<List<DuplicateGroup>>(emptyList())
+    private val _candidateGroups = MutableStateFlow<List<CleanupCandidateGroup>>(emptyList())
+    private val _activeCandidateGroup = MutableStateFlow<CleanupCandidateGroup?>(null)
+    private val _selectedItemPaths = MutableStateFlow<Set<String>>(emptySet())
+    private val _activeDeleteItems = MutableStateFlow<List<StorageItem>>(emptyList())
+    private val _isDeleteCountdownVisible = MutableStateFlow(false)
+    private val _isTrashDialogVisible = MutableStateFlow(false)
+    private val _userMessage = MutableStateFlow<String?>(null)
+
+    private data class DialogState(
+        val activeGroup: CleanupCandidateGroup?,
+        val selectedPaths: Set<String>,
+        val deleteItems: List<StorageItem>,
+        val isDeleteVisible: Boolean,
+        val isTrashVisible: Boolean
+    )
+
+    val uiState: StateFlow<CleanupUiState> = combine(
+        combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems) { dupState, dupGroups, candGroups, trash ->
+            val dupRecoverable = dupGroups.sumOf { it.recoverableBytes }
+            val candRecoverable = candGroups.sumOf { it.totalBytes }
+            val totalRecoverable = dupRecoverable + candRecoverable
+
+            CleanupUiState(
+                duplicateScanState = dupState,
+                duplicateGroups = dupGroups,
+                candidateGroups = candGroups,
+                totalRecoverableBytes = totalRecoverable,
+                trashItems = trash
+            )
+        },
+        combine(_activeCandidateGroup, _selectedItemPaths, _activeDeleteItems, _isDeleteCountdownVisible, _isTrashDialogVisible) { group, paths, deleteItems, deleteVis, trashVis ->
+            DialogState(group, paths, deleteItems, deleteVis, trashVis)
+        },
+        _userMessage
+    ) { baseState, dialogState, userMsg ->
+        baseState.copy(
+            activeCandidateGroup = dialogState.activeGroup,
+            selectedItemPaths = dialogState.selectedPaths,
+            activeDeleteItems = dialogState.deleteItems,
+            isDeleteCountdownVisible = dialogState.isDeleteVisible,
+            isTrashDialogVisible = dialogState.isTrashVisible,
+            userMessage = userMsg
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CleanupUiState()
+    )
+
+    init {
+        loadCandidates()
+    }
+
+    fun loadCandidates() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
+            val allFiles = db.fileDao().getChildrenSync("") // Or full scan files
+            val candidates = cleanupEngine.getCandidatesFromEntities(allFiles)
+            _candidateGroups.value = candidates
+        }
+    }
+
+    fun scanForDuplicates() {
+        if (_duplicateScanState.value is DuplicateScanState.Scanning) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                _duplicateScanState.value = DuplicateScanState.Scanning("Clustering identical file sizes…")
+                val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
+                val potentialCandidates = db.fileDao().getPotentialDuplicateSizeCandidates()
+
+                if (potentialCandidates.isEmpty()) {
+                    _duplicateScanState.value = DuplicateScanState.Completed(emptyList())
+                    _duplicateGroups.value = emptyList()
+                    return@launch
+                }
+
+                _duplicateScanState.value = DuplicateScanState.Scanning("Computing partial hashes…")
+                val confirmed = duplicateDetector.findDuplicatesFromEntities(potentialCandidates)
+
+                _duplicateGroups.value = confirmed
+                _duplicateScanState.value = DuplicateScanState.Completed(confirmed)
+            } catch (e: Exception) {
+                _duplicateScanState.value = DuplicateScanState.Error(e.localizedMessage ?: "Duplicate scan failed")
+            }
+        }
+    }
+
+    fun openCandidateGroup(group: CleanupCandidateGroup) {
+        _activeCandidateGroup.value = group
+        _selectedItemPaths.value = emptySet()
+    }
+
+    fun closeCandidateGroup() {
+        _activeCandidateGroup.value = null
+        _selectedItemPaths.value = emptySet()
+    }
+
+    fun toggleItemSelection(path: String) {
+        val current = _selectedItemPaths.value.toMutableSet()
+        if (current.contains(path)) {
+            current.remove(path)
+        } else {
+            current.add(path)
+        }
+        _selectedItemPaths.value = current
+    }
+
+    fun selectAllCandidates() {
+        val group = _activeCandidateGroup.value ?: return
+        val allPaths = group.items.map { it.path }.toSet()
+        _selectedItemPaths.value = allPaths
+    }
+
+    fun deselectAllCandidates() {
+        _selectedItemPaths.value = emptySet()
+    }
+
+    fun promptDeleteSelectedCandidates() {
+        val group = _activeCandidateGroup.value ?: return
+        val selectedPaths = _selectedItemPaths.value
+        val itemsToDelete = group.items.filter { selectedPaths.contains(it.path) }
+        if (itemsToDelete.isNotEmpty()) {
+            _activeDeleteItems.value = itemsToDelete
+            _isDeleteCountdownVisible.value = true
+        }
+    }
+
+    fun promptDeleteSingleItem(item: StorageItem) {
+        _activeDeleteItems.value = listOf(item)
+        _isDeleteCountdownVisible.value = true
+    }
+
+    fun dismissDeleteDialog() {
+        _isDeleteCountdownVisible.value = false
+        _activeDeleteItems.value = emptyList()
+    }
+
+    fun executeAuthenticatedDelete(
+        activity: FragmentActivity,
+        items: List<StorageItem>
+    ) {
+        val title = if (items.size == 1) "Confirm Deletion" else "Confirm Cleanup Deletion"
+        val subtitle = "Authenticate to delete ${items.size} files (${app.quarry.tanvir.info.domain.model.StorageFormatter.formatBytes(items.sumOf { it.size })})"
+
+        securityManager.authenticate(
+            activity = activity,
+            title = title,
+            subtitle = subtitle,
+            onSuccess = {
+                viewModelScope.launch {
+                    val paths = items.map { it.path }
+                    val results = fileOps.bulkDelete(paths)
+                    val count = results.count { it.value }
+                    _userMessage.value = "Cleaned up $count files"
+                    _isDeleteCountdownVisible.value = false
+                    _activeDeleteItems.value = emptyList()
+                    _selectedItemPaths.value = emptySet()
+                    loadCandidates()
+                    if (_duplicateScanState.value is DuplicateScanState.Completed) {
+                        scanForDuplicates()
+                    }
+                }
+            },
+            onError = { error ->
+                _userMessage.value = error
+            }
+        )
+    }
+
+    fun openTrashDialog() {
+        _isTrashDialogVisible.value = true
+    }
+
+    fun closeTrashDialog() {
+        _isTrashDialogVisible.value = false
+    }
+
+    fun restoreTrashItem(trashId: String) {
+        viewModelScope.launch {
+            val result = trashManager.restoreItem(trashId)
+            if (result.isSuccess) {
+                _userMessage.value = "Restored file"
+                loadCandidates()
+            } else {
+                _userMessage.value = result.exceptionOrNull()?.message ?: "Restore failed"
+            }
+        }
+    }
+
+    fun deleteTrashItemForever(
+        activity: FragmentActivity,
+        trashId: String
+    ) {
+        securityManager.authenticate(
+            activity = activity,
+            title = "Confirm Permanent Delete",
+            subtitle = "Authenticate to permanently remove this file",
+            onSuccess = {
+                viewModelScope.launch {
+                    val result = trashManager.deletePermanently(trashId)
+                    if (result.isSuccess) {
+                        _userMessage.value = "Deleted forever"
+                    } else {
+                        _userMessage.value = "Failed to delete"
+                    }
+                }
+            },
+            onError = { error ->
+                _userMessage.value = error
+            }
+        )
+    }
+
+    fun emptyTrash(activity: FragmentActivity) {
+        securityManager.authenticate(
+            activity = activity,
+            title = "Empty Trash",
+            subtitle = "Authenticate to permanently delete all items in Trash",
+            onSuccess = {
+                viewModelScope.launch {
+                    val result = trashManager.emptyTrash()
+                    if (result.isSuccess) {
+                        _userMessage.value = "Emptied trash (${result.getOrDefault(0)} items)"
+                    }
+                }
+            },
+            onError = { error ->
+                _userMessage.value = error
+            }
+        )
+    }
+
+    fun clearUserMessage() {
+        _userMessage.value = null
+    }
+}

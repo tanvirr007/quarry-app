@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Quarry</string>
+    <string name="tagline">See where your storage goes.</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_explore">Explore</string>
+    <string name="nav_cleanup">Cleanup</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Storage Overview -->
+    <string name="internal_storage">Internal Storage</string>
+    <string name="storage_used">%1$s used</string>
+    <string name="storage_free">%1$s free</string>
+    <string name="storage_total">Total: %1$s</string>
+    <string name="analyze_storage">Analyze</string>
+
+    <!-- Categories -->
+    <string name="category_videos">Videos</string>
+    <string name="category_images">Images</string>
+    <string name="category_apps">Apps</string>
+    <string name="category_documents">Documents</string>
+    <string name="category_audio">Audio</string>
+    <string name="category_archives">Archives</string>
+    <string name="category_apks">APKs</string>
+    <string name="category_other">Other</string>
+
+    <!-- Permissions -->
+    <string name="storage_permission_rationale">Quarry needs broad access to your device storage to scan folders and files, calculate their sizes, build the storage map, and provide file-management features. Everything is processed locally on your device. Nothing is uploaded.</string>
+    <string name="grant_storage_access">Grant Storage Access</string>
+</resources>
