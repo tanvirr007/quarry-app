@@ -75,7 +75,11 @@ app/src/main/java/app/quarry/tanvir/info/
 
 ### General Guidelines & Tone
 - **No Emojis**: Do not use emojis in commit messages, documentation, logs, or UI strings. Keep documentation clean, clear, and professional.
-- **Issue Tracking**: When addressing bugs or feature requests, consult the structured issue forms in `.github/ISSUE_TEMPLATE/` to ensure all necessary device, OS, and permission diagnostics are addressed.
+- **Issue Tracking**: When addressing bugs or feature requests, consult the structured issue forms:
+  - [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.yml) ([New Bug on GitHub](https://github.com/tanvirr007/quarry-app/issues/new?template=bug_report.yml))
+  - [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.yml) ([New Feature on GitHub](https://github.com/tanvirr007/quarry-app/issues/new?template=feature_request.yml))
+  - [Issue Tracker](https://github.com/tanvirr007/quarry-app/issues)
+  Ensure all necessary device, OS, and permission diagnostics are addressed when working with issues.
 
 ---
 
