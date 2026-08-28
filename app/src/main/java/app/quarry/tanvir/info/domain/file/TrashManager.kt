@@ -34,22 +34,34 @@ class TrashManager(
     private val mutex = Mutex()
 
     /**
-     * Primary external trash directory located on the primary shared storage volume.
-     * Moving files here from /storage/emulated/0 allows instantaneous atomic rename (O(1)).
+     * Primary external trash directory located at the root of primary shared storage.
+     * Moving files here from anywhere in /storage/emulated/0 allows instantaneous atomic rename (O(1)).
      */
     private val externalTrashDir: File by lazy {
-        val extFiles = context.getExternalFilesDir(null)
-        val dir = if (extFiles != null) {
-            File(extFiles, ".quarry_trash")
-        } else {
-            File(Environment.getExternalStorageDirectory(), ".quarry_trash")
-        }
+        val root = Environment.getExternalStorageDirectory()
+        val dir = File(root, ".quarry_trash")
         if (!dir.exists()) dir.mkdirs()
         dir
     }
 
     /**
-     * Internal fallback trash directory inside app data storage.
+     * Legacy external trash directory used in older versions (inside Android/data sandbox).
+     * Checked for backward compatibility so existing items can be restored/cleaned.
+     */
+    private val legacyExternalTrashDir: File? by lazy {
+        try {
+            val extFiles = context.getExternalFilesDir(null)
+            if (extFiles != null) {
+                val dir = File(extFiles, ".quarry_trash")
+                if (dir.exists()) dir else null
+            } else null
+        } catch (ignored: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Internal fallback trash directory inside app private data storage.
      */
     private val internalTrashDir: File by lazy {
         File(context.filesDir, ".quarry_trash").apply {
@@ -73,7 +85,19 @@ class TrashManager(
      */
     private fun getTrashDirForPath(filePath: String): File {
         val externalRoot = Environment.getExternalStorageDirectory().absolutePath
-        return if (filePath.startsWith(externalRoot) || filePath.startsWith("/storage/")) {
+        return if (filePath.startsWith(externalRoot) || filePath.startsWith("/storage/emulated/0")) {
+            if (!externalTrashDir.exists()) externalTrashDir.mkdirs()
+            externalTrashDir
+        } else if (filePath.startsWith("/storage/")) {
+            // Check if file is on a secondary SD card volume (e.g. /storage/ABCD-1234/...)
+            val segments = filePath.split("/").filter { it.isNotEmpty() }
+            if (segments.size >= 2) {
+                val sdRoot = File("/storage/${segments[1]}")
+                val sdTrash = File(sdRoot, ".quarry_trash")
+                if (sdTrash.exists() || sdTrash.mkdirs()) {
+                    return sdTrash
+                }
+            }
             if (!externalTrashDir.exists()) externalTrashDir.mkdirs()
             externalTrashDir
         } else {
@@ -121,8 +145,9 @@ class TrashManager(
                 }
             }
 
-            // Discover any orphan files present in trash dirs not yet indexed in metadata
+            // Discover any orphan files present in all trash dirs not yet indexed in metadata
             discoverOrphanFiles(externalTrashDir, list, knownTrashPaths)
+            legacyExternalTrashDir?.let { discoverOrphanFiles(it, list, knownTrashPaths) }
             discoverOrphanFiles(internalTrashDir, list, knownTrashPaths)
 
             list.sortByDescending { it.deletedTimestamp }
@@ -224,22 +249,28 @@ class TrashManager(
                 val fileSize = calculateFileSize(source)
                 val isDir = source.isDirectory
 
-                // Try atomic filesystem rename first
-                val moved = source.renameTo(trashTarget)
+                // Try atomic filesystem rename first (instantaneous on same volume)
+                var moved = source.renameTo(trashTarget)
                 if (!moved) {
-                    // Fallback to recursive copy and delete
-                    val copySuccess = if (isDir) {
-                        source.copyRecursively(trashTarget, overwrite = true)
-                    } else {
-                        source.copyTo(trashTarget, overwrite = true)
-                        true
+                    try {
+                        java.nio.file.Files.move(source.toPath(), trashTarget.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                        moved = true
+                    } catch (e: Exception) {
+                        val copySuccess = if (isDir) {
+                            source.copyRecursively(trashTarget, overwrite = true)
+                        } else {
+                            source.copyTo(trashTarget, overwrite = true)
+                            true
+                        }
+                        if (copySuccess) {
+                            if (isDir) source.deleteRecursively() else source.delete()
+                            moved = true
+                        }
                     }
+                }
 
-                    if (copySuccess) {
-                        if (isDir) source.deleteRecursively() else source.delete()
-                    } else {
-                        return@withContext Result.failure(IllegalStateException("Could not move file to Trash"))
-                    }
+                if (!moved) {
+                    return@withContext Result.failure(IllegalStateException("Could not move file to Trash"))
                 }
 
                 // Remove from database index
@@ -268,12 +299,74 @@ class TrashManager(
      * Moves multiple files or directories into Trash in batch.
      */
     suspend fun moveToTrashBatch(paths: List<String>): Map<String, Boolean> = withContext(Dispatchers.IO) {
-        val results = mutableMapOf<String, Boolean>()
-        for (path in paths) {
-            val res = moveToTrash(path)
-            results[path] = res.isSuccess
+        mutex.withLock {
+            val results = mutableMapOf<String, Boolean>()
+            val currentList = _trashItems.value.toMutableList()
+            val entitiesToDelete = mutableListOf<String>()
+
+            for (path in paths) {
+                try {
+                    val source = File(path)
+                    if (!source.exists()) {
+                        entitiesToDelete.add(path)
+                        results[path] = false
+                        continue
+                    }
+
+                    val trashDir = getTrashDirForPath(path)
+                    val uniqueSuffix = UUID.randomUUID().toString().take(6)
+                    val trashId = "${System.currentTimeMillis()}_${uniqueSuffix}_${source.name}"
+                    val trashTarget = File(trashDir, trashId)
+
+                    val fileSize = calculateFileSize(source)
+                    val isDir = source.isDirectory
+
+                    var moved = source.renameTo(trashTarget)
+                    if (!moved) {
+                        try {
+                            java.nio.file.Files.move(source.toPath(), trashTarget.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                            moved = true
+                        } catch (e: Exception) {
+                            val copySuccess = if (isDir) {
+                                source.copyRecursively(trashTarget, overwrite = true)
+                            } else {
+                                source.copyTo(trashTarget, overwrite = true)
+                                true
+                            }
+                            if (copySuccess) {
+                                if (isDir) source.deleteRecursively() else source.delete()
+                                moved = true
+                            }
+                        }
+                    }
+
+                    if (moved) {
+                        entitiesToDelete.add(path)
+                        val item = TrashItem(
+                            id = trashId,
+                            originalPath = path,
+                            trashPath = trashTarget.absolutePath,
+                            name = source.name,
+                            size = fileSize,
+                            isDirectory = isDir,
+                            deletedTimestamp = System.currentTimeMillis()
+                        )
+                        currentList.add(item)
+                        results[path] = true
+                    } else {
+                        results[path] = false
+                    }
+                } catch (e: Exception) {
+                    results[path] = false
+                }
+            }
+
+            for (deletedPath in entitiesToDelete) {
+                repository.deleteFileRecord(deletedPath)
+            }
+            saveMetadata(currentList)
+            results
         }
-        results
     }
 
     /**
@@ -304,20 +397,28 @@ class TrashManager(
                     if (!it.exists()) it.mkdirs()
                 }
 
-                val restored = trashFile.renameTo(targetFile)
+                var restored = trashFile.renameTo(targetFile)
                 if (!restored) {
-                    val copied = if (trashFile.isDirectory) {
-                        trashFile.copyRecursively(targetFile, overwrite = true)
-                    } else {
-                        trashFile.copyTo(targetFile, overwrite = true)
-                        true
-                    }
+                    try {
+                        java.nio.file.Files.move(trashFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                        restored = true
+                    } catch (e: Exception) {
+                        val copied = if (trashFile.isDirectory) {
+                            trashFile.copyRecursively(targetFile, overwrite = true)
+                        } else {
+                            trashFile.copyTo(targetFile, overwrite = true)
+                            true
+                        }
 
-                    if (copied) {
-                        if (trashFile.isDirectory) trashFile.deleteRecursively() else trashFile.delete()
-                    } else {
-                        return@withContext Result.failure(IllegalStateException("Failed to restore file"))
+                        if (copied) {
+                            if (trashFile.isDirectory) trashFile.deleteRecursively() else trashFile.delete()
+                            restored = true
+                        }
                     }
+                }
+
+                if (!restored) {
+                    return@withContext Result.failure(IllegalStateException("Failed to restore file"))
                 }
 
                 // Update metadata
@@ -356,15 +457,96 @@ class TrashManager(
     }
 
     /**
-     * Restores multiple items from Trash in batch.
+     * Restores multiple items from Trash in batch with atomic efficiency.
      */
     suspend fun restoreItemsBatch(trashIds: List<String>): Map<String, Boolean> = withContext(Dispatchers.IO) {
-        val results = mutableMapOf<String, Boolean>()
-        for (id in trashIds) {
-            val res = restoreItem(id)
-            results[id] = res.isSuccess
+        mutex.withLock {
+            val results = mutableMapOf<String, Boolean>()
+            var currentList = _trashItems.value.toList()
+            val restoredEntities = mutableListOf<FileEntity>()
+            val idsToRemove = mutableSetOf<String>()
+
+            for (trashId in trashIds) {
+                val item = currentList.find { it.id == trashId }
+                if (item == null) {
+                    results[trashId] = false
+                    continue
+                }
+
+                try {
+                    val trashFile = File(item.trashPath)
+                    if (!trashFile.exists()) {
+                        idsToRemove.add(trashId)
+                        results[trashId] = false
+                        continue
+                    }
+
+                    var targetFile = File(item.originalPath)
+                    if (targetFile.exists()) {
+                        targetFile = resolveDestinationCollision(targetFile)
+                    }
+
+                    targetFile.parentFile?.let {
+                        if (!it.exists()) it.mkdirs()
+                    }
+
+                    var restored = trashFile.renameTo(targetFile)
+                    if (!restored) {
+                        try {
+                            java.nio.file.Files.move(trashFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                            restored = true
+                        } catch (e: Exception) {
+                            val copied = if (trashFile.isDirectory) {
+                                trashFile.copyRecursively(targetFile, overwrite = true)
+                            } else {
+                                trashFile.copyTo(targetFile, overwrite = true)
+                                true
+                            }
+                            if (copied) {
+                                if (trashFile.isDirectory) trashFile.deleteRecursively() else trashFile.delete()
+                                restored = true
+                            }
+                        }
+                    }
+
+                    if (restored) {
+                        idsToRemove.add(trashId)
+                        results[trashId] = true
+
+                        if (targetFile.isDirectory) {
+                            indexDirectoryRecursively(targetFile, restoredEntities)
+                        } else {
+                            val category = StorageCategory.fromExtension(targetFile.extension)
+                            restoredEntities.add(
+                                FileEntity(
+                                    path = targetFile.absolutePath,
+                                    name = targetFile.name,
+                                    size = targetFile.length(),
+                                    isDirectory = false,
+                                    category = category.name,
+                                    lastModified = targetFile.lastModified(),
+                                    parentPath = targetFile.parentFile?.absolutePath,
+                                    extension = targetFile.extension
+                                )
+                            )
+                        }
+                    } else {
+                        results[trashId] = false
+                    }
+                } catch (e: Exception) {
+                    results[trashId] = false
+                }
+            }
+
+            if (idsToRemove.isNotEmpty()) {
+                currentList = currentList.filter { !idsToRemove.contains(it.id) }
+                saveMetadata(currentList)
+            }
+            if (restoredEntities.isNotEmpty()) {
+                repository.insertFiles(restoredEntities)
+            }
+            results
         }
-        results
     }
 
     /**
@@ -398,12 +580,39 @@ class TrashManager(
      * Permanently deletes multiple items from Trash in batch.
      */
     suspend fun deletePermanentlyBatch(trashIds: List<String>): Map<String, Boolean> = withContext(Dispatchers.IO) {
-        val results = mutableMapOf<String, Boolean>()
-        for (id in trashIds) {
-            val res = deletePermanently(id)
-            results[id] = res.isSuccess
+        mutex.withLock {
+            val results = mutableMapOf<String, Boolean>()
+            var currentList = _trashItems.value.toList()
+            val idsToRemove = mutableSetOf<String>()
+
+            for (trashId in trashIds) {
+                val item = currentList.find { it.id == trashId }
+                if (item == null) {
+                    results[trashId] = false
+                    continue
+                }
+                try {
+                    val trashFile = File(item.trashPath)
+                    if (trashFile.exists()) {
+                        if (trashFile.isDirectory) {
+                            trashFile.deleteRecursively()
+                        } else {
+                            trashFile.delete()
+                        }
+                    }
+                    idsToRemove.add(trashId)
+                    results[trashId] = true
+                } catch (e: Exception) {
+                    results[trashId] = false
+                }
+            }
+
+            if (idsToRemove.isNotEmpty()) {
+                currentList = currentList.filter { !idsToRemove.contains(it.id) }
+                saveMetadata(currentList)
+            }
+            results
         }
-        results
     }
 
     /**
@@ -421,8 +630,9 @@ class TrashManager(
                 deletedCount++
             }
 
-            // Also clean any unindexed residue in trash folders
+            // Also clean any unindexed residue in all trash folders
             cleanFolderContents(externalTrashDir)
+            legacyExternalTrashDir?.let { cleanFolderContents(it) }
             cleanFolderContents(internalTrashDir)
 
             saveMetadata(emptyList())

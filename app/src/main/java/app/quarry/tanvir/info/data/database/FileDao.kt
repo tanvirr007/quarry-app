@@ -19,6 +19,9 @@ interface FileDao {
     @Query("DELETE FROM files WHERE path = :path OR path LIKE :path || '/%'")
     suspend fun deleteByPath(path: String)
 
+    @Query("DELETE FROM files WHERE path IN (:paths)")
+    suspend fun deleteByPaths(paths: List<String>)
+
     @Query("SELECT * FROM files")
     fun getAllFiles(): Flow<List<FileEntity>>
 

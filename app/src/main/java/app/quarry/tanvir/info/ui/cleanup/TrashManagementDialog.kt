@@ -3,6 +3,8 @@ package app.quarry.tanvir.info.ui.cleanup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -96,6 +99,9 @@ fun TrashManagementDialog(
             it.originalPath.contains(searchQuery, ignoreCase = true)
         }
     }
+    val selectedItems = trashItems.filter { selectedIds.contains(it.id) }
+    val selectedBytes = selectedItems.sumOf { it.size }
+    val isSelectionMode = selectedIds.isNotEmpty()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -108,129 +114,190 @@ fun TrashManagementDialog(
                 .fillMaxWidth()
                 .fillMaxHeight(0.88f)
                 .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header: Title + Space badge + Empty Trash button
+            // Dynamic Header: Switches cleanly between Normal mode and Selection mode
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Trash & Recycle Bin",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "${trashItems.size} items · ${StorageFormatter.formatBytes(totalBytes)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                if (isSelectionMode) {
+                    // Selection mode header
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${selectedIds.size} Selected",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "${StorageFormatter.formatBytes(selectedBytes)} of ${StorageFormatter.formatBytes(totalBytes)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-                if (trashItems.isNotEmpty()) {
-                    Button(
-                        onClick = { showEmptyTrashConfirmDialog = true },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    IconButton(
+                        onClick = { selectedIds = emptySet() }
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.DeleteSweep,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "Clear Selection",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                } else {
+                    // Normal mode header
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Empty Trash",
-                            style = MaterialTheme.typography.labelLarge,
+                            text = "Trash & Recycle Bin",
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
+                        Text(
+                            text = "${trashItems.size} items · ${StorageFormatter.formatBytes(totalBytes)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    if (trashItems.isNotEmpty()) {
+                        Button(
+                            onClick = { showEmptyTrashConfirmDialog = true },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.DeleteSweep,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Empty Trash",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
 
-            // Search Bar & Multi-Select Header (when trash not empty)
-            if (trashItems.isNotEmpty()) {
-                if (trashItems.size > 3 || searchQuery.isNotBlank()) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text("Filter trash items…") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = "Search"
-                            )
-                        },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear")
-                                }
+            // Search Bar (when trash has multiple items)
+            if (trashItems.isNotEmpty() && (trashItems.size > 3 || searchQuery.isNotBlank())) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Filter trash items…") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear")
                             }
-                        },
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true
+                )
+            }
+
+            // Selection Action Toolbar / Quick Toggle Row
+            if (trashItems.isNotEmpty()) {
+                val allSelected = selectedIds.size == filteredItems.size && filteredItems.isNotEmpty()
+
+                if (isSelectionMode) {
+                    // Dedicated Selection Action Card
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
-                        singleLine = true
-                    )
-                }
-
-                // Selection toolbar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    val allSelected = selectedIds.size == filteredItems.size && filteredItems.isNotEmpty()
-                    TextButton(
-                        onClick = {
-                            selectedIds = if (allSelected) emptySet() else filteredItems.map { it.id }.toSet()
-                        }
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
                     ) {
-                        Text(if (allSelected) "Deselect All" else "Select All")
-                    }
-
-                    if (selectedIds.isNotEmpty()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilledTonalButton(
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            TextButton(
                                 onClick = {
-                                    onRestoreSelected(selectedIds.toList())
-                                    selectedIds = emptySet()
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                    selectedIds = if (allSelected) emptySet() else filteredItems.map { it.id }.toSet()
+                                }
                             ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.RestoreFromTrash,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Restore (${selectedIds.size})")
+                                Text(if (allSelected) "Deselect All" else "Select All")
                             }
 
-                            Button(
-                                onClick = { showBulkDeleteConfirmDialog = true },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError
-                                ),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.DeleteForever,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Delete (${selectedIds.size})")
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        val toRestore = selectedIds.toList()
+                                        selectedIds = emptySet()
+                                        onRestoreSelected(toRestore)
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.RestoreFromTrash,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Restore (${selectedIds.size})")
+                                }
+
+                                Button(
+                                    onClick = { showBulkDeleteConfirmDialog = true },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.DeleteForever,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Delete (${selectedIds.size})")
+                                }
                             }
+                        }
+                    }
+                } else {
+                    // Normal state quick select toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "${filteredItems.size} items available",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(
+                            onClick = {
+                                selectedIds = filteredItems.map { it.id }.toSet()
+                            }
+                        ) {
+                            Text("Select All")
                         }
                     }
                 }
@@ -287,18 +354,26 @@ fun TrashManagementDialog(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "No trash items match \"$searchQuery\"",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "No trash items match \"$searchQuery\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(onClick = { searchQuery = "" }) {
+                            Text("Clear filter")
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredItems, key = { it.id }) { item ->
                         val isSelected = selectedIds.contains(item.id)
@@ -331,7 +406,7 @@ fun TrashManagementDialog(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
@@ -381,29 +456,32 @@ fun TrashManagementDialog(
                                     )
                                 }
 
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    IconButton(
-                                        onClick = { onRestoreItem(item.id) },
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.RestoreFromTrash,
-                                            contentDescription = "Restore",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
+                                // In normal mode (not multi-selecting), show individual restore & delete icons
+                                if (!isSelectionMode) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        IconButton(
+                                            onClick = { onRestoreItem(item.id) },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.RestoreFromTrash,
+                                                contentDescription = "Restore",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
 
-                                    IconButton(
-                                        onClick = { itemPendingPermanentDelete = item },
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.DeleteForever,
-                                            contentDescription = "Delete Forever",
-                                            tint = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                        IconButton(
+                                            onClick = { itemPendingPermanentDelete = item },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.DeleteForever,
+                                                contentDescription = "Delete Forever",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -421,7 +499,7 @@ fun TrashManagementDialog(
                 Text("Close")
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 
@@ -514,8 +592,8 @@ fun TrashManagementDialog(
 
     // Confirmation Alert for Bulk Delete Selected
     if (showBulkDeleteConfirmDialog) {
-        val selectedItems = trashItems.filter { selectedIds.contains(it.id) }
-        val selectedBytes = selectedItems.sumOf { it.size }
+        val count = selectedIds.size
+        val bytes = selectedBytes
         AlertDialog(
             onDismissRequest = { showBulkDeleteConfirmDialog = false },
             icon = {
@@ -527,19 +605,20 @@ fun TrashManagementDialog(
                 )
             },
             title = {
-                Text("Delete ${selectedIds.size} files forever?")
+                Text("Delete $count items forever?")
             },
             text = {
                 Text(
-                    "${selectedIds.size} selected items (${StorageFormatter.formatBytes(selectedBytes)}) will be permanently removed from disk. This cannot be undone."
+                    "$count selected items (${StorageFormatter.formatBytes(bytes)}) will be permanently removed from disk. This cannot be undone."
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
+                        val toDelete = selectedIds.toList()
                         showBulkDeleteConfirmDialog = false
-                        onDeleteSelectedForever(selectedIds.toList())
                         selectedIds = emptySet()
+                        onDeleteSelectedForever(toDelete)
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,

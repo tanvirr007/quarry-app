@@ -102,13 +102,36 @@ class FileOperationsManager(
     }
 
     /**
-     * Bulk permanently deletes a list of files.
+     * Bulk permanently deletes a list of files with batch database synchronization.
      */
     suspend fun bulkDelete(paths: List<String>): Map<String, Boolean> = withContext(Dispatchers.IO) {
         val results = mutableMapOf<String, Boolean>()
+        val deletedPaths = mutableListOf<String>()
+
         for (path in paths) {
-            val res = deletePermanently(path)
-            results[path] = res.isSuccess
+            try {
+                val file = File(path)
+                val deleted = if (!file.exists()) {
+                    true
+                } else if (file.isDirectory) {
+                    file.deleteRecursively()
+                } else {
+                    file.delete()
+                }
+
+                if (deleted) {
+                    deletedPaths.add(path)
+                    results[path] = true
+                } else {
+                    results[path] = false
+                }
+            } catch (e: Exception) {
+                results[path] = false
+            }
+        }
+
+        if (deletedPaths.isNotEmpty()) {
+            repository.deleteFileRecords(deletedPaths)
         }
         results
     }

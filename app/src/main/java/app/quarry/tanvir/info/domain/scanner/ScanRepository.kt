@@ -134,6 +134,13 @@ class ScanRepository(
         database.fileDao().deleteByPath(path)
     }
 
+    suspend fun deleteFileRecords(paths: List<String>) = withContext(Dispatchers.IO) {
+        if (paths.isEmpty()) return@withContext
+        paths.chunked(500).forEach { chunk ->
+            database.fileDao().deleteByPaths(chunk)
+        }
+    }
+
     suspend fun insertFile(file: FileEntity) = withContext(Dispatchers.IO) {
         database.fileDao().insertBatch(listOf(file))
     }
