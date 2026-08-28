@@ -343,6 +343,30 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                 _userMessage.value = error
             }
         )
+    fun moveToTrash(file: FileEntity) {
+        viewModelScope.launch {
+            val result = fileOps.moveToTrash(file.path)
+            if (result.isSuccess) {
+                _userMessage.value = "Moved \"${file.name}\" to Trash"
+                _activeDetailsFile.value = null
+                loadDirectory(_currentPath.value)
+            } else {
+                _userMessage.value = result.exceptionOrNull()?.message ?: "Failed to move to Trash"
+            }
+        }
+    }
+
+    fun moveToTrashSelected() {
+        val paths = _selectedPaths.value.toList()
+        if (paths.isEmpty()) return
+
+        viewModelScope.launch {
+            val results = fileOps.bulkMoveToTrash(paths)
+            val successCount = results.count { it.value }
+            _userMessage.value = "Moved $successCount items to Trash"
+            clearSelection()
+            loadDirectory(_currentPath.value)
+        }
     }
 
     fun openFile(file: FileEntity) {

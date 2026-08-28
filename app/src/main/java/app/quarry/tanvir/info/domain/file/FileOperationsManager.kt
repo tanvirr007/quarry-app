@@ -3,7 +3,6 @@ package app.quarry.tanvir.info.domain.file
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import app.quarry.tanvir.info.data.database.FileEntity
@@ -14,25 +13,11 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 
-data class TrashItem(
-    val id: String,
-    val originalPath: String,
-    val trashPath: String,
-    val name: String,
-    val size: Long,
-    val isDirectory: Boolean,
-    val deletedTimestamp: Long
-)
-
 class FileOperationsManager(
     private val context: Context,
     private val repository: ScanRepository
 ) {
-    private val trashDirectory: File by lazy {
-        File(context.filesDir, ".quarry_trash").apply {
-            if (!exists()) mkdirs()
-        }
-    }
+    private val trashManager = TrashManager.getInstance(context, repository)
 
     /**
      * Renames a single file or directory and updates the database record.
@@ -70,8 +55,7 @@ class FileOperationsManager(
                 parentPath = parentDir.absolutePath,
                 extension = extension
             )
-            // Rescan directory / re-insert entity
-            repository.getChildren(parentDir.absolutePath)
+            repository.insertFile(updatedEntity)
             Result.success(targetFile.absolutePath)
         } catch (e: Exception) {
             Result.failure(e)
@@ -79,41 +63,17 @@ class FileOperationsManager(
     }
 
     /**
-     * Moves a file or directory to Quarry's secure local trash.
+     * Moves a file or directory to Quarry's secure trash bin.
      */
     suspend fun moveToTrash(path: String): Result<TrashItem> = withContext(Dispatchers.IO) {
-        try {
-            val file = File(path)
-            if (!file.exists()) {
-                repository.deleteFileRecord(path)
-                return@withContext Result.failure(IllegalArgumentException("File does not exist"))
-            }
+        trashManager.moveToTrash(path)
+    }
 
-            val trashId = "${System.currentTimeMillis()}_${file.name}"
-            val trashTarget = File(trashDirectory, trashId)
-
-            val moved = file.renameTo(trashTarget)
-            if (!moved) {
-                // Fallback to copy and delete
-                file.copyRecursively(trashTarget, overwrite = true)
-                file.deleteRecursively()
-            }
-
-            repository.deleteFileRecord(path)
-
-            val trashItem = TrashItem(
-                id = trashId,
-                originalPath = path,
-                trashPath = trashTarget.absolutePath,
-                name = file.name,
-                size = trashTarget.length(),
-                isDirectory = trashTarget.isDirectory,
-                deletedTimestamp = System.currentTimeMillis()
-            )
-            Result.success(trashItem)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    /**
+     * Bulk moves a list of files or directories to Trash.
+     */
+    suspend fun bulkMoveToTrash(paths: List<String>): Map<String, Boolean> = withContext(Dispatchers.IO) {
+        trashManager.moveToTrashBatch(paths)
     }
 
     /**

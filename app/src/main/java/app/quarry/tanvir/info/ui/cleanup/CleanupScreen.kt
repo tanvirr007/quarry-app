@@ -128,49 +128,110 @@ fun CleanupScreen(
                     )
                 }
 
-                if (uiState.totalRecoverableBytes > 0) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                        )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Estimated Recoverable",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = StorageFormatter.formatBytes(uiState.totalRecoverableBytes),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        Column {
+                            Text(
+                                text = "Estimated Recoverable",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = StorageFormatter.formatBytes(uiState.totalRecoverableBytes),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
 
-                            FilledTonalButton(
-                                onClick = { viewModel.openTrashDialog() },
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.RestoreFromTrash,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Trash (${uiState.trashItems.size})")
-                            }
+                        FilledTonalButton(
+                            onClick = { viewModel.openTrashDialog() },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.RestoreFromTrash,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Trash (${uiState.trashItems.size})")
                         }
                     }
+                }
+            }
+        }
+
+        // Dedicated Trash & Recycle Bin Access Card
+        val trashBytes = uiState.trashItems.sumOf { it.size }
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { viewModel.openTrashDialog() },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.RestoreFromTrash,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Trash & Recycle Bin",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (uiState.trashItems.isNotEmpty()) {
+                            "${uiState.trashItems.size} items preserved · Safe temporary storage"
+                        } else {
+                            "Empty · Files moved to Trash can be restored here"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+
+                if (trashBytes > 0) {
+                    Text(
+                        text = StorageFormatter.formatBytes(trashBytes),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -346,6 +407,7 @@ fun CleanupScreen(
             onToggleSelect = { viewModel.toggleItemSelection(it) },
             onSelectAll = { viewModel.selectAllCandidates() },
             onDeselectAll = { viewModel.deselectAllCandidates() },
+            onMoveToTrashSelected = { viewModel.moveSelectedCandidatesToTrash() },
             onDeleteSelected = { viewModel.promptDeleteSelectedCandidates() },
             onDismiss = { viewModel.closeCandidateGroup() }
         )
@@ -356,8 +418,12 @@ fun CleanupScreen(
         TrashManagementDialog(
             trashItems = uiState.trashItems,
             onRestoreItem = { viewModel.restoreTrashItem(it) },
+            onRestoreSelected = { viewModel.restoreSelectedTrashItems(it) },
             onDeleteForever = { trashId ->
                 activity?.let { viewModel.deleteTrashItemForever(it, trashId) }
+            },
+            onDeleteSelectedForever = { trashIds ->
+                activity?.let { viewModel.deleteSelectedTrashItemsForever(it, trashIds) }
             },
             onEmptyTrash = {
                 activity?.let { viewModel.emptyTrash(it) }

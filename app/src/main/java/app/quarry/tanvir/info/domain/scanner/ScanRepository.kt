@@ -133,6 +133,18 @@ class ScanRepository(
         database.fileDao().deleteByPath(path)
     }
 
+    suspend fun insertFile(file: FileEntity) = withContext(Dispatchers.IO) {
+        database.fileDao().insertBatch(listOf(file))
+    }
+
+    suspend fun insertFiles(files: List<FileEntity>) = withContext(Dispatchers.IO) {
+        database.fileDao().insertBatch(files)
+    }
+
+    suspend fun getFileByPath(path: String): FileEntity? = withContext(Dispatchers.IO) {
+        database.fileDao().getFileByPath(path)
+    }
+
     companion object {
         @Volatile
         private var INSTANCE: ScanRepository? = null

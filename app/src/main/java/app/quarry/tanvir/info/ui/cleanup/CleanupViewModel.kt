@@ -50,7 +50,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     private val repository = ScanRepository.getInstance(application)
     private val duplicateDetector = FastDuplicateDetector()
     private val cleanupEngine = DefaultCleanupEngine(duplicateDetector)
-    private val trashManager = TrashManager(application, repository)
+    private val trashManager = TrashManager.getInstance(application, repository)
     private val fileOps = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
 
@@ -112,7 +112,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     fun loadCandidates() {
         viewModelScope.launch(Dispatchers.IO) {
             val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
-            val allFiles = db.fileDao().getChildrenSync("") // Or full scan files
+            val allFiles = db.fileDao().getChildrenSync("")
             val candidates = cleanupEngine.getCandidatesFromEntities(allFiles)
             _candidateGroups.value = candidates
         }
@@ -194,6 +194,26 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         _activeDeleteItems.value = emptyList()
     }
 
+    fun moveSelectedCandidatesToTrash() {
+        val group = _activeCandidateGroup.value ?: return
+        val selectedPaths = _selectedItemPaths.value
+        val itemsToTrash = group.items.filter { selectedPaths.contains(it.path) }
+        if (itemsToTrash.isEmpty()) return
+
+        viewModelScope.launch {
+            val paths = itemsToTrash.map { it.path }
+            val results = fileOps.bulkMoveToTrash(paths)
+            val successCount = results.count { it.value }
+            _userMessage.value = "Moved $successCount items to Trash"
+            _selectedItemPaths.value = emptySet()
+            _activeCandidateGroup.value = null
+            loadCandidates()
+            if (_duplicateScanState.value is DuplicateScanState.Completed) {
+                scanForDuplicates()
+            }
+        }
+    }
+
     fun executeAuthenticatedDelete(
         activity: FragmentActivity,
         items: List<StorageItem>
@@ -246,6 +266,16 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun restoreSelectedTrashItems(trashIds: List<String>) {
+        if (trashIds.isEmpty()) return
+        viewModelScope.launch {
+            val results = trashManager.restoreItemsBatch(trashIds)
+            val count = results.count { it.value }
+            _userMessage.value = "Restored $count files"
+            loadCandidates()
+        }
+    }
+
     fun deleteTrashItemForever(
         activity: FragmentActivity,
         trashId: String
@@ -262,6 +292,28 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
                     } else {
                         _userMessage.value = "Failed to delete"
                     }
+                }
+            },
+            onError = { error ->
+                _userMessage.value = error
+            }
+        )
+    }
+
+    fun deleteSelectedTrashItemsForever(
+        activity: FragmentActivity,
+        trashIds: List<String>
+    ) {
+        if (trashIds.isEmpty()) return
+        securityManager.authenticate(
+            activity = activity,
+            title = "Confirm Permanent Delete",
+            subtitle = "Authenticate to permanently remove ${trashIds.size} files",
+            onSuccess = {
+                viewModelScope.launch {
+                    val results = trashManager.deletePermanentlyBatch(trashIds)
+                    val count = results.count { it.value }
+                    _userMessage.value = "Permanently deleted $count files"
                 }
             },
             onError = { error ->

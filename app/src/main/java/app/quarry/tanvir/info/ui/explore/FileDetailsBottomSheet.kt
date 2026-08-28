@@ -64,6 +64,7 @@ fun FileDetailsBottomSheet(
     onOpen: (FileEntity) -> Unit,
     onShare: (FileEntity) -> Unit,
     onRename: (FileEntity) -> Unit,
+    onMoveToTrash: (FileEntity) -> Unit,
     onDelete: (FileEntity) -> Unit,
     onOpenContainingFolder: (String) -> Unit
 ) {
@@ -256,7 +257,7 @@ fun FileDetailsBottomSheet(
                 }
             }
 
-            // Secondary Actions (Rename, Containing Folder, Delete)
+            // Secondary Actions (Containing Folder & Rename)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -271,12 +272,12 @@ fun FileDetailsBottomSheet(
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
                 ) {
                     Icon(imageVector = Icons.Rounded.FolderOpen, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Folder",
+                        text = "Containing Folder",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -286,12 +287,40 @@ fun FileDetailsBottomSheet(
                     onClick = { onRename(file) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
                 ) {
                     Icon(imageVector = Icons.Rounded.DriveFileRenameOutline, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Rename",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Destructive / Trash Actions (Move to Trash & Delete Permanently)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilledTonalButton(
+                    onClick = {
+                        onMoveToTrash(file)
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Move to Trash",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -301,16 +330,16 @@ fun FileDetailsBottomSheet(
                     onClick = { onDelete(file) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 ) {
                     Icon(imageVector = Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Delete",
+                        text = "Delete Forever",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

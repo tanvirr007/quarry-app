@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.FilterList
+import androidx.compose.material.icons.rounded.RestoreFromTrash
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material3.Button
@@ -32,6 +33,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -246,6 +248,14 @@ fun ExploreScreen(
                         IconButton(onClick = { viewModel.selectAll() }) {
                             Icon(imageVector = Icons.Rounded.SelectAll, contentDescription = "Select All")
                         }
+                        FilledTonalButton(
+                            onClick = { viewModel.moveToTrashSelected() },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(imageVector = Icons.Rounded.RestoreFromTrash, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Trash")
+                        }
                         Button(
                             onClick = { viewModel.promptDeleteSelected() },
                             colors = ButtonDefaults.buttonColors(
@@ -347,6 +357,7 @@ fun ExploreScreen(
             onOpen = { viewModel.openFile(file) },
             onShare = { viewModel.shareFile(file) },
             onRename = { viewModel.startRename(file) },
+            onMoveToTrash = { viewModel.moveToTrash(file) },
             onDelete = { viewModel.promptDeleteSingle(file) },
             onOpenContainingFolder = { folderPath ->
                 viewModel.navigateToDirectory(folderPath)
