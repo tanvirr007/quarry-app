@@ -108,8 +108,7 @@ val onboardingSteps = listOf(
 
 @Composable
 fun OnboardingScreen(
-    onCompleted: () -> Unit,
-    onDismiss: (() -> Unit)? = null
+    onCompleted: () -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { onboardingSteps.size })
     val coroutineScope = rememberCoroutineScope()
@@ -125,12 +124,12 @@ fun OnboardingScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            // Header Bar: Step badge + Skip button
+            // Header Bar: Step badge
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
@@ -144,22 +143,6 @@ fun OnboardingScreen(
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
-                }
-
-                if (pagerState.currentPage < onboardingSteps.size - 1) {
-                    TextButton(
-                        onClick = {
-                            onDismiss?.invoke() ?: onCompleted()
-                        }
-                    ) {
-                        Text(
-                            text = "Skip",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.size(48.dp))
                 }
             }
 
@@ -274,19 +257,19 @@ fun OnboardingScreen(
 
 @Composable
 fun OnboardingDialog(
-    onDismiss: () -> Unit,
     onCompleted: () -> Unit
 ) {
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {},
         properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false,
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
         )
     ) {
         OnboardingScreen(
-            onCompleted = onCompleted,
-            onDismiss = onDismiss
+            onCompleted = onCompleted
         )
     }
 }

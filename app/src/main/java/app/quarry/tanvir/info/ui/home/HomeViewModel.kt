@@ -129,6 +129,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startScan() {
+        if (!checkHasStoragePermission()) {
+            _userMessage.value = "Storage permission is required to analyze files"
+            return
+        }
         repository.startScan()
     }
 
