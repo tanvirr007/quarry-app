@@ -1,0 +1,60 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    
+    <!-- Background Circle -->
+    <path
+        android:fillColor="#006A60"
+        android:pathData="M48,0A48,48 0,1 0,48 96,48 48,0 1,0 48,0z" />
+        
+    <!-- Inner Accent Circle -->
+    <path
+        android:fillColor="#1D867B"
+        android:pathData="M48,6A42,42 0,1 0,48 90,42 42,0 1,0 48,6z" />
+        
+    <!-- Head / Face -->
+    <path
+        android:fillColor="#FFE0B2"
+        android:pathData="M48,22c-7.73,0 -14,6.27 -14,14v6c0,7.73 6.27,14 14,14s14,-6.27 14,-14v-6c0,-7.73 -6.27,-14 -14,-14z" />
+        
+    <!-- Hair -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M34,32c0,-8.84 6.27,-16 14,-16s14,7.16 14,16c0,1.5 -0.2,2.9 -0.58,4.2 -1.42,-3.5 -4.92,-6.2 -9.42,-6.2 -3.5,0 -6.5,1.6 -8.5,4 -0.9,-1.2 -2.3,-2 -3.9,-2 -1.7,0 -3.2,0.9 -4.1,2.3 -0.9,-0.7 -1.5,-1.4 -1.5,-2.3z" />
+        
+    <!-- Glasses / Code Specs -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M38,36h8v6h-8zM50,36h8v6h-8z" />
+    <path
+        android:fillColor="#80DEEA"
+        android:pathData="M39.5,37.5h5v3h-5zM51.5,37.5h5v3h-5z" />
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M46,38h4v2h-4zM34,38h4v2h-4zM58,38h4v2h-4z" />
+        
+    <!-- Neck -->
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M44,52h8v8h-8z" />
+        
+    <!-- Torso / Hoodie -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M24,84c0,-13.25 10.75,-24 24,-24s24,10.75 24,24c0,3.31 -2.69,6 -6,6H30c-3.31,0 -6,-2.69 -6,-6z" />
+        
+    <!-- Hoodie collar / Inner shirt -->
+    <path
+        android:fillColor="#004D40"
+        android:pathData="M48,60l-6,14h12z" />
+    <path
+        android:fillColor="#74F8E5"
+        android:pathData="M48,64l-3,7h6z" />
+        
+    <!-- Code Brackets badge on chest -->
+    <path
+        android:fillColor="#74F8E5"
+        android:pathData="M41,76l-3,3 3,3 1,-1 -2,-2 2,-2zM55,76l3,3 -3,3 -1,-1 2,-2 -2,-2z" />
+</vector>
