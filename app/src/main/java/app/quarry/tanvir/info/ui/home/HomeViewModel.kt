@@ -5,6 +5,8 @@ import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.quarry.tanvir.info.data.database.CategoryStat
+import app.quarry.tanvir.info.data.database.FileEntity
+import app.quarry.tanvir.info.data.database.ScanSnapshotEntity
 import app.quarry.tanvir.info.data.filesystem.FastStorageScanner
 import app.quarry.tanvir.info.domain.analyzer.StorageAnalyzer
 import app.quarry.tanvir.info.domain.analyzer.StorageOverviewData
@@ -15,8 +17,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import java.io.File
 
 data class HomeUiState(
     val overview: StorageOverviewData = StorageOverviewData(),
@@ -38,7 +38,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         repository.getApkFiles(),
         repository.getScreenshots(),
         _permissionState
-    ) { scanState, categoryStats, snapshots, largeFiles, apks, screenshots, hasPermission ->
+    ) { args ->
+        @Suppress("UNCHECKED_CAST")
+        val scanState = args[0] as ScanState
+        @Suppress("UNCHECKED_CAST")
+        val categoryStats = args[1] as List<CategoryStat>
+        @Suppress("UNCHECKED_CAST")
+        val snapshots = args[2] as List<ScanSnapshotEntity>
+        @Suppress("UNCHECKED_CAST")
+        val largeFiles = args[3] as List<FileEntity>
+        @Suppress("UNCHECKED_CAST")
+        val apks = args[4] as List<FileEntity>
+        @Suppress("UNCHECKED_CAST")
+        val screenshots = args[5] as List<FileEntity>
+        val hasPermission = args[6] as Boolean
 
         val rootDir = Environment.getExternalStorageDirectory()
         val totalBytes = FastStorageScanner.getTotalStorageBytes(rootDir)

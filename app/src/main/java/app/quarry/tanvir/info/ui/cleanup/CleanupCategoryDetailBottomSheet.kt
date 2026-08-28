@@ -44,7 +44,8 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.cleanup.CleanupCandidateGroup
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.model.StorageItem
-import app.quarry.tanvir.info.ui.components.CategoryVisuals
+import app.quarry.tanvir.info.ui.components.getColor
+import app.quarry.tanvir.info.ui.components.getIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,8 +115,8 @@ fun CleanupCategoryDetailBottomSheet(
             ) {
                 items(group.items, key = { it.path }) { item ->
                     val isSelected = selectedPaths.contains(item.path)
-                    val icon = CategoryVisuals.getIcon(item.category)
-                    val color = CategoryVisuals.getColor(item.category)
+                    val icon = item.category.getIcon()
+                    val color = item.category.getColor()
 
                     Card(
                         modifier = Modifier

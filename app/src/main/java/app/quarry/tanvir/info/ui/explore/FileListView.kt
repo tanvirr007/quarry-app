@@ -1,6 +1,7 @@
 package app.quarry.tanvir.info.ui.explore
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,11 +33,13 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import app.quarry.tanvir.info.ui.components.CategoryVisuals
+import app.quarry.tanvir.info.ui.components.getColor
+import app.quarry.tanvir.info.ui.components.getIcon
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileListView(
     files: List<FileEntity>,
@@ -68,8 +71,8 @@ fun FileListView(
         items(files, key = { it.path }) { file ->
             val isSelected = selectedPaths.contains(file.path)
             val category = StorageCategory.fromExtension(file.extension)
-            val icon = if (file.isDirectory) Icons.Rounded.Folder else CategoryVisuals.getIcon(category)
-            val color = if (file.isDirectory) MaterialTheme.colorScheme.primary else CategoryVisuals.getColor(category)
+            val icon = if (file.isDirectory) Icons.Rounded.Folder else category.getIcon()
+            val color = if (file.isDirectory) MaterialTheme.colorScheme.primary else category.getColor()
 
             val dateStr = if (file.lastModified > 0) {
                 SimpleDateFormat("MMM dd, yyyy", Locale.US).format(Date(file.lastModified))

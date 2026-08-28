@@ -49,7 +49,8 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import app.quarry.tanvir.info.ui.components.CategoryVisuals
+import app.quarry.tanvir.info.ui.components.getColor
+import app.quarry.tanvir.info.ui.components.getIcon
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -68,8 +69,8 @@ fun FileDetailsBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
     val category = StorageCategory.fromExtension(file.extension)
-    val icon = CategoryVisuals.getIcon(category)
-    val color = CategoryVisuals.getColor(category)
+    val icon = category.getIcon()
+    val color = category.getColor()
 
     val dateFormatted = if (file.lastModified > 0) {
         SimpleDateFormat("MMMM dd, yyyy HH:mm", Locale.US).format(Date(file.lastModified))

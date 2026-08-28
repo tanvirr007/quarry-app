@@ -34,7 +34,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.treemap.TreemapNode
-import app.quarry.tanvir.info.ui.components.CategoryVisuals
+import app.quarry.tanvir.info.ui.components.getColor
 
 @Composable
 fun TreemapCanvas(
@@ -125,9 +125,9 @@ fun TreemapCanvas(
 
                 if (width > 2 && height > 2) {
                     val baseColor = if (node.isDirectory) {
-                        CategoryVisuals.getColor(node.category).copy(alpha = 0.85f)
+                        node.category.getColor().copy(alpha = 0.85f)
                     } else {
-                        CategoryVisuals.getColor(node.category)
+                        node.category.getColor()
                     }
 
                     // Fill Rectangle

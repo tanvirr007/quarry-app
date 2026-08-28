@@ -32,7 +32,8 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import app.quarry.tanvir.info.ui.components.CategoryVisuals
+import app.quarry.tanvir.info.ui.components.getColor
+import app.quarry.tanvir.info.ui.components.getIcon
 
 @Composable
 fun LargestFilesView(
@@ -59,8 +60,8 @@ fun LargestFilesView(
     ) {
         itemsIndexed(files, key = { _, file -> file.path }) { index, file ->
             val category = StorageCategory.fromExtension(file.extension)
-            val icon = CategoryVisuals.getIcon(category)
-            val color = CategoryVisuals.getColor(category)
+            val icon = category.getIcon()
+            val color = category.getColor()
             val progressFraction = (file.size.toFloat() / maxSizeBytes.toFloat()).coerceIn(0.01f, 1f)
 
             Card(

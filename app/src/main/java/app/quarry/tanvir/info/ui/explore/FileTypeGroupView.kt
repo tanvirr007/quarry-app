@@ -38,7 +38,8 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import app.quarry.tanvir.info.ui.components.CategoryVisuals
+import app.quarry.tanvir.info.ui.components.getColor
+import app.quarry.tanvir.info.ui.components.getIcon
 
 @Composable
 fun FileTypeGroupView(
@@ -71,8 +72,8 @@ fun FileTypeGroupView(
     ) {
         items(grouped, key = { it.first.name }) { (category, catFiles) ->
             var isExpanded by remember { mutableStateOf(false) }
-            val icon = CategoryVisuals.getIcon(category)
-            val color = CategoryVisuals.getColor(category)
+            val icon = category.getIcon()
+            val color = category.getColor()
             val totalBytes = catFiles.sumOf { it.size }
 
             Card(
