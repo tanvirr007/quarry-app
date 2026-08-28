@@ -1,6 +1,7 @@
 package app.quarry.tanvir.info.ui.cleanup
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -71,6 +72,19 @@ fun CleanupScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     val activity = context as? FragmentActivity
+
+    // Prioritized Back handling: Delete Dialog -> Trash Dialog -> Candidate Group Sheet -> System (Home)
+    val hasActiveCleanupOverlay = uiState.isDeleteCountdownVisible ||
+            uiState.isTrashDialogVisible ||
+            uiState.activeCandidateGroup != null
+
+    BackHandler(enabled = hasActiveCleanupOverlay) {
+        when {
+            uiState.isDeleteCountdownVisible -> viewModel.dismissDeleteDialog()
+            uiState.isTrashDialogVisible -> viewModel.closeTrashDialog()
+            uiState.activeCandidateGroup != null -> viewModel.closeCandidateGroup()
+        }
+    }
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { msg ->

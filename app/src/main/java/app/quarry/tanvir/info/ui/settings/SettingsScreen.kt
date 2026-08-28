@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.fragment.app.FragmentActivity
 
 @Composable
@@ -58,6 +59,19 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     val activity = context as? FragmentActivity
+
+    // Prioritized Back handling: Theme Dialog -> Volumes Dialog -> Exclusions Dialog -> System (Home)
+    val hasActiveSettingsDialog = uiState.isThemeDialogVisible ||
+            uiState.isVolumesDialogVisible ||
+            uiState.isExclusionsDialogVisible
+
+    BackHandler(enabled = hasActiveSettingsDialog) {
+        when {
+            uiState.isThemeDialogVisible -> viewModel.hideThemeDialog()
+            uiState.isVolumesDialogVisible -> viewModel.hideVolumesDialog()
+            uiState.isExclusionsDialogVisible -> viewModel.hideExclusionsDialog()
+        }
+    }
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { msg ->

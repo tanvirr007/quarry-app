@@ -72,9 +72,29 @@ fun ExploreScreen(
     val context = LocalContext.current
     val activity = context as? FragmentActivity
 
-    // Handle Android Back gesture to navigate up folder hierarchy
-    BackHandler(enabled = uiState.currentPath != Environment.getExternalStorageDirectory().absolutePath) {
-        viewModel.navigateUp()
+    // Prioritized Back handling: Dialogs -> Details Sheet -> Selection -> Search -> Folder Hierarchy -> System (Home)
+    val isFolderViewMode = uiState.viewMode == ExploreViewMode.TREEMAP ||
+            uiState.viewMode == ExploreViewMode.LIST ||
+            uiState.viewMode == ExploreViewMode.FOLDERS
+    val canNavigateUpFolder = isFolderViewMode &&
+            uiState.currentPath != Environment.getExternalStorageDirectory().absolutePath
+
+    val hasActiveExploreState = uiState.isDeleteCountdownVisible ||
+            uiState.activeRenameFile != null ||
+            uiState.activeDetailsFile != null ||
+            uiState.isSelectionMode ||
+            uiState.searchQuery.isNotEmpty() ||
+            canNavigateUpFolder
+
+    BackHandler(enabled = hasActiveExploreState) {
+        when {
+            uiState.isDeleteCountdownVisible -> viewModel.dismissDeleteDialog()
+            uiState.activeRenameFile != null -> viewModel.dismissRename()
+            uiState.activeDetailsFile != null -> viewModel.hideDetails()
+            uiState.isSelectionMode -> viewModel.clearSelection()
+            uiState.searchQuery.isNotEmpty() -> viewModel.setSearchQuery("")
+            canNavigateUpFolder -> viewModel.navigateUp()
+        }
     }
 
     // User Message Toast
