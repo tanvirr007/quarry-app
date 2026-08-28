@@ -26,6 +26,7 @@ data class SettingsUiState(
     val isThemeDialogVisible: Boolean = false,
     val isVolumesDialogVisible: Boolean = false,
     val isExclusionsDialogVisible: Boolean = false,
+    val isDevInfoVisible: Boolean = false,
     val userMessage: String? = null
 )
 
@@ -39,6 +40,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isThemeDialogVisible = MutableStateFlow(false)
     private val _isVolumesDialogVisible = MutableStateFlow(false)
     private val _isExclusionsDialogVisible = MutableStateFlow(false)
+    private val _isDevInfoVisible = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -61,9 +63,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         combine(
             _isThemeDialogVisible,
             _isVolumesDialogVisible,
-            _isExclusionsDialogVisible
-        ) { themeD, volD, exclD ->
-            listOf(themeD, volD, exclD)
+            _isExclusionsDialogVisible,
+            _isDevInfoVisible
+        ) { themeD, volD, exclD, devInfoD ->
+            listOf(themeD, volD, exclD, devInfoD)
         },
         _userMessage
     ) { baseState, volumes, dialogStates, userMsg ->
@@ -72,6 +75,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isThemeDialogVisible = dialogStates[0],
             isVolumesDialogVisible = dialogStates[1],
             isExclusionsDialogVisible = dialogStates[2],
+            isDevInfoVisible = dialogStates[3],
             userMessage = userMsg
         )
     }.stateIn(
@@ -178,4 +182,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun showExclusionsDialog() { _isExclusionsDialogVisible.value = true }
     fun hideExclusionsDialog() { _isExclusionsDialogVisible.value = false }
+
+    fun showDevInfo() { _isDevInfoVisible.value = true }
+    fun hideDevInfo() { _isDevInfoVisible.value = false }
 }

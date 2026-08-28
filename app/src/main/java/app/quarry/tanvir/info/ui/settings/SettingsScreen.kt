@@ -46,9 +46,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.fragment.app.FragmentActivity
+import androidx.compose.runtime.remember
 
 @Composable
 fun SettingsScreen(
@@ -60,13 +64,34 @@ fun SettingsScreen(
     val context = LocalContext.current
     val activity = context as? FragmentActivity
 
-    // Prioritized Back handling: Theme Dialog -> Volumes Dialog -> Exclusions Dialog -> System (Home)
-    val hasActiveSettingsDialog = uiState.isThemeDialogVisible ||
+    val packageInfo = remember(context) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    val versionName = packageInfo?.versionName ?: "1.0.0"
+    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        packageInfo?.longVersionCode ?: 1L
+    } else {
+        packageInfo?.versionCode?.toLong() ?: 1L
+    }
+
+    // Prioritized Back handling: Dev Info -> Theme Dialog -> Volumes Dialog -> Exclusions Dialog -> System (Home)
+    val hasActiveSettingsDialog = uiState.isDevInfoVisible ||
+            uiState.isThemeDialogVisible ||
             uiState.isVolumesDialogVisible ||
             uiState.isExclusionsDialogVisible
 
     BackHandler(enabled = hasActiveSettingsDialog) {
         when {
+            uiState.isDevInfoVisible -> viewModel.hideDevInfo()
             uiState.isThemeDialogVisible -> viewModel.hideThemeDialog()
             uiState.isVolumesDialogVisible -> viewModel.hideVolumesDialog()
             uiState.isExclusionsDialogVisible -> viewModel.hideExclusionsDialog()
@@ -152,9 +177,16 @@ fun SettingsScreen(
         // 6. About Quarry
         SettingsActionItem(
             icon = Icons.Rounded.Info,
-            title = "Quarry v1.0.0",
-            subtitle = "See where your storage goes. 100% Offline & Private.",
-            onClick = {}
+            title = "Quarry v$versionName (Build $versionCode)",
+            subtitle = null,
+            onClick = { viewModel.showDevInfo() }
+        )
+    }
+
+    // Developer Info Full-Screen Dialog
+    if (uiState.isDevInfoVisible) {
+        DeveloperInfoDialog(
+            onDismiss = { viewModel.hideDevInfo() }
         )
     }
 
@@ -229,7 +261,7 @@ private fun ThemeSelectionDialog(
 private fun SettingsActionItem(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String? = null,
     onClick: () -> Unit
 ) {
     Card(
@@ -264,18 +296,30 @@ private fun SettingsActionItem(
                 )
             }
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
