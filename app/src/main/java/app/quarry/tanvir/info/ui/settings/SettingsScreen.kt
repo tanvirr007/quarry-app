@@ -117,10 +117,16 @@ fun SettingsScreen(
         )
 
         // 5. Storage Volumes
+        val volumeCount = uiState.detectedVolumes.size
+        val volumesSubtitle = if (volumeCount == 1) {
+            "1 drive detected (${uiState.detectedVolumes.firstOrNull()?.name ?: "Internal Storage"})"
+        } else {
+            "$volumeCount drives detected (${uiState.detectedVolumes.joinToString { it.name }})"
+        }
         SettingsActionItem(
             icon = Icons.Rounded.SdStorage,
             title = "Storage Volumes",
-            subtitle = "${uiState.detectedVolumes.size} drives detected (Internal, SD, USB)",
+            subtitle = volumesSubtitle,
             onClick = { viewModel.showVolumesDialog() }
         )
 

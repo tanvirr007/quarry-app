@@ -33,85 +33,99 @@ class StorageVolumeManager(private val context: Context) {
 
     fun getDetectedVolumes(): List<StorageVolumeInfo> {
         val volumeList = mutableListOf<StorageVolumeInfo>()
+        val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as? StorageManager
 
-        // 1. Primary Internal Storage
-        val internalDir = Environment.getExternalStorageDirectory()
-        val totalInternal = FastStorageScanner.getTotalStorageBytes(internalDir)
-        val freeInternal = FastStorageScanner.getFreeStorageBytes(internalDir)
-        val usedInternal = (totalInternal - freeInternal).coerceAtLeast(0L)
+        if (storageManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val volumes = storageManager.storageVolumes
+            for (vol in volumes) {
+                // Only consider mounted volumes
+                val state = vol.state
+                if (state != Environment.MEDIA_MOUNTED && state != Environment.MEDIA_MOUNTED_READ_ONLY) {
+                    continue
+                }
 
-        volumeList.add(
-            StorageVolumeInfo(
-                id = "internal_storage",
-                name = "Internal Storage",
-                path = internalDir.absolutePath,
-                totalBytes = totalInternal,
-                usedBytes = usedInternal,
-                freeBytes = freeInternal,
-                isPrimary = true,
-                isRemovable = false,
-                accessMode = VolumeAccessMode.DIRECT_FILESYSTEM,
-                supportsTreemap = true,
-                supportsDuplicateScan = true,
-                supportsTrash = true,
-                statusDescription = "Full feature support: Interactive Treemap, duplicate detection, cleanup, and trash restoration."
-            )
-        )
+                val isPrimary = vol.isPrimary
+                val isRemovable = vol.isRemovable
+                val name = vol.getDescription(context) ?: if (isPrimary) "Internal Storage" else "External Storage"
+                val dir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    vol.directory
+                } else {
+                    if (isPrimary) Environment.getExternalStorageDirectory() else null
+                } ?: if (isPrimary) Environment.getExternalStorageDirectory() else null
 
-        // 2. Removable SD Cards and External Volumes
-        val externalDirs = context.getExternalFilesDirs(null)
-        for (file in externalDirs) {
-            if (file != null && !file.absolutePath.startsWith(internalDir.absolutePath)) {
-                val rootPath = file.absolutePath.substringBefore("/Android")
-                val rootFile = File(rootPath)
-                val total = FastStorageScanner.getTotalStorageBytes(rootFile)
-                val free = FastStorageScanner.getFreeStorageBytes(rootFile)
-                val used = (total - free).coerceAtLeast(0L)
+                val total: Long
+                val free: Long
+                val used: Long
+                val isDirectAccess: Boolean
 
-                val isDirectAccess = rootFile.canRead()
+                if (dir != null && dir.exists()) {
+                    total = FastStorageScanner.getTotalStorageBytes(dir)
+                    free = FastStorageScanner.getFreeStorageBytes(dir)
+                    used = (total - free).coerceAtLeast(0L)
+                    isDirectAccess = dir.canRead()
+                } else {
+                    total = 0L
+                    free = 0L
+                    used = 0L
+                    isDirectAccess = false
+                }
+
+                val accessMode = if (isDirectAccess) {
+                    VolumeAccessMode.DIRECT_FILESYSTEM
+                } else {
+                    VolumeAccessMode.SAF_ONLY
+                }
+
+                val id = if (isPrimary) "internal_storage" else (vol.uuid ?: "external_${vol.hashCode()}")
 
                 volumeList.add(
                     StorageVolumeInfo(
-                        id = "sd_card_${rootFile.name}",
-                        name = "SD Card (${rootFile.name})",
-                        path = rootPath,
+                        id = id,
+                        name = name,
+                        path = dir?.absolutePath ?: (if (isPrimary) Environment.getExternalStorageDirectory().absolutePath else "/storage/$id"),
                         totalBytes = total,
                         usedBytes = used,
                         freeBytes = free,
-                        isPrimary = false,
-                        isRemovable = true,
-                        accessMode = if (isDirectAccess) VolumeAccessMode.DIRECT_FILESYSTEM else VolumeAccessMode.SAF_ONLY,
+                        isPrimary = isPrimary,
+                        isRemovable = isRemovable,
+                        accessMode = accessMode,
                         supportsTreemap = isDirectAccess,
                         supportsDuplicateScan = isDirectAccess,
                         supportsTrash = isDirectAccess,
-                        statusDescription = if (isDirectAccess) {
+                        statusDescription = if (isPrimary) {
+                            "Full feature support: Interactive Treemap, duplicate detection, cleanup, and trash restoration."
+                        } else if (isDirectAccess) {
                             "Direct filesystem access available. Full Treemap and duplicate scanning enabled."
                         } else {
-                            "SAF fallback mode. Browse, search, and delete supported. Real-time treemap disabled."
+                            "Storage Access Framework (SAF) mode. Browse, search, and delete supported."
                         }
                     )
                 )
             }
         }
 
-        // 3. USB OTG Entry (Status tracking)
-        val hasUsbOtg = volumeList.any { it.name.contains("USB", ignoreCase = true) }
-        if (!hasUsbOtg) {
+        // Fallback if system storageManager returned empty list
+        if (volumeList.isEmpty()) {
+            val internalDir = Environment.getExternalStorageDirectory()
+            val totalInternal = FastStorageScanner.getTotalStorageBytes(internalDir)
+            val freeInternal = FastStorageScanner.getFreeStorageBytes(internalDir)
+            val usedInternal = (totalInternal - freeInternal).coerceAtLeast(0L)
+
             volumeList.add(
                 StorageVolumeInfo(
-                    id = "usb_otg",
-                    name = "USB OTG Storage",
-                    path = "/storage/usb",
-                    totalBytes = 0L,
-                    usedBytes = 0L,
-                    freeBytes = 0L,
-                    isPrimary = false,
-                    isRemovable = true,
-                    accessMode = VolumeAccessMode.NOT_CONNECTED,
-                    supportsTreemap = false,
-                    supportsDuplicateScan = false,
-                    supportsTrash = false,
-                    statusDescription = "Not connected. When connected, SAF access enables file browsing, search, and delete."
+                    id = "internal_storage",
+                    name = "Internal Storage",
+                    path = internalDir.absolutePath,
+                    totalBytes = totalInternal,
+                    usedBytes = usedInternal,
+                    freeBytes = freeInternal,
+                    isPrimary = true,
+                    isRemovable = false,
+                    accessMode = VolumeAccessMode.DIRECT_FILESYSTEM,
+                    supportsTreemap = true,
+                    supportsDuplicateScan = true,
+                    supportsTrash = true,
+                    statusDescription = "Full feature support: Interactive Treemap, duplicate detection, cleanup, and trash restoration."
                 )
             )
         }
