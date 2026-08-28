@@ -181,7 +181,9 @@ fun TrashManagementDialog(
                             Text(
                                 text = "Empty Trash",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -229,19 +231,24 @@ fun TrashManagementDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             TextButton(
                                 onClick = {
                                     selectedIds = if (allSelected) emptySet() else filteredItems.map { it.id }.toSet()
-                                }
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                             ) {
-                                Text(if (allSelected) "Deselect All" else "Select All")
+                                Text(
+                                    text = if (allSelected) "Deselect All" else "Select All",
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FilledTonalButton(
                                     onClick = {
                                         val toRestore = selectedIds.toList()
@@ -249,7 +256,7 @@ fun TrashManagementDialog(
                                         onRestoreSelected(toRestore)
                                     },
                                     shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.RestoreFromTrash,
@@ -257,7 +264,11 @@ fun TrashManagementDialog(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Restore (${selectedIds.size})")
+                                    Text(
+                                        text = "Restore",
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
                                 }
 
                                 Button(
@@ -267,7 +278,7 @@ fun TrashManagementDialog(
                                         containerColor = MaterialTheme.colorScheme.error,
                                         contentColor = MaterialTheme.colorScheme.onError
                                     ),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.DeleteForever,
@@ -275,7 +286,11 @@ fun TrashManagementDialog(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Delete (${selectedIds.size})")
+                                    Text(
+                                        text = "Delete",
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
                                 }
                             }
                         }
