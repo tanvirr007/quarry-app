@@ -43,12 +43,20 @@ enum class FileSortOrder(val displayName: String) {
     DATE_ASC("Date: Oldest first")
 }
 
-private data class Tuple5<A, B, C, D, E>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D,
-    val fifth: E
+private data class ExploreBaseState(
+    val path: String,
+    val mode: ExploreViewMode,
+    val query: String,
+    val category: StorageCategory?,
+    val sortOrder: FileSortOrder
+)
+
+private data class DialogState(
+    val selected: Set<String>,
+    val details: FileEntity?,
+    val rename: FileEntity?,
+    val deleteCandidates: List<FileEntity>,
+    val deleteVisible: Boolean
 )
 
 data class ExploreUiState(
@@ -94,31 +102,33 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _userMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<ExploreUiState> = combine(
-        combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder, prefsRepo.scanHiddenFiles, prefsRepo.isBiometricAuthEnabled) { path, mode, query, cat, sort, hidden, biometric ->
-            ExploreUiState(
-                currentPath = path,
-                viewMode = mode,
-                searchQuery = query,
-                selectedCategory = cat,
-                sortOrder = sort,
-                showHiddenFiles = hidden,
-                isBiometricEnabled = biometric
-            )
+        combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder) { path, mode, query, cat, sort ->
+            ExploreBaseState(path, mode, query, cat, sort)
+        },
+        combine(prefsRepo.scanHiddenFiles, prefsRepo.isBiometricAuthEnabled) { hidden, biometric ->
+            Pair(hidden, biometric)
         },
         combine(_selectedPaths, _activeDetailsFile, _activeRenameFile, _activeDeleteCandidates, _isDeleteCountdownVisible) { selected, details, rename, deleteCandidates, deleteVisible ->
-            Tuple5(selected, details, rename, deleteCandidates, deleteVisible)
+            DialogState(selected, details, rename, deleteCandidates, deleteVisible)
         },
         combine(_userMessage, repository.getLargestFiles(100)) { msg, largest ->
             Pair(msg, largest)
         }
-    ) { baseState, selectionAndDialogs, msgAndLargest ->
-        baseState.copy(
-            selectedPaths = selectionAndDialogs.first,
-            isSelectionMode = selectionAndDialogs.first.isNotEmpty(),
-            activeDetailsFile = selectionAndDialogs.second,
-            activeRenameFile = selectionAndDialogs.third,
-            activeDeleteCandidates = selectionAndDialogs.fourth,
-            isDeleteCountdownVisible = selectionAndDialogs.fifth,
+    ) { base, prefs, dialogs, msgAndLargest ->
+        ExploreUiState(
+            currentPath = base.path,
+            viewMode = base.mode,
+            searchQuery = base.query,
+            selectedCategory = base.category,
+            sortOrder = base.sortOrder,
+            showHiddenFiles = prefs.first,
+            isBiometricEnabled = prefs.second,
+            selectedPaths = dialogs.selected,
+            isSelectionMode = dialogs.selected.isNotEmpty(),
+            activeDetailsFile = dialogs.details,
+            activeRenameFile = dialogs.rename,
+            activeDeleteCandidates = dialogs.deleteCandidates,
+            isDeleteCountdownVisible = dialogs.deleteVisible,
             userMessage = msgAndLargest.first,
             largestFiles = msgAndLargest.second
         )
@@ -282,7 +292,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         file: FileEntity,
         newName: String
     ) {
-        val performRename = {
+        val performRename: () -> Unit = {
             viewModelScope.launch {
                 val result = fileOps.renameFile(file.path, newName)
                 if (result.isSuccess) {
@@ -341,7 +351,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         activity: FragmentActivity?,
         candidates: List<FileEntity>
     ) {
-        val performDelete = {
+        val performDelete: () -> Unit = {
             viewModelScope.launch {
                 val paths = candidates.map { it.path }
                 val results = fileOps.bulkDelete(paths)

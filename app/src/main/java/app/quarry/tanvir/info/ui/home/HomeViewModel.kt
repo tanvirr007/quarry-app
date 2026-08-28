@@ -186,7 +186,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun renameFile(activity: FragmentActivity?, file: FileEntity, newName: String) {
-        val performRename = {
+        val performRename: () -> Unit = {
             viewModelScope.launch(Dispatchers.IO) {
                 val result = fileOperationsManager.renameFile(file.path, newName)
                 if (result.isSuccess) {
@@ -220,8 +220,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun moveToTrash(file: FileEntity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = fileOperationsManager.moveToTrash(file.path)
+            if (result.isSuccess) {
+                _userMessage.value = "Moved \"${file.name}\" to Trash"
+                _selectedDetailFile.value = null
+            } else {
+                _userMessage.value = "Failed to move to Trash: ${result.exceptionOrNull()?.message}"
+            }
+        }
+    }
+
     fun deleteFile(activity: FragmentActivity?, file: FileEntity) {
-        val performDelete = {
+        val performDelete: () -> Unit = {
             viewModelScope.launch(Dispatchers.IO) {
                 val result = fileOperationsManager.deletePermanently(file.path)
                 if (result.isSuccess) {

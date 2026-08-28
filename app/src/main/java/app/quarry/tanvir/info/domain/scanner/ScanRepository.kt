@@ -42,6 +42,7 @@ class ScanRepository(
     val latestSnapshot: Flow<ScanSnapshotEntity?> = database.scanSnapshotDao().getLatestSnapshot()
     val allSnapshots: Flow<List<ScanSnapshotEntity>> = database.scanSnapshotDao().getAllSnapshots()
 
+    fun getAllNonDirectoryFiles(): Flow<List<FileEntity>> = database.fileDao().getAllNonDirectoryFiles()
     fun getChildren(parentPath: String): Flow<List<FileEntity>> = database.fileDao().getChildren(parentPath)
     fun getFilesByCategory(category: String): Flow<List<FileEntity>> = database.fileDao().getFilesByCategory(category)
     fun getLargestFiles(limit: Int = 100): Flow<List<FileEntity>> = database.fileDao().getLargestFiles(limit)

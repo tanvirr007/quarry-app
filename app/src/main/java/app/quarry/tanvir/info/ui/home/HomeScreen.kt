@@ -197,6 +197,7 @@ fun HomeScreen(
             onOpen = { viewModel.openFile(it) },
             onShare = { viewModel.shareFile(it) },
             onRename = { renamingFile = it },
+            onMoveToTrash = { viewModel.moveToTrash(it) },
             onDelete = { viewModel.deleteFile(activity, it) },
             onOpenContainingFolder = {
                 viewModel.selectDetailFile(null)

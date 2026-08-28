@@ -223,7 +223,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         activity: FragmentActivity?,
         items: List<StorageItem>
     ) {
-        val performDelete = {
+        val performDelete: () -> Unit = {
             viewModelScope.launch {
                 val paths = items.map { it.path }
                 val results = fileOps.bulkDelete(paths)
@@ -298,7 +298,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         activity: FragmentActivity?,
         trashId: String
     ) {
-        val performDelete = {
+        val performDelete: () -> Unit = {
             viewModelScope.launch {
                 val result = trashManager.deletePermanently(trashId)
                 if (result.isSuccess) {
@@ -336,7 +336,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         trashIds: List<String>
     ) {
         if (trashIds.isEmpty()) return
-        val performDelete = {
+        val performDelete: () -> Unit = {
             viewModelScope.launch {
                 val results = trashManager.deletePermanentlyBatch(trashIds)
                 val count = results.count { it.value }
@@ -367,7 +367,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun emptyTrash(activity: FragmentActivity?) {
-        val performEmpty = {
+        val performEmpty: () -> Unit = {
             viewModelScope.launch {
                 val result = trashManager.emptyTrash()
                 if (result.isSuccess) {
