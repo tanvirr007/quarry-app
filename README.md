@@ -7,8 +7,7 @@
 [![Android](https://img.shields.io/badge/Android-12.0%2B%20(API%2031%2B)-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2024.12.01-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Material 3](https://img.shields.io/badge/Material%20Design-3-6750A4?style=flat&logo=materialdesign&logoColor=white)](https://m3.material.io)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Material 3](https://img.shields.io/badge/Material_3-M3-6750A4?style=flat&logo=materialdesign&logoColor=white)](https://m3.material.io)
 
 <br/>
 
@@ -24,15 +23,25 @@
 
 ## Features
 
-- **Deep Storage Visualization**: Interactive breakdown of internal storage usage by category (Videos, Images, Apps, Documents, Audio, Archives, APKs, and more).
-- **File Explorer**: Browse and inspect files, directories, and file metadata with high performance.
+- **Interactive Treemap Visualization**:
+  - Hardware-accelerated squarified treemaps with guaranteed minimum tile visibility so small files and directories never collapse into unclickable slivers.
+  - Proximity-aware single-tap folder navigation and file inspection.
+  - Distinct, vibrant HSL gradient colors and labels for every file and folder.
+- **Versatile File Explorer**:
+  - Switch seamlessly between Treemap, List, Largest Files, Categories/Types, and Folders views.
+  - Breadcrumb navigation with hierarchical directory traversal and system back integration.
+  - Search, sort by size/name/date, and toggle hidden dotfiles.
+  - Multi-select batch actions for Trash and permanent Deletion.
 - **Smart Cleanup**:
-  - Identify and safely remove duplicate files and residual junk.
-  - Discover large files occupying significant space.
-  - Locate obsolete APK packages, empty folders, and orphaned data.
-- **Biometric Security**: Protect file browsing and sensitive storage details using device biometric authentication / PIN lock.
-- **Material You & Theming**: Dynamic color theming with complete support for System, Dark, and Light modes.
-- **100% Offline & Private**: Zero tracking, zero analytics, zero network data transmission. Everything stays on your phone.
+  - Identify and safely clean duplicate files with collapsible group sets and recoverable space badges.
+  - Discover large files occupying significant storage.
+  - Locate obsolete APK packages, empty directories, and orphaned caches.
+- **Full-Screen Settings & Management**:
+  - Appearance dialog with live theme preview cards (System, Light, Dark, Dynamic Material You).
+  - Excluded Folders manager with preset chips and custom folder selection.
+  - Storage Volumes overview with capacity statistics and filesystem capability badges.
+- **Biometric Security**: Protect file browsing and sensitive storage details using device biometric authentication or PIN lock.
+- **100% Offline & Private**: Zero tracking, zero analytics, zero network data transmission. All scanning and analysis stay on your device.
 
 ---
 
@@ -70,14 +79,14 @@ quarry-app/
 │       │   ├── MainActivity.kt   # App root & theme provider
 │       │   ├── QuarryApp.kt      # Application initialization
 │       │   ├── data/             # Database, preferences & repositories
-│       │   ├── domain/           # Use cases & business logic
+│       │   ├── domain/           # Use cases, treemap engine, volumes, security & business logic
 │       │   ├── ui/               # Compose screens & components
-│       │   │   ├── cleanup/      # Storage cleanup UI
-│       │   │   ├── explore/      # File explorer UI
+│       │   │   ├── cleanup/      # Storage cleanup & duplicate group UI
+│       │   │   ├── explore/      # Treemap canvas & file explorer UI
 │       │   │   ├── home/         # Storage dashboard UI
 │       │   │   ├── navigation/   # Navigation bar & routing
 │       │   │   ├── onboarding/   # Permissions & onboarding dialogs
-│       │   │   ├── settings/     # Settings UI
+│       │   │   ├── settings/     # Settings UI & full-screen dialogs
 │       │   │   └── theme/        # Material 3 theme & color system
 │       │   └── worker/           # Background workers
 │       └── res/                  # Drawables, strings, mipmaps

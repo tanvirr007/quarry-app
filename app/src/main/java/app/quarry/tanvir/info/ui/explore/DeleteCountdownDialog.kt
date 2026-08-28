@@ -23,11 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import kotlinx.coroutines.delay
 
 @Composable
 fun DeleteCountdownDialog(
@@ -45,15 +39,6 @@ fun DeleteCountdownDialog(
     onConfirmAuthenticatedDelete: () -> Unit
 ) {
     if (candidates.isEmpty()) return
-
-    var secondsRemaining by remember { mutableIntStateOf(5) }
-
-    LaunchedEffect(Unit) {
-        while (secondsRemaining > 0) {
-            delay(1000L)
-            secondsRemaining -= 1
-        }
-    }
 
     val totalBytes = candidates.sumOf { it.size }
     val isBulk = candidates.size > 1
@@ -150,17 +135,14 @@ fun DeleteCountdownDialog(
         confirmButton = {
             Button(
                 onClick = onConfirmAuthenticatedDelete,
-                enabled = secondsRemaining == 0,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
-                    disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
-                    disabledContentColor = MaterialTheme.colorScheme.onError.copy(alpha = 0.6f)
+                    contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
                 Text(
-                    text = if (secondsRemaining > 0) "Delete ($secondsRemaining)" else "Delete",
+                    text = "Delete",
                     fontWeight = FontWeight.Bold
                 )
             }

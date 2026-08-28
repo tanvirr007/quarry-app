@@ -10,6 +10,7 @@ Welcome to **Quarry** (`app.quarry.tanvir.info`). This document outlines reposit
 
 - **100% Offline & Private**: All storage scanning, size calculation, and file operations occur entirely on-device. No telemetry, no external network uploads.
 - **Modern Android Native**: Targets Android 12.0+ (API 31+) through Android 16 (API 36), leveraging modern platform APIs, Coroutines, Flow, and Material You theming.
+- **Visual Storage Breakdown**: Hardware-accelerated squarified treemaps with guaranteed minimum tile visibility, list explorers, and duplicate/large file cleaners.
 
 ---
 
@@ -21,7 +22,7 @@ Welcome to **Quarry** (`app.quarry.tanvir.info`). This document outlines reposit
 - **Typography**: Google Sans Rounded embedded font family (`res/font/google_sans_rounded.ttf`)
 - **Local Persistence**:
   - **Room Database** `2.6.1` (with KSP `2.0.21-1.0.28`) for file metadata indexing and cache.
-  - **DataStore Preferences** `1.1.1` for user settings (theme, sort preferences, onboarding flags).
+  - **DataStore Preferences** `1.1.1` for user settings (theme, sort preferences, onboarding flags, scan exclusions).
 - **Background Processing**: Jetpack **WorkManager** `2.10.0` + Kotlinx Coroutines `1.9.0`
 - **Security**: AndroidX **Biometric** `1.2.0-alpha05` for biometric / PIN protection.
 - **CI/CD**: GitHub Actions with live Telegram bot build monitoring & release dispatch.
@@ -37,26 +38,38 @@ app/src/main/java/app/quarry/tanvir/info/
 ├── MainActivity.kt               # Single-activity container, theme/onboarding root
 ├── QuarryApp.kt                  # Application class
 ├── data/                         # Repositories, Room DAOs, DataStore, file scanners
-│   ├── database/                 # Room database, entities, DAOs
+│   ├── database/                 # Room database, entities, DAOs (QuarryDatabase, FileDao, FileEntity)
 │   ├── model/                    # Data models, category enums, file items
 │   ├── preferences/              # DataStore user preferences & theme management
 │   └── repository/               # Repository implementations
 ├── domain/                       # Use cases and domain business logic
+│   ├── file/                     # File operations (trash, delete, rename, batch actions)
+│   ├── model/                    # Domain models (StorageCategory, StorageFormatter)
+│   ├── scanner/                  # Local storage scanners & metadata indexing
+│   ├── security/                 # Biometric authentication management
+│   ├── treemap/                  # Treemap layout engine (squarified algorithm, node hierarchy)
+│   └── volume/                   # Storage volume manager (internal & external volumes)
 ├── ui/                           # Jetpack Compose UI layer
 │   ├── cleanup/                  # Storage cleaner & duplicate/large file screens
 │   ├── components/               # Reusable UI widgets (cards, charts, buttons, dialogs)
-│   ├── explore/                  # File manager / category browsing screens
-│   ├── home/                     # Dashboard, storage breakdown, visual graphs
+│   ├── explore/                  # Treemap canvas, file lists, category explorer, breadcrumb navigation
+│   ├── home/                     # Dashboard, storage breakdown, visual category charts
 │   ├── navigation/               # NavHost, screens, bottom navigation bar
 │   ├── onboarding/               # First-run permission & onboarding dialogs
-│   ├── settings/                 # App settings, theme selector, security options
+│   ├── settings/                 # Full-screen dialogs (Appearance, Exclusions, Storage Volumes) & settings
 │   └── theme/                    # Material 3 ColorScheme, Typography, Theme setup
 └── worker/                       # WorkManager workers (background scanning/cleanup)
 ```
 
 ---
 
-## 4. Coding Standards & Conventions
+## 4. Key Architectural Patterns
+
+### Treemap Engine & Visualization
+- **Squarified Treemap Algorithm**: `TreemapEngine` organizes directory hierarchies into squarified tiles maintaining optimal aspect ratios.
+- **Guaranteed Visible Floor**: Small files and directories are assigned a balanced minimum visual area floor (~3.5% canvas area) to prevent collapsing into invisible or unclickable 1px slivers.
+- **Proximity-Aware Hit Detection**: `TreemapCanvas` evaluates touch events with distance tolerances to ensure direct, effortless tapping for both small and large tiles.
+- **Color Harmonization**: Every file and directory is rendered with distinct, harmonized HSL gradient tiles and high-contrast labels.
 
 ### Jetpack Compose & UI
 - **Stateless Composables**: Keep UI components decoupled from ViewModel instances by hoisting state and passing event lambdas.
@@ -73,7 +86,8 @@ app/src/main/java/app/quarry/tanvir/info/
 
 ---
 
-### General Guidelines & Tone
+## 5. General Guidelines & Tone
+
 - **No Emojis**: Do not use emojis in commit messages, documentation, logs, or UI strings. Keep documentation clean, clear, and professional.
 - **Issue Tracking**: When addressing bugs or feature requests, consult the structured issue forms:
   - [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.yml) ([New Bug on GitHub](https://github.com/tanvirr007/quarry-app/issues/new?template=bug_report.yml))
@@ -83,7 +97,7 @@ app/src/main/java/app/quarry/tanvir/info/
 
 ---
 
-## 5. Build, Test & Release Workflow
+## 6. Build, Test & Release Workflow
 
 ### Local Commands
 - **Compile / Check**: `./gradlew assembleDebug`
