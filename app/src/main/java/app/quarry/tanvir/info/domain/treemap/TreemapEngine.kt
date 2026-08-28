@@ -101,25 +101,41 @@ object TreemapEngine {
 
     /**
      * Calculates squarified treemap layout for a list of items within target bounds [0, 0, width, height].
-     * Uses the Squarified Treemap Algorithm (Bruls et al.) to ensure aspect ratios close to 1.
+     * Uses the Squarified Treemap Algorithm with balanced minimum item weighting to ensure every file and directory
+     * is clearly visible, easily tappable, and never collapsed into unclickable narrow slivers.
      */
     fun layoutSquarified(
         items: List<TreemapNode>,
         bounds: TreemapRect
     ): List<TreemapNode> {
-        if (items.isEmpty() || bounds.width <= 0 || bounds.height <= 0) return emptyList()
+        if (items.isEmpty() || bounds.width <= 0f || bounds.height <= 0f) return emptyList()
 
-        val validItems = items.filter { it.size > 0 }.sortedByDescending { it.size }
-        if (validItems.isEmpty()) return emptyList()
+        val sortedItems = items.sortedByDescending { it.size }
+        if (sortedItems.isEmpty()) return emptyList()
 
-        val totalSize = validItems.sumOf { it.size }
-        if (totalSize == 0L) return emptyList()
+        val totalArea = (bounds.width * bounds.height).toDouble()
+        val n = sortedItems.size
 
-        val totalArea = bounds.width * bounds.height
-        val normalizedAreas = validItems.map { (it.size.toDouble() / totalSize.toDouble()) * totalArea }
+        // Calculate normalized areas with guaranteed minimum visible floor
+        // so smaller files and directories are clearly visible, distinct, and easily tappable.
+        val minFractionPerItem = (0.40 / n).coerceAtMost(0.035)
+        val guaranteedBaseArea = totalArea * minFractionPerItem
+        val totalGuaranteed = guaranteedBaseArea * n
+        val remainingArea = (totalArea - totalGuaranteed).coerceAtLeast(0.0)
+
+        val totalRawSize = sortedItems.sumOf { it.size }.coerceAtLeast(1L).toDouble()
+
+        val normalizedAreas = sortedItems.map { item ->
+            val proportionalShare = if (totalRawSize > 0) {
+                (item.size.toDouble() / totalRawSize) * remainingArea
+            } else {
+                0.0
+            }
+            guaranteedBaseArea + proportionalShare
+        }
 
         val result = mutableListOf<TreemapNode>()
-        squarify(validItems, normalizedAreas, bounds, result)
+        squarify(sortedItems, normalizedAreas, bounds, result)
         return result
     }
 
@@ -197,42 +213,46 @@ object TreemapEngine {
 
         if (isHorizontal) {
             // Horizontal slice (subdividing along height)
-            val rowHeight = (totalArea / rect.width).toFloat()
+            val rowHeight = (totalArea / rect.width).toFloat().coerceAtMost(rect.height)
             var currentX = rect.left
             for (i in row.indices) {
+                val isLast = (i == row.size - 1)
                 val itemWidth = (rowAreas[i] / rowHeight).toFloat()
+                val nextX = if (isLast) rect.right else (currentX + itemWidth).coerceAtMost(rect.right)
                 val itemRect = TreemapRect(
                     left = currentX,
                     top = rect.top,
-                    right = (currentX + itemWidth).coerceAtMost(rect.right),
+                    right = nextX,
                     bottom = (rect.top + rowHeight).coerceAtMost(rect.bottom)
                 )
                 result.add(row[i].copy(rect = itemRect))
-                currentX += itemWidth
+                currentX = nextX
             }
             return TreemapRect(
                 left = rect.left,
-                top = rect.top + rowHeight,
+                top = (rect.top + rowHeight).coerceAtMost(rect.bottom),
                 right = rect.right,
                 bottom = rect.bottom
             )
         } else {
             // Vertical slice (subdividing along width)
-            val rowWidth = (totalArea / rect.height).toFloat()
+            val rowWidth = (totalArea / rect.height).toFloat().coerceAtMost(rect.width)
             var currentY = rect.top
             for (i in row.indices) {
+                val isLast = (i == row.size - 1)
                 val itemHeight = (rowAreas[i] / rowWidth).toFloat()
+                val nextY = if (isLast) rect.bottom else (currentY + itemHeight).coerceAtMost(rect.bottom)
                 val itemRect = TreemapRect(
                     left = rect.left,
                     top = currentY,
                     right = (rect.left + rowWidth).coerceAtMost(rect.right),
-                    bottom = (currentY + itemHeight).coerceAtMost(rect.bottom)
+                    bottom = nextY
                 )
                 result.add(row[i].copy(rect = itemRect))
-                currentY += itemHeight
+                currentY = nextY
             }
             return TreemapRect(
-                left = rect.left + rowWidth,
+                left = (rect.left + rowWidth).coerceAtMost(rect.right),
                 top = rect.top,
                 right = rect.right,
                 bottom = rect.bottom
