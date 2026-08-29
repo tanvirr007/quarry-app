@@ -1,9 +1,13 @@
 package app.quarry.tanvir.info.domain.file
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.webkit.MimeTypeMap
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
@@ -137,14 +141,18 @@ class FileOperationsManager(
     }
 
     /**
-     * Opens a file using the system Default Intent.
+     * Opens a file using the system Default Intent with support for APK package installers.
      */
     fun openFile(filePath: String) {
         try {
             val file = File(filePath)
-            if (!file.exists()) return
+            if (!file.exists()) {
+                showToast("File does not exist")
+                return
+            }
 
             val uri = getUriForFile(file)
+            val extension = file.extension.lowercase(Locale.ROOT)
             val mimeType = getMimeType(file)
 
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -152,9 +160,26 @@ class FileOperationsManager(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+
             context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            try {
+                val file = File(filePath)
+                val uri = getUriForFile(file)
+                val fallbackIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "*/*")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val chooser = Intent.createChooser(fallbackIntent, "Open with").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(chooser)
+            } catch (ex: Exception) {
+                showToast("No application found to open this file")
+            }
         } catch (e: Exception) {
-            // Log or show toast
+            showToast("Failed to open file: ${e.localizedMessage}")
         }
     }
 
@@ -179,7 +204,13 @@ class FileOperationsManager(
             }
             context.startActivity(chooser)
         } catch (e: Exception) {
-            // Handle share failure
+            showToast("Failed to share file")
+        }
+    }
+
+    private fun showToast(message: String) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
