@@ -96,7 +96,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.10.1")
 
     // Jetpack Compose
-    val composeBom = platform("androidx.compose:compose-bom:2026.08.00")
+    val composeBom = platform("androidx.compose:compose-bom:2026.06.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -112,7 +112,7 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
     // Room Database
-    val roomVersion = "2.6.1"
+    val roomVersion = "2.8.4"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")

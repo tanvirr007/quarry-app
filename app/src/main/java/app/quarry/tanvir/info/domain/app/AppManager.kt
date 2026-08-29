@@ -8,6 +8,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Process
+import android.os.storage.StorageManager
 import android.provider.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -151,7 +152,7 @@ class AppManager(private val context: Context) {
             val statsManager =
                 context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
             // queryStatsForUid is available since API 26 (safe for minSdk 31).
-            val stats = statsManager.queryStatsForUid(appInfo.uid)
+            val stats = statsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, appInfo.uid)
             AppSizeInfo(
                 apkBytes = apkBytes,
                 dataBytes = stats.dataBytes,

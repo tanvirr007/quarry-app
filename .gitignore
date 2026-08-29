@@ -69,3 +69,7 @@ Thumbs.db
 # C++ / NDK builds
 .externalNativeBuild/
 .cxx/
+
+# Agent plans (local only, never commit)
+.agent/
+log.txt

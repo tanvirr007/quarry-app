@@ -74,7 +74,7 @@ interface FileDao {
     fun getApkFiles(): Flow<List<FileEntity>>
 
     @Query("SELECT * FROM files WHERE size >= :minSizeBytes AND isDirectory = 0 ORDER BY size DESC")
-    fun getLargeFiles(minSizeBytes: Long = 50 * 1024 * 1024L): Flow<List<FileEntity>>
+    fun getLargeFiles(minSizeBytes: Long): Flow<List<FileEntity>>
 
     @Query("SELECT * FROM files WHERE lastModified <= :beforeTimestamp AND isDirectory = 0 ORDER BY lastModified ASC")
     fun getOldFiles(beforeTimestamp: Long): Flow<List<FileEntity>>
