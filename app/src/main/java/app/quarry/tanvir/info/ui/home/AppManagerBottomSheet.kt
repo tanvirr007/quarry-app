@@ -64,7 +64,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.quarry.tanvir.info.domain.app.InstalledApp
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics

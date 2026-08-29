@@ -370,7 +370,7 @@ fun FileDetailsBottomSheet(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-            }}
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }

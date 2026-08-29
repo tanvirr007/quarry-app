@@ -92,8 +92,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isCategoryDialogVisible,
             _isDevInfoVisible,
             _isMiscDialogVisible
-        ) { themeD, volD, exclD, catD, devInfoD, miscD ->
-            listOf(themeD, volD, exclD, catD, devInfoD, miscD)
+        ) { dialogs: Array<Boolean> ->
+            dialogs.toList()
         },
         _userMessage
     ) { baseState, volumes, dialogStates, userMsg ->

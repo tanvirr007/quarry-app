@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.app.InstalledApp
+import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.ui.theme.CategoryApp
 
@@ -52,6 +53,7 @@ fun AppDetailsBottomSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val haptics = LocalQuarryHaptics.current
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -151,7 +153,6 @@ fun AppDetailsBottomSheet(
             }
 
             // Actions
-            val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
             if (app.isLaunchable) {
                 Button(
                     onClick = {

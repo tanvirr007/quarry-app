@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
 import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
+import app.quarry.tanvir.info.ui.components.getColor
+import app.quarry.tanvir.info.ui.components.getIcon
 
 @Composable
 fun QuickInsightsSection(
