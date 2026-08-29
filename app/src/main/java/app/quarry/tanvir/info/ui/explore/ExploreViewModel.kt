@@ -101,6 +101,45 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _isDeleteCountdownVisible = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
 
+    private fun isExcludedPath(path: String, excluded: Set<String>): Boolean {
+        if (excluded.isEmpty()) return false
+        for (raw in excluded) {
+            val normalized = raw.trim().trimEnd('/')
+            if (normalized.isEmpty()) continue
+            if (path == normalized || path.startsWith("$normalized/")) return true
+            val stripped = normalized.removePrefix("/")
+            if (stripped.isEmpty()) continue
+            if (path == stripped || path == "/$stripped") return true
+            if (path.endsWith("/$stripped")) return true
+            if (path.contains("/$stripped/")) return true
+        }
+        return false
+    }
+
+    private fun filterHiddenAndExcluded(
+        files: List<FileEntity>,
+        showHidden: Boolean,
+        excluded: Set<String>
+    ): List<FileEntity> {
+        return files.filter { entity ->
+            val hiddenOk = showHidden || !entity.name.startsWith(".")
+            val excludedOk = !isExcludedPath(entity.path, excluded) && !isExcludedPath(entity.parentPath ?: "", excluded)
+            hiddenOk && excludedOk
+        }
+    }
+
+    private val filteredLargestFiles: StateFlow<List<FileEntity>> = combine(
+        repository.getLargestFiles(100),
+        prefsRepo.scanHiddenFiles,
+        prefsRepo.excludedFolders
+    ) { largest, showHidden, excluded ->
+        filterHiddenAndExcluded(largest, showHidden, excluded)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     val uiState: StateFlow<ExploreUiState> = combine(
         combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder) { path, mode, query, cat, sort ->
             ExploreBaseState(path, mode, query, cat, sort)
@@ -111,7 +150,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         combine(_selectedPaths, _activeDetailsFile, _activeRenameFile, _activeDeleteCandidates, _isDeleteCountdownVisible) { selected, details, rename, deleteCandidates, deleteVisible ->
             DialogState(selected, details, rename, deleteCandidates, deleteVisible)
         },
-        combine(_userMessage, repository.getLargestFiles(100)) { msg, largest ->
+        combine(_userMessage, filteredLargestFiles) { msg, largest ->
             Pair(msg, largest)
         }
     ) { base, prefs, dialogs, msgAndLargest ->
@@ -141,12 +180,17 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _directoryFiles = MutableStateFlow<List<FileEntity>>(emptyList())
     val directoryFiles: StateFlow<List<FileEntity>> = _directoryFiles.asStateFlow()
 
-    val allCategorizedFiles: StateFlow<List<FileEntity>> = repository.getAllNonDirectoryFiles()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    val allCategorizedFiles: StateFlow<List<FileEntity>> = combine(
+        repository.getAllNonDirectoryFiles(),
+        prefsRepo.scanHiddenFiles,
+        prefsRepo.excludedFolders
+    ) { files, showHidden, excluded ->
+        filterHiddenAndExcluded(files, showHidden, excluded)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     private val _treemapLayoutNodes = MutableStateFlow<List<TreemapNode>>(emptyList())
     val treemapLayoutNodes: StateFlow<List<TreemapNode>> = _treemapLayoutNodes.asStateFlow()
@@ -155,6 +199,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         loadDirectory(defaultRootPath)
         viewModelScope.launch {
             prefsRepo.scanHiddenFiles.collect {
+                loadDirectory(_currentPath.value)
+            }
+        }
+        viewModelScope.launch {
+            prefsRepo.excludedFolders.collect {
                 loadDirectory(_currentPath.value)
             }
         }
@@ -200,11 +249,8 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
             val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
             val children = db.fileDao().getChildrenSync(path)
             val showHidden = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
-            val visibleChildren = if (showHidden) {
-                children
-            } else {
-                children.filterNot { it.name.startsWith(".") }
-            }
+            val excluded = try { prefsRepo.excludedFolders.first() } catch (e: Exception) { emptySet() }
+            val visibleChildren = filterHiddenAndExcluded(children, showHidden, excluded)
             _directoryFiles.value = visibleChildren
 
             // Compute Treemap layout for this folder with latest known bounds
@@ -238,11 +284,8 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch(Dispatchers.Default) {
             val showHidden = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
-            val visibleChildren = if (showHidden) {
-                currentChildren
-            } else {
-                currentChildren.filterNot { it.name.startsWith(".") }
-            }
+            val excluded = try { prefsRepo.excludedFolders.first() } catch (e: Exception) { emptySet() }
+            val visibleChildren = filterHiddenAndExcluded(currentChildren, showHidden, excluded)
             val tree = TreemapEngine.buildTree(visibleChildren, _currentPath.value)
             val layout = TreemapEngine.layoutSquarified(
                 items = tree.children,

@@ -86,8 +86,8 @@ class FastStorageScanner {
                         continue
                     }
 
-                    // Check if folder is explicitly excluded
-                    if (excludedPaths.contains(child.absolutePath)) {
+                    // Check if folder is explicitly excluded (supports absolute, suffix, and name patterns)
+                    if (isExcludedPath(child.absolutePath, excludedPaths)) {
                         continue
                     }
 
@@ -192,6 +192,21 @@ class FastStorageScanner {
                 )
             )
         )
+    }
+
+    private fun isExcludedPath(path: String, excluded: Set<String>): Boolean {
+        if (excluded.isEmpty()) return false
+        for (raw in excluded) {
+            val normalized = raw.trim().trimEnd('/')
+            if (normalized.isEmpty()) continue
+            if (path == normalized || path.startsWith("$normalized/")) return true
+            val stripped = normalized.removePrefix("/")
+            if (stripped.isEmpty()) continue
+            if (path == stripped || path == "/$stripped") return true
+            if (path.endsWith("/$stripped")) return true
+            if (path.contains("/$stripped/")) return true
+        }
+        return false
     }
 
     private fun isScreenshotPath(path: String, name: String): Boolean {
