@@ -26,13 +26,29 @@ class AppManager(private val context: Context) {
     private val packageManager: PackageManager = context.packageManager
 
     fun hasUsageAccess(): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = appOps.unsafeCheckOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        )
-        return mode == AppOpsManager.MODE_ALLOWED
+        try {
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val mode = appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                context.packageName
+            )
+            if (mode == AppOpsManager.MODE_ALLOWED) return true
+
+            // Fallback: Check if StorageStatsManager can query stats for our UID without SecurityException
+            val statsManager =
+                context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
+            if (statsManager != null) {
+                statsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, Process.myUid())
+                return true
+            }
+        } catch (e: SecurityException) {
+            return false
+        } catch (e: Exception) {
+            // Non-security errors indicate the permission itself was granted
+            return true
+        }
+        return false
     }
 
     suspend fun getInstalledApps(includeSystemApps: Boolean = true): List<InstalledApp> =
