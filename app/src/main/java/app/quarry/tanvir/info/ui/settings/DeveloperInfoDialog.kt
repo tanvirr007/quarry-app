@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -275,24 +276,20 @@ fun DeveloperInfoDialog(
                     }
                 )
 
-                Spacer(modifier = Modifier.weight(1f, fill = false))
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Clean Bottom Copyright Footer
-                Box(
+                // Copyright — directly after GitHub for immediate visibility
+                Text(
+                    text = "© $currentYear TANVIR HASAN",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "© $currentYear TANVIR HASAN",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                        .padding(top = 4.dp, bottom = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
