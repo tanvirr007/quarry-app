@@ -15,12 +15,14 @@ import app.quarry.tanvir.info.domain.treemap.TreemapNode
 import app.quarry.tanvir.info.domain.treemap.TreemapRect
 import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -166,8 +168,18 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         initialValue = ExploreUiState()
     )
 
-    private val _directoryFiles = MutableStateFlow<List<FileEntity>>(emptyList())
-    val directoryFiles: StateFlow<List<FileEntity>> = _directoryFiles.asStateFlow()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val directoryFiles: StateFlow<List<FileEntity>> = combine(
+        _currentPath.flatMapLatest { path -> repository.getChildren(path) },
+        prefsRepo.scanHiddenFiles,
+        prefsRepo.excludedFolders
+    ) { children, showHidden, excluded ->
+        filterHiddenAndExcluded(children, showHidden, excluded)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     val allCategorizedFiles: StateFlow<List<FileEntity>> = combine(
         repository.getAllNonDirectoryFiles(),
@@ -181,22 +193,29 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-    private val _treemapLayoutNodes = MutableStateFlow<List<TreemapNode>>(emptyList())
-    val treemapLayoutNodes: StateFlow<List<TreemapNode>> = _treemapLayoutNodes.asStateFlow()
+    private val _canvasBounds = MutableStateFlow(Pair(1000f, 1000f))
 
-    init {
-        loadDirectory(defaultRootPath)
-        viewModelScope.launch {
-            prefsRepo.scanHiddenFiles.collect {
-                loadDirectory(_currentPath.value)
-            }
+    val treemapLayoutNodes: StateFlow<List<TreemapNode>> = combine(
+        directoryFiles,
+        _currentPath,
+        _canvasBounds
+    ) { visibleChildren, path, (widthPx, heightPx) ->
+        if (visibleChildren.isEmpty()) {
+            emptyList()
+        } else {
+            val w = if (widthPx > 0f) widthPx else 1000f
+            val h = if (heightPx > 0f) heightPx else 1000f
+            val tree = TreemapEngine.buildTree(visibleChildren, path)
+            TreemapEngine.layoutSquarified(
+                items = tree.children,
+                bounds = TreemapRect(0f, 0f, w, h)
+            )
         }
-        viewModelScope.launch {
-            prefsRepo.excludedFolders.collect {
-                loadDirectory(_currentPath.value)
-            }
-        }
-    }
+    }.flowOn(Dispatchers.Default).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     fun setViewMode(mode: ExploreViewMode) {
         _viewMode.value = mode
@@ -216,7 +235,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     fun navigateToDirectory(path: String) {
         _currentPath.value = path
-        loadDirectory(path)
     }
 
     fun navigateUp(): Boolean {
@@ -230,30 +248,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         return false
     }
 
-    private var lastBoundsWidth: Float = 0f
-    private var lastBoundsHeight: Float = 0f
-
-    private fun loadDirectory(path: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
-            val children = db.fileDao().getChildrenSync(path)
-            val showHidden = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
-            val excluded = try { prefsRepo.excludedFolders.first() } catch (e: Exception) { emptySet() }
-            val visibleChildren = filterHiddenAndExcluded(children, showHidden, excluded)
-            _directoryFiles.value = visibleChildren
-
-            // Compute Treemap layout for this folder with latest known bounds
-            val w = if (lastBoundsWidth > 0f) lastBoundsWidth else 1000f
-            val h = if (lastBoundsHeight > 0f) lastBoundsHeight else 1000f
-            val tree = TreemapEngine.buildTree(visibleChildren, path)
-            val layout = TreemapEngine.layoutSquarified(
-                items = tree.children,
-                bounds = TreemapRect(0f, 0f, w, h)
-            )
-            _treemapLayoutNodes.value = layout
-        }
-    }
-
     fun toggleShowHiddenFiles() {
         viewModelScope.launch {
             val current = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
@@ -263,24 +257,9 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     fun recalculateTreemap(widthPx: Float, heightPx: Float) {
         if (widthPx <= 0f || heightPx <= 0f) return
-        if (kotlin.math.abs(lastBoundsWidth - widthPx) < 1f && kotlin.math.abs(lastBoundsHeight - heightPx) < 1f && _treemapLayoutNodes.value.isNotEmpty()) {
-            return
-        }
-        lastBoundsWidth = widthPx
-        lastBoundsHeight = heightPx
-        val currentChildren = _directoryFiles.value
-        if (currentChildren.isEmpty()) return
-
-        viewModelScope.launch(Dispatchers.Default) {
-            val showHidden = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
-            val excluded = try { prefsRepo.excludedFolders.first() } catch (e: Exception) { emptySet() }
-            val visibleChildren = filterHiddenAndExcluded(currentChildren, showHidden, excluded)
-            val tree = TreemapEngine.buildTree(visibleChildren, _currentPath.value)
-            val layout = TreemapEngine.layoutSquarified(
-                items = tree.children,
-                bounds = TreemapRect(0f, 0f, widthPx, heightPx)
-            )
-            _treemapLayoutNodes.value = layout
+        val current = _canvasBounds.value
+        if (kotlin.math.abs(current.first - widthPx) > 1f || kotlin.math.abs(current.second - heightPx) > 1f) {
+            _canvasBounds.value = Pair(widthPx, heightPx)
         }
     }
 
@@ -295,7 +274,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun selectAll() {
-        val all = _directoryFiles.value.map { it.path }.toSet()
+        val all = directoryFiles.value.map { it.path }.toSet()
         _selectedPaths.value = all
     }
 
@@ -331,7 +310,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                     _userMessage.value = "Renamed to $newName"
                     _activeRenameFile.value = null
                     _activeDetailsFile.value = null
-                    loadDirectory(_currentPath.value)
                 } else {
                     _userMessage.value = result.exceptionOrNull()?.message ?: "Rename failed"
                 }
@@ -367,7 +345,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     fun promptDeleteSelected() {
         val paths = _selectedPaths.value
-        val files = _directoryFiles.value.filter { paths.contains(it.path) }
+        val files = directoryFiles.value.filter { paths.contains(it.path) }
         if (files.isNotEmpty()) {
             _activeDeleteCandidates.value = files
             _isDeleteCountdownVisible.value = true
@@ -393,7 +371,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                 _activeDeleteCandidates.value = emptyList()
                 _activeDetailsFile.value = null
                 clearSelection()
-                loadDirectory(_currentPath.value)
             }
         }
 
@@ -428,7 +405,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                 if (result.isSuccess) {
                     _userMessage.value = "Moved \"${file.name}\" to Trash"
                     _activeDetailsFile.value = null
-                    loadDirectory(_currentPath.value)
                 } else {
                     _userMessage.value = result.exceptionOrNull()?.message ?: "Failed to move to Trash"
                 }
@@ -467,7 +443,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                 val successCount = results.count { it.value }
                 _userMessage.value = "Moved $successCount items to Trash"
                 clearSelection()
-                loadDirectory(_currentPath.value)
             }
         }
 
