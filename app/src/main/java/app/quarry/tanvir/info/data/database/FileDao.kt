@@ -86,6 +86,17 @@ interface FileDao {
     suspend fun getPotentialDuplicateSizeCandidates(): List<FileEntity>
 
     @Transaction
+    suspend fun purgeExcludedFiles(isExcluded: (String) -> Boolean) {
+        val allFiles = getAllFilesSync()
+        val pathsToDelete = allFiles.filter { isExcluded(it.path) }.map { it.path }
+        if (pathsToDelete.isNotEmpty()) {
+            pathsToDelete.chunked(500).forEach { chunk ->
+                deleteByPaths(chunk)
+            }
+        }
+    }
+
+    @Transaction
     suspend fun replaceAllFiles(files: List<FileEntity>) {
         clearAll()
         // Insert in chunks of 500 to keep memory footprint flat

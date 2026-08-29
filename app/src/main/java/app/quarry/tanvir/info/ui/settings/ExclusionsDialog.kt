@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FolderOff
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,12 +36,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import app.quarry.tanvir.info.ui.components.FolderPickerDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -82,6 +85,7 @@ fun ExclusionsDialog(
     onDismiss: () -> Unit
 ) {
     var inputPath by remember { mutableStateOf("") }
+    var isFolderPickerVisible by remember { mutableStateOf(false) }
     val sortedExclusions = remember(excludedFolders) {
         excludedFolders.toList().sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
@@ -251,6 +255,19 @@ fun ExclusionsDialog(
                                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                                 )
                             )
+
+                            FilledTonalIconButton(
+                                onClick = { isFolderPickerVisible = true },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.size(52.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.FolderOpen,
+                                    contentDescription = "Browse Folders",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
 
                             FilledIconButton(
                                 onClick = submitInput,
@@ -440,6 +457,19 @@ fun ExclusionsDialog(
                     }
                 }
             }
+        }
+
+        if (isFolderPickerVisible) {
+            FolderPickerDialog(
+                onFolderSelected = { selectedPath ->
+                    if (onAddExclusions != null) {
+                        onAddExclusions(listOf(selectedPath))
+                    } else {
+                        onAddExclusion(selectedPath)
+                    }
+                },
+                onDismiss = { isFolderPickerVisible = false }
+            )
         }
     }
 }

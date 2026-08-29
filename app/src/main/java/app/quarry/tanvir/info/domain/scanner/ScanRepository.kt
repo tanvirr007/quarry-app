@@ -156,6 +156,13 @@ class ScanRepository(
         database.fileDao().getFileByPath(path)
     }
 
+    suspend fun purgeExcludedFiles(excludedPaths: Set<String>) = withContext(Dispatchers.IO) {
+        if (excludedPaths.isEmpty()) return@withContext
+        database.fileDao().purgeExcludedFiles { path ->
+            ExclusionMatcher.isExcluded(path, excludedPaths)
+        }
+    }
+
     companion object {
         @Volatile
         private var INSTANCE: ScanRepository? = null

@@ -14,6 +14,7 @@ import app.quarry.tanvir.info.domain.file.FileOperationsManager
 import app.quarry.tanvir.info.domain.file.TrashItem
 import app.quarry.tanvir.info.domain.file.TrashManager
 import app.quarry.tanvir.info.domain.model.StorageItem
+import app.quarry.tanvir.info.domain.scanner.ExclusionMatcher
 import app.quarry.tanvir.info.domain.scanner.ScanRepository
 import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
 import kotlinx.coroutines.Dispatchers
@@ -113,8 +114,16 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.getAllFiles().collect { allFiles ->
-                val candidates = cleanupEngine.getCandidatesFromEntities(allFiles)
+            combine(
+                repository.getAllFiles(),
+                prefsRepo.excludedFolders
+            ) { allFiles, excluded ->
+                val filtered = if (excluded.isEmpty()) allFiles else allFiles.filter { entity ->
+                    !ExclusionMatcher.isExcluded(entity.path, excluded) &&
+                            !ExclusionMatcher.isExcluded(entity.parentPath ?: "", excluded)
+                }
+                cleanupEngine.getCandidatesFromEntities(filtered)
+            }.collect { candidates ->
                 _candidateGroups.value = candidates
             }
         }
@@ -123,7 +132,12 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     fun loadCandidates() {
         viewModelScope.launch(Dispatchers.IO) {
             val allFiles = repository.getAllFilesSync()
-            val candidates = cleanupEngine.getCandidatesFromEntities(allFiles)
+            val excluded = prefsRepo.excludedFolders.first()
+            val filtered = if (excluded.isEmpty()) allFiles else allFiles.filter { entity ->
+                !ExclusionMatcher.isExcluded(entity.path, excluded) &&
+                        !ExclusionMatcher.isExcluded(entity.parentPath ?: "", excluded)
+            }
+            val candidates = cleanupEngine.getCandidatesFromEntities(filtered)
             _candidateGroups.value = candidates
         }
     }
@@ -135,7 +149,12 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
             try {
                 _duplicateScanState.value = DuplicateScanState.Scanning("Clustering identical file sizes…")
                 val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
-                val potentialCandidates = db.fileDao().getPotentialDuplicateSizeCandidates()
+                val rawCandidates = db.fileDao().getPotentialDuplicateSizeCandidates()
+                val excluded = prefsRepo.excludedFolders.first()
+                val potentialCandidates = if (excluded.isEmpty()) rawCandidates else rawCandidates.filter { entity ->
+                    !ExclusionMatcher.isExcluded(entity.path, excluded) &&
+                            !ExclusionMatcher.isExcluded(entity.parentPath ?: "", excluded)
+                }
 
                 if (potentialCandidates.isEmpty()) {
                     _duplicateScanState.value = DuplicateScanState.Completed(emptyList())

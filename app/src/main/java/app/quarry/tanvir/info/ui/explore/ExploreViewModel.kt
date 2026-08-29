@@ -101,21 +101,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _isDeleteCountdownVisible = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
 
-    private fun isExcludedPath(path: String, excluded: Set<String>): Boolean {
-        if (excluded.isEmpty()) return false
-        for (raw in excluded) {
-            val normalized = raw.trim().trimEnd('/')
-            if (normalized.isEmpty()) continue
-            if (path == normalized || path.startsWith("$normalized/")) return true
-            val stripped = normalized.removePrefix("/")
-            if (stripped.isEmpty()) continue
-            if (path == stripped || path == "/$stripped") return true
-            if (path.endsWith("/$stripped")) return true
-            if (path.contains("/$stripped/")) return true
-        }
-        return false
-    }
-
     private fun filterHiddenAndExcluded(
         files: List<FileEntity>,
         showHidden: Boolean,
@@ -126,7 +111,8 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
             // directories never consume layout area or list rows.
             if (entity.isDirectory && entity.size == 0L) return@filter false
             val hiddenOk = showHidden || !entity.name.startsWith(".")
-            val excludedOk = !isExcludedPath(entity.path, excluded) && !isExcludedPath(entity.parentPath ?: "", excluded)
+            val excludedOk = !app.quarry.tanvir.info.domain.scanner.ExclusionMatcher.isExcluded(entity.path, excluded) &&
+                    !app.quarry.tanvir.info.domain.scanner.ExclusionMatcher.isExcluded(entity.parentPath ?: "", excluded)
             hiddenOk && excludedOk
         }
     }

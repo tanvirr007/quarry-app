@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentActivity
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
+import app.quarry.tanvir.info.domain.scanner.ScanRepository
 import app.quarry.tanvir.info.domain.volume.StorageVolumeInfo
 import app.quarry.tanvir.info.domain.volume.StorageVolumeManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,7 @@ data class SettingsUiState(
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
+    private val repository = ScanRepository.getInstance(application)
     private val volumeManager = StorageVolumeManager(application)
     private val securityManager = BiometricSecurityManager(application)
 
@@ -188,12 +190,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun addExclusion(path: String) {
         viewModelScope.launch {
             prefsRepo.addExcludedFolder(path)
+            repository.purgeExcludedFiles(setOf(path))
         }
     }
 
     fun addExclusions(paths: Collection<String>) {
         viewModelScope.launch {
             prefsRepo.addExcludedFolders(paths)
+            repository.purgeExcludedFiles(paths.toSet())
         }
     }
 
