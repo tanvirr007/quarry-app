@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
@@ -113,8 +114,22 @@ fun AppManagerBottomSheet(
         }
     }
 
+    val hasActiveAppState = uiState.isSelectionMode || uiState.selectedPackages.isNotEmpty()
+
+    BackHandler(enabled = hasActiveAppState) {
+        haptics.click()
+        viewModel.setSelectionMode(false)
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (uiState.isSelectionMode || uiState.selectedPackages.isNotEmpty()) {
+                haptics.click()
+                viewModel.setSelectionMode(false)
+            } else {
+                onDismiss()
+            }
+        },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)

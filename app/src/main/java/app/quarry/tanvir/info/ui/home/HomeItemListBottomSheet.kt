@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
@@ -125,8 +126,30 @@ fun HomeItemListBottomSheet(
         selectedFiles.sumOf { it.size }
     }
 
+    val hasActiveSheetState = deleteCandidates != null || isSelectionMode || selectedPaths.isNotEmpty() || searchQuery.isNotEmpty()
+
+    BackHandler(enabled = hasActiveSheetState) {
+        haptics.click()
+        when {
+            deleteCandidates != null -> deleteCandidates = null
+            isSelectionMode || selectedPaths.isNotEmpty() -> {
+                isSelectionMode = false
+                selectedPaths = emptySet()
+            }
+            searchQuery.isNotEmpty() -> searchQuery = ""
+        }
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (isSelectionMode || selectedPaths.isNotEmpty()) {
+                haptics.click()
+                isSelectionMode = false
+                selectedPaths = emptySet()
+            } else {
+                onDismiss()
+            }
+        },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)

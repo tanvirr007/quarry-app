@@ -85,7 +85,13 @@ fun CleanupScreen(
         when {
             uiState.isDeleteCountdownVisible -> viewModel.dismissDeleteDialog()
             uiState.isTrashDialogVisible -> viewModel.closeTrashDialog()
-            uiState.activeCandidateGroup != null -> viewModel.closeCandidateGroup()
+            uiState.activeCandidateGroup != null -> {
+                if (uiState.selectedItemPaths.isNotEmpty()) {
+                    viewModel.deselectAllCandidates()
+                } else {
+                    viewModel.closeCandidateGroup()
+                }
+            }
         }
     }
 

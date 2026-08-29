@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.cleanup
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -68,8 +69,20 @@ fun CleanupCategoryDetailBottomSheet(
     val selectedItems = group.items.filter { selectedPaths.contains(it.path) }
     val selectedBytes = selectedItems.sumOf { it.size }
 
+    BackHandler(enabled = selectedPaths.isNotEmpty()) {
+        haptics.click()
+        onDeselectAll()
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (selectedPaths.isNotEmpty()) {
+                haptics.click()
+                onDeselectAll()
+            } else {
+                onDismiss()
+            }
+        },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)

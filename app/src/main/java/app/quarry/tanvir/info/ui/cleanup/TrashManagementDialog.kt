@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.cleanup
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -109,8 +110,36 @@ fun TrashManagementDialog(
     val selectedBytes = selectedItems.sumOf { it.size }
     val isSelectionMode = selectedIds.isNotEmpty()
 
+    val hasActiveTrashDialogState = showEmptyTrashConfirmDialog ||
+            showBulkRestoreConfirmDialog ||
+            showBulkDeleteConfirmDialog ||
+            itemPendingRestore != null ||
+            itemPendingPermanentDelete != null ||
+            selectedIds.isNotEmpty() ||
+            searchQuery.isNotEmpty()
+
+    BackHandler(enabled = hasActiveTrashDialogState) {
+        haptics.click()
+        when {
+            showEmptyTrashConfirmDialog -> showEmptyTrashConfirmDialog = false
+            showBulkRestoreConfirmDialog -> showBulkRestoreConfirmDialog = false
+            showBulkDeleteConfirmDialog -> showBulkDeleteConfirmDialog = false
+            itemPendingRestore != null -> itemPendingRestore = null
+            itemPendingPermanentDelete != null -> itemPendingPermanentDelete = null
+            selectedIds.isNotEmpty() -> selectedIds = emptySet()
+            searchQuery.isNotEmpty() -> searchQuery = ""
+        }
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (isSelectionMode || selectedIds.isNotEmpty()) {
+                haptics.click()
+                selectedIds = emptySet()
+            } else {
+                onDismiss()
+            }
+        },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
