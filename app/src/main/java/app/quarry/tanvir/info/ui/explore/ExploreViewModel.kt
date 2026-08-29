@@ -122,6 +122,9 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         excluded: Set<String>
     ): List<FileEntity> {
         return files.filter { entity ->
+            // Hide zero-byte folders everywhere in Explore (treemap + lists) so empty
+            // directories never consume layout area or list rows.
+            if (entity.isDirectory && entity.size == 0L) return@filter false
             val hiddenOk = showHidden || !entity.name.startsWith(".")
             val excludedOk = !isExcludedPath(entity.path, excluded) && !isExcludedPath(entity.parentPath ?: "", excluded)
             hiddenOk && excludedOk

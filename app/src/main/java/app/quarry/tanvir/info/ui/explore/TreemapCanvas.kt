@@ -3,6 +3,7 @@ package app.quarry.tanvir.info.ui.explore
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,7 +14,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +30,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -34,10 +41,16 @@ import app.quarry.tanvir.info.domain.treemap.TreemapRect
 import kotlin.math.abs
 import kotlin.math.sqrt
 
+private const val MIN_SCALE = 1f
+private const val MAX_SCALE = 5f
+
 /**
  * Responsive, hardware-accelerated Treemap Canvas.
- * Every individual file and folder is rendered with distinct, vibrant, harmonized colors.
- * Direct tap interactions allow seamless navigation into folders or viewing file details.
+ * - Every individual file and folder is rendered with distinct, vibrant, harmonized colors.
+ * - Direct tap interactions allow seamless navigation into folders or viewing file details.
+ * - Pinch-to-zoom and pan (maps/photos style): two-finger pinch scales 1x-5x, one-finger drag pans
+ *   when zoomed. Double-tap resets. Pan is clamped to content bounds; at 1x no scrolling.
+ * - Hit-testing is performed in unscaled content coordinates so tiny tiles stay tappable while zoomed.
  */
 @Composable
 fun TreemapCanvas(
@@ -114,105 +127,187 @@ fun TreemapCanvas(
         val heightPx = constraints.maxHeight.toFloat()
         val touchRadiusPx = density.run { 28.dp.toPx() }
 
+        var scale by remember { mutableFloatStateOf(1f) }
+        var offset by remember { mutableStateOf(Offset.Zero) }
+        val scaleUpdated by rememberUpdatedState(scale)
+        val offsetUpdated by rememberUpdatedState(offset)
+
+        fun clampOffset(raw: Offset, scl: Float): Offset {
+            if (scl <= 1f) return Offset.Zero
+            val maxX = (widthPx * (scl - 1f)) / 2f
+            val maxY = (heightPx * (scl - 1f)) / 2f
+            return Offset(
+                x = raw.x.coerceIn(-maxX, maxX),
+                y = raw.y.coerceIn(-maxY, maxY)
+            )
+        }
+
         LaunchedEffect(widthPx, heightPx) {
             if (widthPx > 0f && heightPx > 0f) {
                 onSizeMeasured(widthPx, heightPx)
             }
         }
 
+        LaunchedEffect(widthPx, heightPx, scale) {
+            offset = clampOffset(offset, scale)
+        }
+
+        // Outer box handles pinch-zoom + pan (transform). Inner box handles taps.
+        // Split into nested boxes so tap and transform don't compete for pointer consumption.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clipToBounds()
-                .pointerInput(nodes, widthPx, heightPx) {
-                    detectTapGestures(
-                        onTap = { tapOffset ->
-                            val clickedNode = findBestMatchingNode(
-                                nodes = nodes,
-                                x = tapOffset.x,
-                                y = tapOffset.y,
-                                touchRadiusPx = touchRadiusPx
+                .pointerInput(widthPx, heightPx) {
+                    detectTransformGestures { centroid, pan, zoom, _ ->
+                        val oldScale = scaleUpdated
+                        val curOffset = offsetUpdated
+                        val newScale = (oldScale * zoom).coerceIn(MIN_SCALE, MAX_SCALE)
+                        if (newScale == oldScale && pan == Offset.Zero) return@detectTransformGestures
+
+                        val center = Offset(widthPx / 2f, heightPx / 2f)
+
+                        var newOffset = if (zoom != 1f && oldScale != 0f) {
+                            // Anchor zoom around fingers (maps/photos feel).
+                            // centroid is in screen coords; pan is already folded into new centroid.
+                            val contentUnderCentroid = Offset(
+                                x = (centroid.x - center.x - curOffset.x) / oldScale + center.x,
+                                y = (centroid.y - center.y - curOffset.y) / oldScale + center.y
                             )
-                            if (clickedNode != null) {
-                                onNodeClick(clickedNode)
-                            }
+                            Offset(
+                                x = centroid.x - center.x - (contentUnderCentroid.x - center.x) * newScale,
+                                y = centroid.y - center.y - (contentUnderCentroid.y - center.y) * newScale
+                            )
+                        } else {
+                            curOffset + pan
                         }
-                    )
+
+                        if (newScale <= 1f + 1e-3f) {
+                            scale = 1f
+                            offset = Offset.Zero
+                        } else {
+                            scale = newScale
+                            newOffset = clampOffset(newOffset, newScale)
+                            offset = newOffset
+                        }
+                    }
                 }
         ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidthPx = 1.2.dp.toPx()
-                val cornerRadiusPx = 6.dp.toPx()
-                val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
-
-                nodes.forEachIndexed { index, node ->
-                    val rect = node.rect
-                    val w = rect.width
-                    val h = rect.height
-
-                    if (w > 2f && h > 2f) {
-                        val (colorTop, colorBottom) = getTreemapTileColors(
-                            node = node,
-                            index = index,
-                            isDark = isDark
-                        )
-
-                        val drawRectTopLeft = Offset(rect.left + 1f, rect.top + 1f)
-                        val drawRectSize = Size(
-                            (w - 2f).coerceAtLeast(1f),
-                            (h - 2f).coerceAtLeast(1f)
-                        )
-
-                        // Draw Gradient Fill for rich depth
-                        drawRoundRect(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(colorTop, colorBottom),
-                                startY = rect.top,
-                                endY = rect.bottom
-                            ),
-                            topLeft = drawRectTopLeft,
-                            size = drawRectSize,
-                            cornerRadius = cornerRadius
-                        )
-
-                        // Draw Crisp Outline Border
-                        drawRoundRect(
-                            color = borderColor,
-                            topLeft = drawRectTopLeft,
-                            size = drawRectSize,
-                            cornerRadius = cornerRadius,
-                            style = Stroke(width = strokeWidthPx)
-                        )
-
-                        // Draw Text and Badges if rectangle is large enough
-                        if (w > 28.dp.toPx() && h > 18.dp.toPx()) {
-                            drawContext.canvas.nativeCanvas.apply {
-                                val paddingPx = density.run { 6.dp.toPx() }
-                                val maxChars = (w / density.run { 7.dp.toPx() }).toInt().coerceAtLeast(3)
-                                val displayName = if (node.name.length > maxChars) {
-                                    node.name.take(maxChars - 1) + "…"
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(nodes, widthPx, heightPx, touchRadiusPx) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                scale = 1f
+                                offset = Offset.Zero
+                            },
+                            onTap = { tapOffset ->
+                                val currentScale = scaleUpdated
+                                val currentOffset = offsetUpdated
+                                val center = Offset(widthPx / 2f, heightPx / 2f)
+                                val contentTap = if (currentScale <= 1f) {
+                                    tapOffset
                                 } else {
-                                    node.name
-                                }
-
-                                val sizeText = StorageFormatter.formatBytes(node.size)
-                                val xPos = rect.left + paddingPx
-                                var yPos = rect.top + density.run { 13.dp.toPx() }
-
-                                if (node.isDirectory && h > 36.dp.toPx()) {
-                                    drawText("DIR", xPos, yPos - density.run { 2.dp.toPx() }, dirBadgePaint)
-                                    yPos += density.run { 11.dp.toPx() }
-                                }
-
-                                drawText(displayName, xPos, yPos, textPaint)
-
-                                if (h > 38.dp.toPx()) {
-                                    drawText(
-                                        sizeText,
-                                        xPos,
-                                        yPos + density.run { 12.dp.toPx() },
-                                        subtextPaint
+                                    Offset(
+                                        x = (tapOffset.x - center.x - currentOffset.x) / currentScale + center.x,
+                                        y = (tapOffset.y - center.y - currentOffset.y) / currentScale + center.y
                                     )
+                                }
+                                val effectiveRadius = if (currentScale > 1f) touchRadiusPx / currentScale else touchRadiusPx
+                                val clickedNode = findBestMatchingNode(
+                                    nodes = nodes,
+                                    x = contentTap.x,
+                                    y = contentTap.y,
+                                    touchRadiusPx = effectiveRadius
+                                )
+                                if (clickedNode != null) {
+                                    onNodeClick(clickedNode)
+                                }
+                            }
+                        )
+                    }
+            ) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        )
+                ) {
+                    val strokeWidthPx = 1.2.dp.toPx()
+                    val cornerRadiusPx = 6.dp.toPx()
+                    val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
+
+                    nodes.forEachIndexed { index, node ->
+                        val rect = node.rect
+                        val w = rect.width
+                        val h = rect.height
+
+                        if (w > 2f && h > 2f) {
+                            val (colorTop, colorBottom) = getTreemapTileColors(
+                                node = node,
+                                index = index,
+                                isDark = isDark
+                            )
+
+                            val drawRectTopLeft = Offset(rect.left + 1f, rect.top + 1f)
+                            val drawRectSize = Size(
+                                (w - 2f).coerceAtLeast(1f),
+                                (h - 2f).coerceAtLeast(1f)
+                            )
+
+                            drawRoundRect(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(colorTop, colorBottom),
+                                    startY = rect.top,
+                                    endY = rect.bottom
+                                ),
+                                topLeft = drawRectTopLeft,
+                                size = drawRectSize,
+                                cornerRadius = cornerRadius
+                            )
+
+                            drawRoundRect(
+                                color = borderColor,
+                                topLeft = drawRectTopLeft,
+                                size = drawRectSize,
+                                cornerRadius = cornerRadius,
+                                style = Stroke(width = strokeWidthPx)
+                            )
+
+                            if (w > 28.dp.toPx() && h > 18.dp.toPx()) {
+                                drawContext.canvas.nativeCanvas.apply {
+                                    val paddingPx = density.run { 6.dp.toPx() }
+                                    val maxChars = (w / density.run { 7.dp.toPx() }).toInt().coerceAtLeast(3)
+                                    val displayName = if (node.name.length > maxChars) {
+                                        node.name.take(maxChars - 1) + "…"
+                                    } else {
+                                        node.name
+                                    }
+
+                                    val sizeText = StorageFormatter.formatBytes(node.size)
+                                    val xPos = rect.left + paddingPx
+                                    var yPos = rect.top + density.run { 13.dp.toPx() }
+
+                                    if (node.isDirectory && h > 36.dp.toPx()) {
+                                        drawText("DIR", xPos, yPos - density.run { 2.dp.toPx() }, dirBadgePaint)
+                                        yPos += density.run { 11.dp.toPx() }
+                                    }
+
+                                    drawText(displayName, xPos, yPos, textPaint)
+
+                                    if (h > 38.dp.toPx()) {
+                                        drawText(
+                                            sizeText,
+                                            xPos,
+                                            yPos + density.run { 12.dp.toPx() },
+                                            subtextPaint
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -223,10 +318,6 @@ fun TreemapCanvas(
     }
 }
 
-/**
- * Finds the node closest to or directly containing (x, y), prioritizing smaller
- * or narrow nodes so they are effortlessly tapped without requiring pinpoint accuracy.
- */
 private fun findBestMatchingNode(
     nodes: List<TreemapNode>,
     x: Float,
@@ -235,7 +326,6 @@ private fun findBestMatchingNode(
 ): TreemapNode? {
     if (nodes.isEmpty()) return null
 
-    // 1. Check all nodes containing the tap point directly
     val directHits = nodes.filter { node ->
         x >= node.rect.left && x <= node.rect.right &&
                 y >= node.rect.top && y <= node.rect.bottom
@@ -244,7 +334,6 @@ private fun findBestMatchingNode(
     if (directHits.isNotEmpty()) {
         val smallestDirect = directHits.minByOrNull { it.rect.width * it.rect.height }
 
-        // If tap is inside a large tile but close to a smaller neighbor tile, prioritize the smaller neighbor
         val nearbySmallNode = nodes
             .filter { node ->
                 val dist = distanceToRect(x, y, node.rect)
@@ -259,7 +348,6 @@ private fun findBestMatchingNode(
         return smallestDirect
     }
 
-    // 2. Proximity fallback: find nearest node within touch tolerance
     val candidate = nodes.minByOrNull { distanceToRect(x, y, it.rect) }
     if (candidate != null && distanceToRect(x, y, candidate.rect) <= touchRadiusPx * 1.5f) {
         return candidate
@@ -282,10 +370,6 @@ private fun distanceToRect(x: Float, y: Float, rect: TreemapRect): Float {
     return sqrt(dx * dx + dy * dy)
 }
 
-/**
- * Calculates a unique, vibrant, harmonized color pair (top and bottom gradient)
- * for each individual file and directory so every file in the treemap has its own distinct color.
- */
 private fun getTreemapTileColors(
     node: TreemapNode,
     index: Int,
@@ -310,9 +394,6 @@ private fun getTreemapTileColors(
     return Pair(topColor, bottomColor)
 }
 
-/**
- * Converts HSL color components to an Android Compose Color instance.
- */
 private fun hslToColor(
     hue: Float,
     saturation: Float,

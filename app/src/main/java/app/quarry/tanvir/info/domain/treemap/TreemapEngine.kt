@@ -21,7 +21,11 @@ object TreemapEngine {
             files.filter { it.path.startsWith(rootPath) && it.path != rootPath }
         }
 
-        if (filtered.isEmpty()) {
+        // Ignore zero-byte folders: they carry no visual weight and would waste the
+        // guaranteed minimum floor in the treemap. Filter before any aggregation.
+        val effectiveFiltered = filtered.filterNot { it.isDirectory && it.size == 0L }
+
+        if (effectiveFiltered.isEmpty()) {
             return TreemapNode(
                 path = rootPath.ifEmpty { "/" },
                 name = if (rootPath.isEmpty()) "Storage" else rootPath.substringAfterLast('/'),
@@ -33,18 +37,18 @@ object TreemapEngine {
 
         // Aggregate immediate children of rootPath
         val directChildren = if (rootPath.isEmpty()) {
-            filtered.filter { it.parentPath == null || it.parentPath.isEmpty() || it.parentPath == "/" }
+            effectiveFiltered.filter { it.parentPath == null || it.parentPath.isEmpty() || it.parentPath == "/" }
         } else {
-            filtered.filter { it.parentPath == rootPath }
+            effectiveFiltered.filter { it.parentPath == rootPath }
         }
 
-        val childNodes = if (directChildren.isNotEmpty()) {
+        val rawChildNodes = if (directChildren.isNotEmpty()) {
             directChildren.map { entity ->
-                createNodeFromEntity(entity, filtered)
-            }.sortedByDescending { it.size }
+                createNodeFromEntity(entity, effectiveFiltered)
+            }
         } else {
             // If flat file list or deep items, group by immediate child subpath
-            val grouped = filtered.groupBy { entity ->
+            val grouped = effectiveFiltered.groupBy { entity ->
                 val relative = if (rootPath.isEmpty()) entity.path.trimStart('/') else entity.path.removePrefix(rootPath).trimStart('/')
                 val firstSegment = relative.substringBefore('/')
                 if (rootPath.isEmpty()) "/$firstSegment" else "$rootPath/$firstSegment"
@@ -61,8 +65,13 @@ object TreemapEngine {
                     isDirectory = isDir,
                     category = category
                 )
-            }.sortedByDescending { it.size }
+            }
         }
+
+        // Defensive drop: any directory that ended up with 0 bytes after aggregation is hidden.
+        val childNodes = rawChildNodes
+            .filterNot { it.isDirectory && it.size == 0L }
+            .sortedByDescending { it.size }
 
         val totalSize = childNodes.sumOf { it.size }
 
@@ -108,9 +117,11 @@ object TreemapEngine {
         items: List<TreemapNode>,
         bounds: TreemapRect
     ): List<TreemapNode> {
-        if (items.isEmpty() || bounds.width <= 0f || bounds.height <= 0f) return emptyList()
+        // Drop zero-byte folders so they never consume the guaranteed visible floor.
+        val nonZeroItems = items.filterNot { it.isDirectory && it.size == 0L }
+        if (nonZeroItems.isEmpty() || bounds.width <= 0f || bounds.height <= 0f) return emptyList()
 
-        val sortedItems = items.sortedByDescending { it.size }
+        val sortedItems = nonZeroItems.sortedByDescending { it.size }
         if (sortedItems.isEmpty()) return emptyList()
 
         val totalArea = (bounds.width * bounds.height).toDouble()
