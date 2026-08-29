@@ -263,9 +263,8 @@ fun HomeScreen(
                 onAppInfo = {
                     appManagerViewModel.openAppDetails(app)
                 },
-                onUninstall = {
-                    appManagerViewModel.uninstall(app)
-                    appManagerViewModel.dismissDetails()
+                onOpenUsageAccess = {
+                    appManagerViewModel.openUsageAccessSettings()
                 },
                 onDismiss = { appManagerViewModel.dismissDetails() }
             )

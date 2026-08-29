@@ -386,47 +386,6 @@ fun AppManagerBottomSheet(
                 }
             }
 
-            // Bottom action bar (batch uninstall)
-            AnimatedVisibility(
-                visible = uiState.isSelectionMode,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Button(
-                    onClick = {
-                        haptics.warning()
-                        viewModel.uninstallSelected()
-                    },
-                    enabled = uiState.selectedPackages.isNotEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (uiState.selectedPackages.isEmpty()) {
-                            "Uninstall"
-                        } else {
-                            "Uninstall (${uiState.selectedPackages.size})"
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(6.dp))
         }
     }
