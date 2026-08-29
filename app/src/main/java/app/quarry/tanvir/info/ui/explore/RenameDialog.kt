@@ -106,7 +106,7 @@ fun RenameDialog(
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = "Changing a file extension does not convert its actual format.",
+                                text = "Changing a file extension does not convert its actual format",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
@@ -115,7 +115,7 @@ fun RenameDialog(
                 }
 
                 Text(
-                    text = "Android authentication required for security.",
+                    text = "Android authentication required for security",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -131,7 +131,7 @@ fun RenameDialog(
                 enabled = newName.isNotBlank() && newName != file.name,
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Authenticate & Rename")
+                Text("Rename")
             }
         },
         dismissButton = {
