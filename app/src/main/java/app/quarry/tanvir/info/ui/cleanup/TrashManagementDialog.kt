@@ -46,6 +46,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -110,40 +111,34 @@ fun TrashManagementDialog(
     val selectedBytes = selectedItems.sumOf { it.size }
     val isSelectionMode = selectedIds.isNotEmpty()
 
-    val hasActiveTrashDialogState = showEmptyTrashConfirmDialog ||
-            showBulkRestoreConfirmDialog ||
-            showBulkDeleteConfirmDialog ||
-            itemPendingRestore != null ||
-            itemPendingPermanentDelete != null ||
-            selectedIds.isNotEmpty() ||
-            searchQuery.isNotEmpty()
-
-    BackHandler(enabled = hasActiveTrashDialogState) {
-        haptics.click()
-        when {
-            showEmptyTrashConfirmDialog -> showEmptyTrashConfirmDialog = false
-            showBulkRestoreConfirmDialog -> showBulkRestoreConfirmDialog = false
-            showBulkDeleteConfirmDialog -> showBulkDeleteConfirmDialog = false
-            itemPendingRestore != null -> itemPendingRestore = null
-            itemPendingPermanentDelete != null -> itemPendingPermanentDelete = null
-            selectedIds.isNotEmpty() -> selectedIds = emptySet()
-            searchQuery.isNotEmpty() -> searchQuery = ""
-        }
-    }
-
     ModalBottomSheet(
-        onDismissRequest = {
-            if (isSelectionMode || selectedIds.isNotEmpty()) {
-                haptics.click()
-                selectedIds = emptySet()
-            } else {
-                onDismiss()
-            }
-        },
+        onDismissRequest = onDismiss,
         sheetState = sheetState,
+        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false),
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
+        val hasActiveTrashDialogState = showEmptyTrashConfirmDialog ||
+                showBulkRestoreConfirmDialog ||
+                showBulkDeleteConfirmDialog ||
+                itemPendingRestore != null ||
+                itemPendingPermanentDelete != null ||
+                selectedIds.isNotEmpty() ||
+                searchQuery.isNotEmpty()
+
+        BackHandler(enabled = true) {
+            haptics.click()
+            when {
+                showEmptyTrashConfirmDialog -> showEmptyTrashConfirmDialog = false
+                showBulkRestoreConfirmDialog -> showBulkRestoreConfirmDialog = false
+                showBulkDeleteConfirmDialog -> showBulkDeleteConfirmDialog = false
+                itemPendingRestore != null -> itemPendingRestore = null
+                itemPendingPermanentDelete != null -> itemPendingPermanentDelete = null
+                selectedIds.isNotEmpty() -> selectedIds = emptySet()
+                searchQuery.isNotEmpty() -> searchQuery = ""
+                else -> onDismiss()
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()

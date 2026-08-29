@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -69,24 +70,21 @@ fun CleanupCategoryDetailBottomSheet(
     val selectedItems = group.items.filter { selectedPaths.contains(it.path) }
     val selectedBytes = selectedItems.sumOf { it.size }
 
-    BackHandler(enabled = selectedPaths.isNotEmpty()) {
-        haptics.click()
-        onDeselectAll()
-    }
-
     ModalBottomSheet(
-        onDismissRequest = {
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        BackHandler(enabled = true) {
+            haptics.click()
             if (selectedPaths.isNotEmpty()) {
-                haptics.click()
                 onDeselectAll()
             } else {
                 onDismiss()
             }
-        },
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-    ) {
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()

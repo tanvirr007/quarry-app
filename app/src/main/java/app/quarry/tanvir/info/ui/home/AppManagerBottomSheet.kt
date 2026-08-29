@@ -50,6 +50,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -114,26 +115,23 @@ fun AppManagerBottomSheet(
         }
     }
 
-    val hasActiveAppState = uiState.isSelectionMode || uiState.selectedPackages.isNotEmpty()
-
-    BackHandler(enabled = hasActiveAppState) {
-        haptics.click()
-        viewModel.setSelectionMode(false)
-    }
-
     ModalBottomSheet(
-        onDismissRequest = {
-            if (uiState.isSelectionMode || uiState.selectedPackages.isNotEmpty()) {
-                haptics.click()
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        val hasActiveAppState = uiState.isSelectionMode || uiState.selectedPackages.isNotEmpty()
+
+        BackHandler(enabled = true) {
+            haptics.click()
+            if (hasActiveAppState) {
                 viewModel.setSelectionMode(false)
             } else {
                 onDismiss()
             }
-        },
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-    ) {
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
