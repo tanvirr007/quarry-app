@@ -21,6 +21,15 @@
 
 ---
 
+## Screenshots
+
+| | |
+| :---: | :---: |
+| ![Home](assets/ui/home.png) | ![Explore](assets/ui/explore.png) |
+| ![Cleanup](assets/ui/cleanup.png) | ![Settings](assets/ui/settings.png) |
+
+---
+
 ## Features
 
 - **Interactive Treemap Visualization**:
