@@ -1,5 +1,7 @@
 <div align="center">
 
+![Quarry Banner](assets/update.png)
+
 # Quarry
 
 **See where your device storage really goes**
