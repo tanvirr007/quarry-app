@@ -54,7 +54,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(),
     onNavigateToCategory: ((StorageCategory) -> Unit)? = null,
-    onNavigateToInsight: ((QuickInsight) -> Unit)? = null
+    onNavigateToInsight: ((QuickInsight) -> Unit)? = null,
+    onNavigateToExplore: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -124,7 +125,8 @@ fun HomeScreen(
 
         // Storage Overview Card
         StorageOverviewCard(
-            overview = uiState.overview
+            overview = uiState.overview,
+            onClick = onNavigateToExplore
         )
 
         // Analyze Storage Button (Shown when not currently scanning)
