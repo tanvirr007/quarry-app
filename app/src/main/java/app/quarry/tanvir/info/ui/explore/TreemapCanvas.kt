@@ -88,16 +88,6 @@ fun TreemapCanvas(
         }
     }
 
-    val dirBadgePaint = remember(density) {
-        android.graphics.Paint().apply {
-            color = android.graphics.Color.argb(245, 255, 255, 255)
-            textSize = density.run { 9.dp.toPx() }
-            isAntiAlias = true
-            isFakeBoldText = true
-            setShadowLayer(2f, 0f, 1f, android.graphics.Color.argb(180, 0, 0, 0))
-        }
-    }
-
     if (nodes.isEmpty()) {
         Box(
             modifier = modifier
@@ -291,16 +281,11 @@ fun TreemapCanvas(
 
                                     val sizeText = StorageFormatter.formatBytes(node.size)
                                     val xPos = rect.left + paddingPx
-                                    var yPos = rect.top + density.run { 13.dp.toPx() }
-
-                                    if (node.isDirectory && h > 36.dp.toPx()) {
-                                        drawText("DIR", xPos, yPos - density.run { 2.dp.toPx() }, dirBadgePaint)
-                                        yPos += density.run { 11.dp.toPx() }
-                                    }
+                                    val yPos = rect.top + density.run { 13.dp.toPx() }
 
                                     drawText(displayName, xPos, yPos, textPaint)
 
-                                    if (h > 38.dp.toPx()) {
+                                    if (h > 30.dp.toPx()) {
                                         drawText(
                                             sizeText,
                                             xPos,
