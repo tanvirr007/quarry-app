@@ -80,6 +80,9 @@ fun HomeScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshPermissionState()
+                if (showAppManager) {
+                    appManagerViewModel.refresh()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -228,6 +231,7 @@ fun HomeScreen(
     // App Manager Sheet
     if (showAppManager) {
         LaunchedEffect(showAppManager) {
+            appManagerViewModel.refresh()
             if (appManagerStartSelection) {
                 appManagerViewModel.setSelectionMode(true)
                 appManagerStartSelection = false
@@ -253,15 +257,6 @@ fun HomeScreen(
                     appManagerViewModel.dismissDetails()
                 },
                 onAppInfo = {
-                    appManagerViewModel.openAppDetails(app)
-                },
-                onForceStop = {
-                    appManagerViewModel.openAppDetails(app)
-                },
-                onClearCache = {
-                    appManagerViewModel.openAppDetails(app)
-                },
-                onClearData = {
                     appManagerViewModel.openAppDetails(app)
                 },
                 onUninstall = {

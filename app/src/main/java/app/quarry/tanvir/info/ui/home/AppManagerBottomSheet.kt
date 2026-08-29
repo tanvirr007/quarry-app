@@ -52,11 +52,15 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +80,20 @@ fun AppManagerBottomSheet(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val quarryHaptic = rememberQuarryHaptic(enabled = hapticsEnabled, strength = hapticStrength)
+
+    // Re-check permissions and refresh app storage data when returning to app / foreground
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val sortedApps = if (uiState.sortByName) {
         uiState.apps.sortedBy { it.label.lowercase() }
@@ -226,7 +244,11 @@ fun AppManagerBottomSheet(
             }
 
             // Usage access strip
-            if (!uiState.hasUsageAccess && !uiState.isLoading) {
+            AnimatedVisibility(
+                visible = !uiState.hasUsageAccess && !uiState.isLoading,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -312,7 +334,7 @@ fun AppManagerBottomSheet(
                                 if (uiState.isSelectionMode) {
                                     viewModel.toggleSelection(app.packageName)
                                 } else {
-                                    viewModel.openApp(app)
+                                    viewModel.showDetails(app)
                                 }
                             },
                             onLongClick = {

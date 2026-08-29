@@ -80,11 +80,21 @@ class AppManager(private val context: Context) {
         try {
             val intent = Intent(Intent.ACTION_DELETE).apply {
                 data = Uri.parse("package:$packageName")
+                putExtra(Intent.EXTRA_RETURN_RESULT, true)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            // Uninstall confirm dialog requires system resolver; ignore failures.
+            try {
+                val fallbackIntent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+                    data = Uri.parse("package:$packageName")
+                    putExtra(Intent.EXTRA_RETURN_RESULT, true)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(fallbackIntent)
+            } catch (e2: Exception) {
+                openAppDetails(packageName)
+            }
         }
     }
 

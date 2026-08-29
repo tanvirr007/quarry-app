@@ -51,15 +51,28 @@ class AppManagerViewModel(application: Application) : AndroidViewModel(applicati
     fun refresh() {
         viewModelScope.launch(Dispatchers.IO) {
             val hasAccess = appManager.hasUsageAccess()
-            _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                hasUsageAccess = hasAccess
-            )
+            val currentApps = _uiState.value.apps
+            if (currentApps.isEmpty()) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true,
+                    hasUsageAccess = hasAccess
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    hasUsageAccess = hasAccess
+                )
+            }
             val apps = appManager.getInstalledApps(includeSystemApps = _uiState.value.showSystemApps)
+            val currentDetail = _uiState.value.detailApp
+            val updatedDetail = if (currentDetail != null) {
+                apps.find { it.packageName == currentDetail.packageName } ?: currentDetail
+            } else null
+
             _uiState.value = _uiState.value.copy(
                 apps = apps,
                 isLoading = false,
-                hasUsageAccess = appManager.hasUsageAccess()
+                hasUsageAccess = appManager.hasUsageAccess(),
+                detailApp = updatedDetail
             )
         }
     }
