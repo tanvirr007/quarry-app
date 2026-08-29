@@ -6,7 +6,7 @@ Welcome to **Quarry** (`app.quarry.tanvir.info`). This document outlines reposit
 
 ## 1. Project Overview & Philosophy
 
-**Quarry** is a modern, privacy-first Android storage analyzer and file manager built with 100% Jetpack Compose and Material 3.
+**Quarry** is a modern, privacy-first Android storage analyzer and visual disk cleanup utility built with 100% Jetpack Compose and Material 3.
 
 - **100% Offline & Private**: All storage scanning, size calculation, and file operations occur entirely on-device. No telemetry, no external network uploads.
 - **Modern Android Native**: Targets Android 12.0+ (API 31+) through Android 16 (API 36), leveraging modern platform APIs, Coroutines, Flow, and Material You theming.

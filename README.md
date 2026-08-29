@@ -19,7 +19,10 @@
 
 ## Overview
 
-**Quarry** is a modern, fast, and privacy-first Android storage analyzer and file manager. Designed with **Jetpack Compose** and **Material 3**, Quarry provides deep visibility into your device's internal storage, categorizes your files, helps identify redundant data, and cleans up space safely—all processed 100% locally on your device.
+**Quarry** is a modern, fast, and privacy-first Android storage analyzer and disk cleanup utility built with **Jetpack Compose** and **Material 3**. It is purpose-built to help you see what is eating up your storage, explore files visually with treemaps, and clean up space safely.
+
+> [!NOTE]
+> **Quarry is not a general-purpose file manager.** It is dedicated specifically to disk space analysis, visualization, and cleanup—not everyday file management like copying, moving, or archiving. All scans and operations run 100% offline on your device.
 
 ---
 
@@ -38,7 +41,7 @@
   - Hardware-accelerated squarified treemaps with guaranteed minimum tile visibility so small files and directories never collapse into unclickable slivers.
   - Proximity-aware single-tap folder navigation and file inspection.
   - Distinct, vibrant HSL gradient colors and labels for every file and folder.
-- **Versatile File Explorer**:
+- **Versatile Storage Explorer**:
   - Switch seamlessly between Treemap, List, Largest Files, Categories/Types, and Folders views.
   - Breadcrumb navigation with hierarchical directory traversal and system back integration.
   - Search, sort by size/name/date, and toggle hidden dotfiles.
