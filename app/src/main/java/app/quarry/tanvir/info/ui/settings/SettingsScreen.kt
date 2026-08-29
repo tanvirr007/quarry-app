@@ -141,7 +141,7 @@ fun SettingsScreen(
         SettingsSwitchItem(
             icon = if (uiState.scanHiddenFiles) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
             title = "Show Hidden Files",
-            subtitle = if (uiState.scanHiddenFiles) "Showing dotfiles and hidden folders" else "Hiding dotfiles and hidden folders",
+            subtitle = if (uiState.scanHiddenFiles) "Hidden items visible" else "Hidden items hidden",
             checked = uiState.scanHiddenFiles,
             onCheckedChange = { viewModel.setScanHiddenFiles(it) }
         )
