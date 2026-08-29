@@ -49,8 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.isSystemInDarkTheme
+import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 
 import androidx.compose.material3.Switch
@@ -68,12 +68,15 @@ fun AppearanceDialog(
     val scrollState = rememberScrollState()
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
-    Dialog(
+    val isDark = when (currentTheme) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
+    QuarryFullScreenDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+        isDarkTheme = isDark
     ) {
         BackHandler(onBack = {
             haptics.click()

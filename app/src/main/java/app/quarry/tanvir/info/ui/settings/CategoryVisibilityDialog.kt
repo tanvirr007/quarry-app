@@ -35,8 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
@@ -50,9 +49,8 @@ fun CategoryVisibilityDialog(
 ) {
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    QuarryFullScreenDialog(
+        onDismissRequest = onDismiss
     ) {
         BackHandler(onBack = {
             haptics.click()

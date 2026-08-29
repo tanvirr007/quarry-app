@@ -262,7 +262,7 @@ fun OnboardingScreen(
 fun OnboardingDialog(
     onCompleted: () -> Unit
 ) {
-    Dialog(
+    app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog(
         onDismissRequest = {},
         properties = DialogProperties(
             dismissOnBackPress = false,

@@ -56,8 +56,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,14 +67,13 @@ fun FolderPickerDialog(
 ) {
     val rootPath = remember { Environment.getExternalStorageDirectory().absolutePath }
     var currentPath by remember { mutableStateOf(initialPath) }
-
     val currentDir = remember(currentPath) { File(currentPath) }
-    val canGoUp = currentPath != rootPath && currentDir.parentFile != null
+    val canGoUp = currentPath != rootPath && currentPath.length > rootPath.length
 
     val subdirectories = remember(currentPath) {
         try {
-            currentDir.listFiles()
-                ?.filter { it.isDirectory }
+            currentDir.listFiles { file -> file.isDirectory }
+                ?.toList()
                 ?.sortedWith { a, b ->
                     val aHidden = a.name.startsWith(".")
                     val bHidden = b.name.startsWith(".")
@@ -98,12 +95,8 @@ fun FolderPickerDialog(
     }
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+    QuarryFullScreenDialog(
+        onDismissRequest = onDismiss
     ) {
         BackHandler {
             haptics.click()

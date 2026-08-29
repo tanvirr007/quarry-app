@@ -9,12 +9,15 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import app.quarry.tanvir.info.data.preferences.ThemeMode
+import app.quarry.tanvir.info.ui.components.findWindow
 
 private val DarkColorScheme = darkColorScheme(
     primary = Teal80,
@@ -82,6 +85,8 @@ private val LightColorScheme = lightColorScheme(
     surfaceContainerHighest = Color(0xFFE0E3E2)
 )
 
+val LocalDarkTheme = compositionLocalOf { false }
+
 @Composable
 fun QuarryTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -106,19 +111,24 @@ fun QuarryTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as? Activity)?.window
+            val window = findWindow(view)
             if (window != null) {
                 window.statusBarColor = android.graphics.Color.TRANSPARENT
                 window.navigationBarColor = android.graphics.Color.TRANSPARENT
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
-                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.isAppearanceLightStatusBars = !darkTheme
+                insetsController.isAppearanceLightNavigationBars = !darkTheme
             }
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalDarkTheme provides darkTheme
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

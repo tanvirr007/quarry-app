@@ -62,8 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 
 private val COMMON_PRESETS = listOf(
     "/Android/data",
@@ -108,12 +107,8 @@ fun ExclusionsDialog(
         }
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+    QuarryFullScreenDialog(
+        onDismissRequest = onDismiss
     ) {
         BackHandler(onBack = {
             haptics.click()

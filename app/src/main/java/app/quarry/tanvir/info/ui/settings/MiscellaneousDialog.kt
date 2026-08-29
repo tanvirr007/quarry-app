@@ -54,8 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import app.quarry.tanvir.info.domain.haptics.hapticStrengthLabel
 import app.quarry.tanvir.info.domain.haptics.performQuarryHaptic
 
@@ -81,12 +80,8 @@ fun MiscellaneousDialog(
     var sliderDraft by remember { mutableStateOf<Int?>(null) }
     val displayStrength = sliderDraft ?: hapticStrength
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+    QuarryFullScreenDialog(
+        onDismissRequest = onDismiss
     ) {
         BackHandler(onBack = {
             haptics.click()

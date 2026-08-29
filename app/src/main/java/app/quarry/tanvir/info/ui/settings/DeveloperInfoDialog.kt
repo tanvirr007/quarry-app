@@ -66,9 +66,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import app.quarry.tanvir.info.R
+import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,12 +99,8 @@ fun DeveloperInfoDialog(
     val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+    QuarryFullScreenDialog(
+        onDismissRequest = onDismiss
     ) {
         BackHandler(onBack = {
             haptics.click()
