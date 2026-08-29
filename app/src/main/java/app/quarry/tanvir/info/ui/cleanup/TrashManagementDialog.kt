@@ -89,8 +89,10 @@ fun TrashManagementDialog(
     val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
     var searchQuery by remember { mutableStateOf("") }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
+    var itemPendingRestore by remember { mutableStateOf<TrashItem?>(null) }
     var itemPendingPermanentDelete by remember { mutableStateOf<TrashItem?>(null) }
     var showEmptyTrashConfirmDialog by remember { mutableStateOf(false) }
+    var showBulkRestoreConfirmDialog by remember { mutableStateOf(false) }
     var showBulkDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     val totalBytes = trashItems.sumOf { it.size }
@@ -253,11 +255,7 @@ fun TrashManagementDialog(
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FilledTonalButton(
-                                    onClick = {
-                                        val toRestore = selectedIds.toList()
-                                        selectedIds = emptySet()
-                                        onRestoreSelected(toRestore)
-                                    },
+                                    onClick = { showBulkRestoreConfirmDialog = true },
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
@@ -479,7 +477,7 @@ fun TrashManagementDialog(
                                 if (!isSelectionMode) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                         IconButton(
-                                            onClick = { onRestoreItem(item.id) },
+                                            onClick = { itemPendingRestore = item },
                                             modifier = Modifier.size(36.dp)
                                         ) {
                                             Icon(
@@ -559,6 +557,97 @@ fun TrashManagementDialog(
             },
             dismissButton = {
                 TextButton(onClick = { showEmptyTrashConfirmDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Confirmation Alert for Single Item Restore
+    itemPendingRestore?.let { item ->
+        AlertDialog(
+            onDismissRequest = { itemPendingRestore = null },
+            icon = {
+                Icon(
+                    imageVector = Icons.Rounded.RestoreFromTrash,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text("Restore File?")
+            },
+            text = {
+                Text(
+                    "\"${item.name}\" (${StorageFormatter.formatBytes(item.size)}) will be restored to its original location:\n${item.originalPath}"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val id = item.id
+                        itemPendingRestore = null
+                        onRestoreItem(id)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Restore")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { itemPendingRestore = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Confirmation Alert for Bulk Restore Selected
+    if (showBulkRestoreConfirmDialog) {
+        val count = selectedIds.size
+        val bytes = selectedBytes
+        AlertDialog(
+            onDismissRequest = { showBulkRestoreConfirmDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Rounded.RestoreFromTrash,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text("Restore $count items?")
+            },
+            text = {
+                Text(
+                    "$count selected items (${StorageFormatter.formatBytes(bytes)}) will be restored to their original locations."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val toRestore = selectedIds.toList()
+                        showBulkRestoreConfirmDialog = false
+                        selectedIds = emptySet()
+                        onRestoreSelected(toRestore)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Restore")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkRestoreConfirmDialog = false }) {
                     Text("Cancel")
                 }
             }
