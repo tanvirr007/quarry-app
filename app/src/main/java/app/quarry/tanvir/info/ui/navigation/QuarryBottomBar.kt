@@ -13,10 +13,13 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 
+import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
+
 @Composable
 fun QuarryBottomBar(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val haptics = LocalQuarryHaptics.current
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -29,6 +32,7 @@ fun QuarryBottomBar(navController: NavController) {
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
+                    haptics.click()
                     if (currentRoute != screen.route) {
                         navController.navigate(screen.route) {
                             popUpTo(navController.graph.findStartDestination().id) {

@@ -87,7 +87,10 @@ fun ExploreScreen(
             uiState.searchQuery.isNotEmpty() ||
             canNavigateUpFolder
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     BackHandler(enabled = hasActiveExploreState) {
+        haptics.click()
         when {
             uiState.isDeleteCountdownVisible -> viewModel.dismissDeleteDialog()
             uiState.activeRenameFile != null -> viewModel.dismissRename()
@@ -130,7 +133,10 @@ fun ExploreScreen(
                 },
                 trailingIcon = {
                     if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            viewModel.setSearchQuery("")
+                        }) {
                             Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear search")
                         }
                     }
@@ -144,7 +150,10 @@ fun ExploreScreen(
             var showSortMenu by remember { mutableStateOf(false) }
             Box {
                 IconButton(
-                    onClick = { showSortMenu = true },
+                    onClick = {
+                        haptics.click()
+                        showSortMenu = true
+                    },
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
@@ -168,6 +177,7 @@ fun ExploreScreen(
                                 )
                             },
                             onClick = {
+                                haptics.selection()
                                 viewModel.setSortOrder(sortOption)
                                 showSortMenu = false
                             }
@@ -193,6 +203,7 @@ fun ExploreScreen(
                             }
                         },
                         onClick = {
+                            haptics.selection()
                             viewModel.toggleShowHiddenFiles()
                         }
                     )
@@ -211,7 +222,10 @@ fun ExploreScreen(
             ExploreViewMode.entries.forEach { mode ->
                 FilterChip(
                     selected = uiState.viewMode == mode,
-                    onClick = { viewModel.setViewMode(mode) },
+                    onClick = {
+                        haptics.click()
+                        viewModel.setViewMode(mode)
+                    },
                     label = { Text(mode.title, fontWeight = FontWeight.Medium) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -271,11 +285,17 @@ fun ExploreScreen(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        IconButton(onClick = { viewModel.selectAll() }) {
+                        IconButton(onClick = {
+                            haptics.selection()
+                            viewModel.selectAll()
+                        }) {
                             Icon(imageVector = Icons.Rounded.SelectAll, contentDescription = "Select All")
                         }
                         FilledTonalButton(
-                            onClick = { viewModel.moveToTrashSelected(activity) },
+                            onClick = {
+                                haptics.warning()
+                                viewModel.moveToTrashSelected(activity)
+                            },
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(imageVector = Icons.Rounded.RestoreFromTrash, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -283,7 +303,10 @@ fun ExploreScreen(
                             Text("Trash")
                         }
                         Button(
-                            onClick = { viewModel.promptDeleteSelected() },
+                            onClick = {
+                                haptics.warning()
+                                viewModel.promptDeleteSelected()
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = MaterialTheme.colorScheme.onError
@@ -294,7 +317,10 @@ fun ExploreScreen(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Delete")
                         }
-                        TextButton(onClick = { viewModel.clearSelection() }) {
+                        TextButton(onClick = {
+                            haptics.click()
+                            viewModel.clearSelection()
+                        }) {
                             Text("Cancel")
                         }
                     }
@@ -315,6 +341,7 @@ fun ExploreScreen(
                     TreemapCanvas(
                         nodes = treemapNodes,
                         onNodeClick = { node ->
+                            haptics.click()
                             if (node.isDirectory) {
                                 viewModel.navigateToDirectory(node.path)
                             } else {

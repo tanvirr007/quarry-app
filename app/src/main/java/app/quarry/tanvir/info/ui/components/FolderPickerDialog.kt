@@ -96,6 +96,7 @@ fun FolderPickerDialog(
             "Internal Storage / " + currentPath.removePrefix(rootPath).removePrefix("/")
         }
     }
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -105,6 +106,7 @@ fun FolderPickerDialog(
         )
     ) {
         BackHandler {
+            haptics.click()
             if (canGoUp) {
                 currentPath = currentDir.parentFile?.absolutePath ?: rootPath
             } else {
@@ -124,7 +126,10 @@ fun FolderPickerDialog(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Close",
@@ -159,7 +164,10 @@ fun FolderPickerDialog(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             OutlinedButton(
-                                onClick = onDismiss,
+                                onClick = {
+                                    haptics.click()
+                                    onDismiss()
+                                },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
@@ -168,6 +176,7 @@ fun FolderPickerDialog(
 
                             Button(
                                 onClick = {
+                                    haptics.click()
                                     // Provide relative path or canonical path
                                     val relative = if (currentPath == rootPath) {
                                         "/"
@@ -226,6 +235,7 @@ fun FolderPickerDialog(
                         if (canGoUp) {
                             IconButton(
                                 onClick = {
+                                    haptics.click()
                                     currentPath = currentDir.parentFile?.absolutePath ?: rootPath
                                 },
                                 modifier = Modifier
@@ -327,6 +337,7 @@ fun FolderPickerDialog(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
                                     .clickable {
+                                        haptics.click()
                                         currentPath = subDir.absolutePath
                                     },
                                 shape = RoundedCornerShape(14.dp),

@@ -32,6 +32,8 @@ import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 
+import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
+
 @Composable
 fun CategoryGrid(
     categories: List<StorageCategoryData>,
@@ -62,8 +64,6 @@ fun CategoryGrid(
                     categoryData = pair[0],
                     onClick = { onCategoryClick(pair[0].category) },
                     onLongClick = onCategoryLongClick?.let { { it(pair[0].category) } },
-                    hapticsEnabled = hapticsEnabled,
-                    hapticStrength = hapticStrength,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -72,8 +72,6 @@ fun CategoryGrid(
                         categoryData = pair[1],
                         onClick = { onCategoryClick(pair[1].category) },
                         onLongClick = onCategoryLongClick?.let { { it(pair[1].category) } },
-                        hapticsEnabled = hapticsEnabled,
-                        hapticStrength = hapticStrength,
                         modifier = Modifier.weight(1f)
                     )
                 } else {
@@ -90,20 +88,21 @@ private fun CategoryCard(
     categoryData: StorageCategoryData,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
-    hapticsEnabled: Boolean = true,
-    hapticStrength: Int = 60,
     modifier: Modifier = Modifier
 ) {
     val categoryColor = categoryData.category.getColor()
-    val quarryHaptic = rememberQuarryHaptic(hapticsEnabled, hapticStrength)
+    val haptics = LocalQuarryHaptics.current
 
     Card(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .combinedClickable(
-                onClick = onClick,
+                onClick = {
+                    haptics.click()
+                    onClick()
+                },
                 onLongClick = {
-                    quarryHaptic()
+                    haptics.longPress()
                     onLongClick?.invoke()
                 }
             ),

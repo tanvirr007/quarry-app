@@ -122,9 +122,11 @@ fun RenameDialog(
             }
         },
         confirmButton = {
+            val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
             Button(
                 onClick = {
                     if (newName.isNotBlank() && newName != file.name) {
+                        haptics.click()
                         onConfirm(newName.trim())
                     }
                 },
@@ -135,8 +137,12 @@ fun RenameDialog(
             }
         },
         dismissButton = {
+            val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
             TextButton(
-                onClick = onDismiss,
+                onClick = {
+                    haptics.click()
+                    onDismiss()
+                },
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Cancel")

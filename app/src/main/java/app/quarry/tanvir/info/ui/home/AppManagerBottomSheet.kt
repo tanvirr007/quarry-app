@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import app.quarry.tanvir.info.domain.app.InstalledApp
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
 import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +80,7 @@ fun AppManagerBottomSheet(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val quarryHaptic = rememberQuarryHaptic(enabled = hapticsEnabled, strength = hapticStrength)
+    val haptics = LocalQuarryHaptics.current
     val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
 
     // Re-check permissions and refresh app storage data when returning to app / foreground
@@ -173,6 +174,7 @@ fun AppManagerBottomSheet(
                             sortedApps.all { uiState.selectedPackages.contains(it.packageName) }
                         IconButton(
                             onClick = {
+                                haptics.selection()
                                 if (isAllSelected) viewModel.deselectAll() else viewModel.selectAll()
                             }
                         ) {
@@ -182,7 +184,10 @@ fun AppManagerBottomSheet(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        IconButton(onClick = { viewModel.setSelectionMode(false) }) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            viewModel.setSelectionMode(false)
+                        }) {
                             Icon(
                                 imageVector = Icons.Rounded.Close,
                                 contentDescription = "Cancel selection",
@@ -226,14 +231,20 @@ fun AppManagerBottomSheet(
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { viewModel.toggleSort() }) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            viewModel.toggleSort()
+                        }) {
                             Icon(
                                 imageVector = Icons.Rounded.Sort,
                                 contentDescription = if (uiState.sortByName) "Sorted by Name" else "Sorted by Size",
                                 tint = if (uiState.sortByName) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.Rounded.Close,
                                 contentDescription = "Close",
@@ -283,7 +294,10 @@ fun AppManagerBottomSheet(
                             )
                         }
                         Button(
-                            onClick = { viewModel.openUsageAccessSettings() },
+                            onClick = {
+                                haptics.click()
+                                viewModel.openUsageAccessSettings()
+                            },
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Text("Grant")
@@ -334,19 +348,22 @@ fun AppManagerBottomSheet(
                             isSelectionMode = uiState.isSelectionMode,
                             onClick = {
                                 if (uiState.isSelectionMode) {
+                                    haptics.selection()
                                     viewModel.toggleSelection(app.packageName)
                                 } else {
+                                    haptics.click()
                                     viewModel.showDetails(app)
                                 }
                             },
                             onLongClick = {
-                                quarryHaptic()
+                                haptics.longPress()
                                 if (!uiState.isSelectionMode) {
                                     viewModel.setSelectionMode(true)
                                 }
                                 viewModel.toggleSelection(app.packageName)
                             },
                             onMoreClick = {
+                                haptics.click()
                                 viewModel.showDetails(app)
                             }
                         )
@@ -361,7 +378,10 @@ fun AppManagerBottomSheet(
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Button(
-                    onClick = { viewModel.uninstallSelected() },
+                    onClick = {
+                        haptics.warning()
+                        viewModel.uninstallSelected()
+                    },
                     enabled = uiState.selectedPackages.isNotEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()

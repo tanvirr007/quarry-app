@@ -83,6 +83,8 @@ fun SettingsScreen(
         packageInfo?.versionCode?.toLong() ?: 1L
     }
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     // Prioritized Back handling: Dev Info -> Category -> Theme/Volumes/Exclusions/Misc -> System (Home)
     val hasActiveSettingsDialog = uiState.isDevInfoVisible ||
             uiState.isThemeDialogVisible ||
@@ -92,6 +94,7 @@ fun SettingsScreen(
             uiState.isMiscDialogVisible
 
     BackHandler(enabled = hasActiveSettingsDialog) {
+        haptics.click()
         when {
             uiState.isCategoryDialogVisible -> viewModel.hideCategoryDialog()
             uiState.isDevInfoVisible -> viewModel.hideDevInfo()
@@ -252,11 +255,15 @@ private fun SettingsActionItem(
     subtitle: String? = null,
     onClick: () -> Unit
 ) {
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() },
+            .clickable {
+                haptics.click()
+                onClick()
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -324,11 +331,15 @@ private fun SettingsSwitchItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onCheckedChange(!checked) },
+            .clickable {
+                haptics.selection()
+                onCheckedChange(!checked)
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -375,7 +386,10 @@ private fun SettingsSwitchItem(
 
             Switch(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = {
+                    haptics.selection()
+                    onCheckedChange(it)
+                }
             )
         }
     }

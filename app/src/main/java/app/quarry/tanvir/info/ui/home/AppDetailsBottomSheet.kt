@@ -151,9 +151,13 @@ fun AppDetailsBottomSheet(
             }
 
             // Actions
+            val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
             if (app.isLaunchable) {
                 Button(
-                    onClick = onOpen,
+                    onClick = {
+                        haptics.click()
+                        onOpen()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -164,7 +168,10 @@ fun AppDetailsBottomSheet(
             }
 
             FilledTonalButton(
-                onClick = onAppInfo,
+                onClick = {
+                    haptics.click()
+                    onAppInfo()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -175,7 +182,10 @@ fun AppDetailsBottomSheet(
 
             if (!app.isSystemApp) {
                 Button(
-                    onClick = onUninstall,
+                    onClick = {
+                        haptics.warning()
+                        onUninstall()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(

@@ -73,12 +73,15 @@ fun CleanupScreen(
     val context = LocalContext.current
     val activity = context as? FragmentActivity
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     // Prioritized Back handling: Delete Dialog -> Trash Dialog -> Candidate Group Sheet -> System (Home)
     val hasActiveCleanupOverlay = uiState.isDeleteCountdownVisible ||
             uiState.isTrashDialogVisible ||
             uiState.activeCandidateGroup != null
 
     BackHandler(enabled = hasActiveCleanupOverlay) {
+        haptics.click()
         when {
             uiState.isDeleteCountdownVisible -> viewModel.dismissDeleteDialog()
             uiState.isTrashDialogVisible -> viewModel.closeTrashDialog()
@@ -308,7 +311,10 @@ fun CleanupScreen(
                 when (val state = uiState.duplicateScanState) {
                     is DuplicateScanState.Idle -> {
                         Button(
-                            onClick = { viewModel.scanForDuplicates() },
+                            onClick = {
+                                haptics.click()
+                                viewModel.scanForDuplicates()
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {
@@ -352,7 +358,10 @@ fun CleanupScreen(
                             )
 
                             OutlinedButton(
-                                onClick = { viewModel.scanForDuplicates() },
+                                onClick = {
+                                    haptics.click()
+                                    viewModel.scanForDuplicates()
+                                },
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text("Rescan")
@@ -406,7 +415,10 @@ fun CleanupScreen(
                 subtitle = group.description,
                 itemCount = group.items.size,
                 totalBytes = group.totalBytes,
-                onClick = { viewModel.openCandidateGroup(group) }
+                onClick = {
+                    haptics.click()
+                    viewModel.openCandidateGroup(group)
+                }
             )
         }
 

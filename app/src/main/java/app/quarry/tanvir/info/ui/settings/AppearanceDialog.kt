@@ -66,6 +66,7 @@ fun AppearanceDialog(
     onDismiss: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -74,7 +75,10 @@ fun AppearanceDialog(
             decorFitsSystemWindows = false
         )
     ) {
-        BackHandler(onBack = onDismiss)
+        BackHandler(onBack = {
+            haptics.click()
+            onDismiss()
+        })
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -88,7 +92,10 @@ fun AppearanceDialog(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Back",
@@ -130,7 +137,10 @@ fun AppearanceDialog(
                     description = "Follows your device's system dark and light theme settings automatically.",
                     icon = Icons.Rounded.BrightnessAuto,
                     isSelected = currentTheme == ThemeMode.SYSTEM,
-                    onClick = { onSelectTheme(ThemeMode.SYSTEM) }
+                    onClick = {
+                        haptics.selection()
+                        onSelectTheme(ThemeMode.SYSTEM)
+                    }
                 )
 
                 ThemeModeItemCard(
@@ -138,7 +148,10 @@ fun AppearanceDialog(
                     description = "Clean, crisp light appearance with high contrast for bright environments.",
                     icon = Icons.Rounded.LightMode,
                     isSelected = currentTheme == ThemeMode.LIGHT,
-                    onClick = { onSelectTheme(ThemeMode.LIGHT) }
+                    onClick = {
+                        haptics.selection()
+                        onSelectTheme(ThemeMode.LIGHT)
+                    }
                 )
 
                 ThemeModeItemCard(
@@ -146,7 +159,10 @@ fun AppearanceDialog(
                     description = "Comfortable dark color palette optimized for low-light environments and OLED efficiency.",
                     icon = Icons.Rounded.DarkMode,
                     isSelected = currentTheme == ThemeMode.DARK,
-                    onClick = { onSelectTheme(ThemeMode.DARK) }
+                    onClick = {
+                        haptics.selection()
+                        onSelectTheme(ThemeMode.DARK)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -208,7 +224,10 @@ fun AppearanceDialog(
 
                             Switch(
                                 checked = isDynamicColor,
-                                onCheckedChange = onToggleDynamicColor,
+                                onCheckedChange = {
+                                    haptics.selection()
+                                    onToggleDynamicColor(it)
+                                },
                                 thumbContent = if (isDynamicColor) {
                                     {
                                         Icon(

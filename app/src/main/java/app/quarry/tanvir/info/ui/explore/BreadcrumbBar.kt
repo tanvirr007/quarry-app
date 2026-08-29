@@ -47,6 +47,8 @@ fun BreadcrumbBar(
         scrollState.animateScrollTo(scrollState.maxValue)
     }
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -61,7 +63,10 @@ fun BreadcrumbBar(
         ) {
             // Root "Internal Storage" Button
             TextButton(
-                onClick = { onNavigateToSegment(rootPath) }
+                onClick = {
+                    haptics.click()
+                    onNavigateToSegment(rootPath)
+                }
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Home,
@@ -91,7 +96,10 @@ fun BreadcrumbBar(
                 )
 
                 TextButton(
-                    onClick = { onNavigateToSegment(targetPath) }
+                    onClick = {
+                        haptics.click()
+                        onNavigateToSegment(targetPath)
+                    }
                 ) {
                     Text(
                         text = segment,

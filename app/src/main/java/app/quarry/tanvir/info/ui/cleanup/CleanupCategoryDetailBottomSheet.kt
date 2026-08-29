@@ -64,6 +64,7 @@ fun CleanupCategoryDetailBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     val selectedItems = group.items.filter { selectedPaths.contains(it.path) }
     val selectedBytes = selectedItems.sumOf { it.size }
 
@@ -101,7 +102,10 @@ fun CleanupCategoryDetailBottomSheet(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     OutlinedButton(
-                        onClick = if (selectedPaths.size == group.items.size) onDeselectAll else onSelectAll,
+                        onClick = {
+                            haptics.selection()
+                            if (selectedPaths.size == group.items.size) onDeselectAll() else onSelectAll()
+                        },
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(if (selectedPaths.size == group.items.size) "Deselect All" else "Select All")
@@ -128,7 +132,10 @@ fun CleanupCategoryDetailBottomSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { onToggleSelect(item.path) },
+                            .clickable {
+                                haptics.selection()
+                                onToggleSelect(item.path)
+                            },
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = if (isSelected) {
@@ -147,7 +154,10 @@ fun CleanupCategoryDetailBottomSheet(
                         ) {
                             Checkbox(
                                 checked = isSelected,
-                                onCheckedChange = { onToggleSelect(item.path) }
+                                onCheckedChange = {
+                                    haptics.selection()
+                                    onToggleSelect(item.path)
+                                }
                             )
 
                             Box(
@@ -199,7 +209,10 @@ fun CleanupCategoryDetailBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     FilledTonalButton(
-                        onClick = onMoveToTrashSelected,
+                        onClick = {
+                            haptics.warning()
+                            onMoveToTrashSelected()
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
@@ -217,7 +230,10 @@ fun CleanupCategoryDetailBottomSheet(
                     }
 
                     Button(
-                        onClick = onDeleteSelected,
+                        onClick = {
+                            haptics.warning()
+                            onDeleteSelected()
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
@@ -238,6 +254,7 @@ fun CleanupCategoryDetailBottomSheet(
                         )
                     }
                 }
+            }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

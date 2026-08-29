@@ -86,12 +86,14 @@ fun ExclusionsDialog(
 ) {
     var inputPath by remember { mutableStateOf("") }
     var isFolderPickerVisible by remember { mutableStateOf(false) }
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     val sortedExclusions = remember(excludedFolders) {
         excludedFolders.toList().sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
 
     val submitInput: () -> Unit = {
         if (inputPath.isNotBlank()) {
+            haptics.click()
             val paths = inputPath.split(',', ';', '\n')
                 .map { it.trim() }
                 .filter { it.isNotBlank() }
@@ -113,7 +115,10 @@ fun ExclusionsDialog(
             decorFitsSystemWindows = false
         )
     ) {
-        BackHandler(onBack = onDismiss)
+        BackHandler(onBack = {
+            haptics.click()
+            onDismiss()
+        })
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -127,7 +132,10 @@ fun ExclusionsDialog(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Back",
@@ -257,35 +265,38 @@ fun ExclusionsDialog(
                             )
 
                             FilledTonalIconButton(
-                                onClick = { isFolderPickerVisible = true },
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.size(52.dp)
+                                 onClick = {
+                                     haptics.click()
+                                     isFolderPickerVisible = true
+                                 },
+                                 shape = RoundedCornerShape(14.dp),
+                                 modifier = Modifier.size(52.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.FolderOpen,
-                                    contentDescription = "Browse Folders",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
+                                 Icon(
+                                     imageVector = Icons.Rounded.FolderOpen,
+                                     contentDescription = "Browse Folders",
+                                     tint = MaterialTheme.colorScheme.primary,
+                                     modifier = Modifier.size(22.dp)
+                                 )
                             }
 
                             FilledIconButton(
-                                onClick = submitInput,
-                                enabled = inputPath.isNotBlank(),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.size(52.dp),
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                )
+                                 onClick = submitInput,
+                                 enabled = inputPath.isNotBlank(),
+                                 shape = RoundedCornerShape(14.dp),
+                                 modifier = Modifier.size(52.dp),
+                                 colors = IconButtonDefaults.filledIconButtonColors(
+                                     containerColor = MaterialTheme.colorScheme.primary,
+                                     contentColor = MaterialTheme.colorScheme.onPrimary,
+                                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                 )
                             ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Add,
-                                    contentDescription = "Add Exclusion",
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                 Icon(
+                                     imageVector = Icons.Rounded.Add,
+                                     contentDescription = "Add Exclusion",
+                                     modifier = Modifier.size(24.dp)
+                                 )
                             }
                         }
 
@@ -314,6 +325,7 @@ fun ExclusionsDialog(
                                         FilterChip(
                                             selected = false,
                                             onClick = {
+                                                haptics.click()
                                                 if (onAddExclusions != null) {
                                                     onAddExclusions(listOf(preset))
                                                 } else {
@@ -441,7 +453,10 @@ fun ExclusionsDialog(
                                     }
 
                                     IconButton(
-                                        onClick = { onRemoveExclusion(path) },
+                                        onClick = {
+                                            haptics.warning()
+                                            onRemoveExclusion(path)
+                                        },
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(

@@ -48,30 +48,41 @@ fun CategoryVisibilityDialog(
     onToggleCategory: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        BackHandler(onBack = onDismiss)
+        BackHandler(onBack = {
+            haptics.click()
+            onDismiss()
+        })
         Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Storage Categories", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Close")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Rounded.Check, contentDescription = "Done")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+            topBar = {
+                TopAppBar(
+                    title = { Text("Storage Categories", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
+                            Icon(Icons.Rounded.Close, contentDescription = "Close")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
+                            Icon(Icons.Rounded.Check, contentDescription = "Done")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 )
-            )
-        },
+            },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
             Column(
@@ -100,7 +111,7 @@ fun CategoryVisibilityDialog(
                 }
             }
         }
-        }
+    }
 }
 
 @Composable
@@ -110,12 +121,18 @@ private fun CategoryToggleRow(
     canDisable: Boolean,
     onToggle: () -> Unit
 ) {
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     val color = category.getColor()
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable(enabled = canDisable || !enabled) { if (canDisable || !enabled) onToggle() },
+            .clickable(enabled = canDisable || !enabled) {
+                if (canDisable || !enabled) {
+                    haptics.selection()
+                    onToggle()
+                }
+            },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (enabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -156,7 +173,12 @@ private fun CategoryToggleRow(
             }
             Checkbox(
                 checked = enabled,
-                onCheckedChange = { if (canDisable || !enabled) onToggle() },
+                onCheckedChange = {
+                    if (canDisable || !enabled) {
+                        haptics.selection()
+                        onToggle()
+                    }
+                },
                 enabled = canDisable || !enabled
             )
         }

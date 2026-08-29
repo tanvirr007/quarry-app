@@ -45,6 +45,8 @@ fun PermissionBanner(
 ) {
     val context = LocalContext.current
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -99,6 +101,7 @@ fun PermissionBanner(
 
             Button(
                 onClick = {
+                    haptics.click()
                     launchStoragePermissionSettings(context)
                     onGrantClick()
                 },

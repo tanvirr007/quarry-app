@@ -98,6 +98,7 @@ fun DeveloperInfoDialog(
         packageInfo?.versionCode?.toLong() ?: 1L
     }
     val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -106,7 +107,10 @@ fun DeveloperInfoDialog(
             decorFitsSystemWindows = false
         )
     ) {
-        BackHandler(onBack = onDismiss)
+        BackHandler(onBack = {
+            haptics.click()
+            onDismiss()
+        })
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -120,7 +124,10 @@ fun DeveloperInfoDialog(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Back",
@@ -303,11 +310,15 @@ private fun DevInfoItemCard(
     actionUrl: String? = null,
     onPrimaryClick: () -> Unit
 ) {
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onPrimaryClick() },
+            .clickable {
+                haptics.click()
+                onPrimaryClick()
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

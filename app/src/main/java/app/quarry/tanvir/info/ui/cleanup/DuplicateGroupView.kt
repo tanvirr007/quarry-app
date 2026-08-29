@@ -55,6 +55,8 @@ fun DuplicateGroupView(
     onDeleteItems: (List<StorageItem>) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     if (groups.isEmpty()) {
         Card(
             modifier = modifier.fillMaxWidth(),
@@ -116,7 +118,10 @@ fun DuplicateGroupView(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { isExpanded = !isExpanded }
+                            .clickable {
+                                haptics.click()
+                                isExpanded = !isExpanded
+                            }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -203,6 +208,7 @@ fun DuplicateGroupView(
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     TextButton(
                                         onClick = {
+                                            haptics.selection()
                                             selectedPaths = group.items.drop(1).map { it.path }.toSet()
                                         },
                                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
@@ -212,6 +218,7 @@ fun DuplicateGroupView(
 
                                     TextButton(
                                         onClick = {
+                                            haptics.selection()
                                             selectedPaths = if (selectedPaths.size == group.items.size) {
                                                 emptySet()
                                             } else {
@@ -238,6 +245,7 @@ fun DuplicateGroupView(
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(8.dp))
                                         .clickable {
+                                            haptics.selection()
                                             val newSet = selectedPaths.toMutableSet()
                                             if (newSet.contains(item.path)) newSet.remove(item.path) else newSet.add(item.path)
                                             selectedPaths = newSet
@@ -249,6 +257,7 @@ fun DuplicateGroupView(
                                     Checkbox(
                                         checked = isSelected,
                                         onCheckedChange = { checked ->
+                                            haptics.selection()
                                             val newSet = selectedPaths.toMutableSet()
                                             if (checked) newSet.add(item.path) else newSet.remove(item.path)
                                             selectedPaths = newSet
@@ -304,7 +313,10 @@ fun DuplicateGroupView(
                             // Full-width Clean button inside the expanded view
                             if (selectedItems.isNotEmpty()) {
                                 Button(
-                                    onClick = { onDeleteItems(selectedItems) },
+                                    onClick = {
+                                        haptics.warning()
+                                        onDeleteItems(selectedItems)
+                                    },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.error,
                                         contentColor = MaterialTheme.colorScheme.onError

@@ -55,6 +55,8 @@ fun FolderSizeView(
 
     val maxSizeBytes = dirList.firstOrNull()?.size?.coerceAtLeast(1L) ?: 1L
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -66,7 +68,10 @@ fun FolderSizeView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
-                    .clickable { onFolderClick(folder) },
+                    .clickable {
+                        haptics.click()
+                        onFolderClick(folder)
+                    },
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface

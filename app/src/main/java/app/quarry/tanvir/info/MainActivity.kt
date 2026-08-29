@@ -70,18 +70,29 @@ class MainActivity : FragmentActivity() {
                             }
                         }
                     }
-                    QuarryTheme(
-                        themeMode = state.themeMode,
-                        dynamicColor = state.isDynamicColor
+                    val haptics = app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptics(
+                        enabled = state.isHapticsEnabled,
+                        strength = state.hapticStrength
+                    )
+                    val composeHaptic = app.quarry.tanvir.info.domain.haptics.rememberQuarryComposeHapticFeedback(haptics)
+
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics provides haptics,
+                        androidx.compose.ui.platform.LocalHapticFeedback provides composeHaptic
                     ) {
-                        if (!state.isOnboardingCompleted) {
-                            OnboardingScreen(
-                                onCompleted = {
-                                    viewModel.completeOnboarding()
-                                }
-                            )
-                        } else {
-                            QuarryMainApp()
+                        QuarryTheme(
+                            themeMode = state.themeMode,
+                            dynamicColor = state.isDynamicColor
+                        ) {
+                            if (!state.isOnboardingCompleted) {
+                                OnboardingScreen(
+                                    onCompleted = {
+                                        viewModel.completeOnboarding()
+                                    }
+                                )
+                            } else {
+                                QuarryMainApp()
+                            }
                         }
                     }
                 }
@@ -96,6 +107,7 @@ fun QuarryMainApp() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
     val currentScreen = Screen.bottomNavItems.find { it.route == currentRoute } ?: Screen.Home
 
@@ -113,6 +125,7 @@ fun QuarryMainApp() {
                 navigationIcon = {
                     if (currentRoute != Screen.Home.route) {
                         IconButton(onClick = {
+                            haptics.click()
                             navController.navigate(Screen.Home.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true

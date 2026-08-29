@@ -128,9 +128,13 @@ fun HomeScreen(
         )
 
         // Analyze Storage Button (Shown when not currently scanning)
+        val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
         if (uiState.scanState !is ScanState.Scanning) {
             Button(
-                onClick = { viewModel.startScan() },
+                onClick = {
+                    haptics.click()
+                    viewModel.startScan()
+                },
                 enabled = uiState.hasStoragePermission,
                 modifier = Modifier
                     .fillMaxWidth()

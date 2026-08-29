@@ -196,6 +196,7 @@ fun OnboardingScreen(
                 }
 
                 // Action Buttons
+                val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -204,6 +205,7 @@ fun OnboardingScreen(
                     if (pagerState.currentPage > 0) {
                         OutlinedButton(
                             onClick = {
+                                haptics.click()
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(pagerState.currentPage - 1)
                                 }
@@ -223,6 +225,7 @@ fun OnboardingScreen(
 
                     Button(
                         onClick = {
+                            haptics.click()
                             if (pagerState.currentPage < onboardingSteps.size - 1) {
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(pagerState.currentPage + 1)

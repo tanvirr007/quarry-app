@@ -76,6 +76,7 @@ fun MiscellaneousDialog(
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     var sliderValue by remember(hapticStrength) { mutableFloatStateOf(hapticStrength.toFloat()) }
     var sliderDraft by remember { mutableStateOf<Int?>(null) }
     val displayStrength = sliderDraft ?: hapticStrength
@@ -87,7 +88,10 @@ fun MiscellaneousDialog(
             decorFitsSystemWindows = false
         )
     ) {
-        BackHandler(onBack = onDismiss)
+        BackHandler(onBack = {
+            haptics.click()
+            onDismiss()
+        })
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -101,7 +105,10 @@ fun MiscellaneousDialog(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Back",
@@ -196,7 +203,10 @@ fun MiscellaneousDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { onToggleQuickInsights(!isQuickInsightsEnabled) },
+                                .clickable {
+                                    haptics.selection()
+                                    onToggleQuickInsights(!isQuickInsightsEnabled)
+                                },
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
@@ -230,7 +240,10 @@ fun MiscellaneousDialog(
 
                             Switch(
                                 checked = isQuickInsightsEnabled,
-                                onCheckedChange = onToggleQuickInsights
+                                onCheckedChange = {
+                                    haptics.selection()
+                                    onToggleQuickInsights(it)
+                                }
                             )
                         }
 
@@ -247,7 +260,10 @@ fun MiscellaneousDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .clickable { onManageCategories() },
+                        .clickable {
+                            haptics.click()
+                            onManageCategories()
+                        },
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
@@ -331,7 +347,10 @@ fun MiscellaneousDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { onToggleHaptics(!isHapticsEnabled) },
+                                .clickable {
+                                    haptics.selection()
+                                    onToggleHaptics(!isHapticsEnabled)
+                                },
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
@@ -357,7 +376,7 @@ fun MiscellaneousDialog(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = if (isHapticsEnabled) "Vibration on long-press and actions" else "Vibrations disabled",
+                                    text = if (isHapticsEnabled) "Vibration on touch and actions" else "Vibrations disabled",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -365,7 +384,10 @@ fun MiscellaneousDialog(
 
                             Switch(
                                 checked = isHapticsEnabled,
-                                onCheckedChange = onToggleHaptics
+                                onCheckedChange = {
+                                    haptics.selection()
+                                    onToggleHaptics(it)
+                                }
                             )
                         }
 
@@ -429,7 +451,10 @@ fun MiscellaneousDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { onToggleKeepScreenOn(!isKeepScreenOn) },
+                                .clickable {
+                                    haptics.selection()
+                                    onToggleKeepScreenOn(!isKeepScreenOn)
+                                },
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
@@ -463,7 +488,10 @@ fun MiscellaneousDialog(
 
                             Switch(
                                 checked = isKeepScreenOn,
-                                onCheckedChange = onToggleKeepScreenOn
+                                onCheckedChange = {
+                                    haptics.selection()
+                                    onToggleKeepScreenOn(it)
+                                }
                             )
                         }
 

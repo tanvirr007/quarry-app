@@ -232,14 +232,17 @@ fun FileDetailsBottomSheet(
                     }
                 }
             }
-
+            val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
             // Primary Actions (Open & Share)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = { onOpen(file) },
+                    onClick = {
+                        haptics.click()
+                        onOpen(file)
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
@@ -254,7 +257,10 @@ fun FileDetailsBottomSheet(
                 }
 
                 FilledTonalButton(
-                    onClick = { onShare(file) },
+                    onClick = {
+                        haptics.click()
+                        onShare(file)
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
@@ -276,6 +282,7 @@ fun FileDetailsBottomSheet(
             ) {
                 OutlinedButton(
                     onClick = {
+                        haptics.click()
                         val parent = file.parentPath
                         if (!parent.isNullOrEmpty()) {
                             onOpenContainingFolder(parent)
@@ -296,7 +303,10 @@ fun FileDetailsBottomSheet(
                 }
 
                 OutlinedButton(
-                    onClick = { onRename(file) },
+                    onClick = {
+                        haptics.click()
+                        onRename(file)
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
@@ -318,6 +328,7 @@ fun FileDetailsBottomSheet(
             ) {
                 FilledTonalButton(
                     onClick = {
+                        haptics.warning()
                         onMoveToTrash(file)
                         onDismiss()
                     },
@@ -339,7 +350,10 @@ fun FileDetailsBottomSheet(
                 }
 
                 Button(
-                    onClick = { onDelete(file) },
+                    onClick = {
+                        haptics.warning()
+                        onDelete(file)
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
@@ -356,7 +370,7 @@ fun FileDetailsBottomSheet(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
+            }}
 
             Spacer(modifier = Modifier.height(16.dp))
         }

@@ -87,6 +87,7 @@ fun TrashManagementDialog(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
     var itemPendingRestore by remember { mutableStateOf<TrashItem?>(null) }
@@ -144,7 +145,10 @@ fun TrashManagementDialog(
                     }
 
                     IconButton(
-                        onClick = { selectedIds = emptySet() }
+                        onClick = {
+                            haptics.click()
+                            selectedIds = emptySet()
+                        }
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
@@ -169,7 +173,10 @@ fun TrashManagementDialog(
 
                     if (trashItems.isNotEmpty()) {
                         Button(
-                            onClick = { showEmptyTrashConfirmDialog = true },
+                            onClick = {
+                                haptics.warning()
+                                showEmptyTrashConfirmDialog = true
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -209,7 +216,10 @@ fun TrashManagementDialog(
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
+                            IconButton(onClick = {
+                                haptics.click()
+                                searchQuery = ""
+                            }) {
                                 Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear")
                             }
                         }
@@ -242,6 +252,7 @@ fun TrashManagementDialog(
                         ) {
                             TextButton(
                                 onClick = {
+                                    haptics.selection()
                                     selectedIds = if (allSelected) emptySet() else filteredItems.map { it.id }.toSet()
                                 },
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
@@ -255,7 +266,10 @@ fun TrashManagementDialog(
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FilledTonalButton(
-                                    onClick = { showBulkRestoreConfirmDialog = true },
+                                    onClick = {
+                                        haptics.click()
+                                        showBulkRestoreConfirmDialog = true
+                                    },
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
@@ -273,7 +287,10 @@ fun TrashManagementDialog(
                                 }
 
                                 Button(
-                                    onClick = { showBulkDeleteConfirmDialog = true },
+                                    onClick = {
+                                        haptics.warning()
+                                        showBulkDeleteConfirmDialog = true
+                                    },
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.error,
@@ -405,6 +422,7 @@ fun TrashManagementDialog(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
                                 .clickable {
+                                    haptics.selection()
                                     selectedIds = if (isSelected) {
                                         selectedIds - item.id
                                     } else {
@@ -430,6 +448,7 @@ fun TrashManagementDialog(
                                 Checkbox(
                                     checked = isSelected,
                                     onCheckedChange = { checked ->
+                                        haptics.selection()
                                         selectedIds = if (checked) selectedIds + item.id else selectedIds - item.id
                                     }
                                 )
@@ -477,7 +496,10 @@ fun TrashManagementDialog(
                                 if (!isSelectionMode) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                         IconButton(
-                                            onClick = { itemPendingRestore = item },
+                                            onClick = {
+                                                haptics.click()
+                                                itemPendingRestore = item
+                                            },
                                             modifier = Modifier.size(36.dp)
                                         ) {
                                             Icon(
@@ -489,7 +511,10 @@ fun TrashManagementDialog(
                                         }
 
                                         IconButton(
-                                            onClick = { itemPendingPermanentDelete = item },
+                                            onClick = {
+                                                haptics.warning()
+                                                itemPendingPermanentDelete = item
+                                            },
                                             modifier = Modifier.size(36.dp)
                                         ) {
                                             Icon(
@@ -509,7 +534,10 @@ fun TrashManagementDialog(
 
             // Close button
             OutlinedButton(
-                onClick = onDismiss,
+                onClick = {
+                    haptics.click()
+                    onDismiss()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -543,6 +571,7 @@ fun TrashManagementDialog(
             confirmButton = {
                 Button(
                     onClick = {
+                        haptics.warning()
                         showEmptyTrashConfirmDialog = false
                         onEmptyTrash()
                     },
@@ -556,7 +585,10 @@ fun TrashManagementDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEmptyTrashConfirmDialog = false }) {
+                TextButton(onClick = {
+                    haptics.click()
+                    showEmptyTrashConfirmDialog = false
+                }) {
                     Text("Cancel")
                 }
             }
@@ -586,6 +618,7 @@ fun TrashManagementDialog(
             confirmButton = {
                 Button(
                     onClick = {
+                        haptics.click()
                         val id = item.id
                         itemPendingRestore = null
                         onRestoreItem(id)
@@ -600,7 +633,10 @@ fun TrashManagementDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { itemPendingRestore = null }) {
+                TextButton(onClick = {
+                    haptics.click()
+                    itemPendingRestore = null
+                }) {
                     Text("Cancel")
                 }
             }
@@ -632,6 +668,7 @@ fun TrashManagementDialog(
             confirmButton = {
                 Button(
                     onClick = {
+                        haptics.click()
                         val toRestore = selectedIds.toList()
                         showBulkRestoreConfirmDialog = false
                         selectedIds = emptySet()
@@ -647,7 +684,10 @@ fun TrashManagementDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBulkRestoreConfirmDialog = false }) {
+                TextButton(onClick = {
+                    haptics.click()
+                    showBulkRestoreConfirmDialog = false
+                }) {
                     Text("Cancel")
                 }
             }
@@ -677,6 +717,7 @@ fun TrashManagementDialog(
             confirmButton = {
                 Button(
                     onClick = {
+                        haptics.warning()
                         val id = item.id
                         itemPendingPermanentDelete = null
                         onDeleteForever(id)
@@ -691,7 +732,10 @@ fun TrashManagementDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { itemPendingPermanentDelete = null }) {
+                TextButton(onClick = {
+                    haptics.click()
+                    itemPendingPermanentDelete = null
+                }) {
                     Text("Cancel")
                 }
             }
@@ -723,6 +767,7 @@ fun TrashManagementDialog(
             confirmButton = {
                 Button(
                     onClick = {
+                        haptics.warning()
                         val toDelete = selectedIds.toList()
                         showBulkDeleteConfirmDialog = false
                         selectedIds = emptySet()
@@ -738,7 +783,10 @@ fun TrashManagementDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBulkDeleteConfirmDialog = false }) {
+                TextButton(onClick = {
+                    haptics.click()
+                    showBulkDeleteConfirmDialog = false
+                }) {
                     Text("Cancel")
                 }
             }

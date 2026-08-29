@@ -48,6 +48,8 @@ fun DeleteCountdownDialog(
         "Delete \"${candidates.first().name}\"?"
     }
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
@@ -134,7 +136,10 @@ fun DeleteCountdownDialog(
         },
         confirmButton = {
             Button(
-                onClick = onConfirmAuthenticatedDelete,
+                onClick = {
+                    haptics.warning()
+                    onConfirmAuthenticatedDelete()
+                },
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
@@ -149,7 +154,10 @@ fun DeleteCountdownDialog(
         },
         dismissButton = {
             TextButton(
-                onClick = onDismiss,
+                onClick = {
+                    haptics.click()
+                    onDismiss()
+                },
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Cancel")

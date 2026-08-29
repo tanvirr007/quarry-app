@@ -72,6 +72,7 @@ fun StorageVolumesDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
     val totalStorage = volumes.sumOf { it.totalBytes }
     val usedStorage = volumes.sumOf { it.usedBytes }
@@ -84,7 +85,10 @@ fun StorageVolumesDialog(
             decorFitsSystemWindows = false
         )
     ) {
-        BackHandler(onBack = onDismiss)
+        BackHandler(onBack = {
+            haptics.click()
+            onDismiss()
+        })
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -98,7 +102,10 @@ fun StorageVolumesDialog(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Back",
@@ -306,6 +313,7 @@ fun StorageVolumesDialog(
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                     .clickable {
+                                        haptics.click()
                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                                         clipboard?.setPrimaryClip(ClipData.newPlainText("Volume Path", volume.path))
                                         Toast.makeText(context, "Path copied to clipboard", Toast.LENGTH_SHORT).show()

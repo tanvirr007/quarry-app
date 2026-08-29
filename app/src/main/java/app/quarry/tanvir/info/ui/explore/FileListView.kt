@@ -64,6 +64,8 @@ fun FileListView(
         return
     }
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -85,12 +87,17 @@ fun FileListView(
                     .combinedClickable(
                         onClick = {
                             if (isSelectionMode) {
+                                haptics.selection()
                                 onToggleSelect(file.path)
                             } else {
+                                haptics.click()
                                 onItemClick(file)
                             }
                         },
-                        onLongClick = { onItemLongClick(file) }
+                        onLongClick = {
+                            haptics.longPress()
+                            onItemLongClick(file)
+                        }
                     ),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
@@ -111,7 +118,10 @@ fun FileListView(
                     if (isSelectionMode) {
                         Checkbox(
                             checked = isSelected,
-                            onCheckedChange = { onToggleSelect(file.path) }
+                            onCheckedChange = {
+                                haptics.selection()
+                                onToggleSelect(file.path)
+                            }
                         )
                     }
 

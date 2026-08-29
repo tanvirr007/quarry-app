@@ -27,9 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
-import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
-import app.quarry.tanvir.info.ui.components.getColor
-import app.quarry.tanvir.info.ui.components.getIcon
+import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
 
 @Composable
 fun QuickInsightsSection(
@@ -68,9 +66,7 @@ fun QuickInsightsSection(
             QuickInsightCard(
                 insight = insight,
                 onClick = { onInsightClick(insight) },
-                onLongClick = onInsightLongClick?.let { { it(insight) } },
-                hapticsEnabled = hapticsEnabled,
-                hapticStrength = hapticStrength
+                onLongClick = onInsightLongClick?.let { { it(insight) } }
             )
         }
     }
@@ -86,16 +82,19 @@ private fun QuickInsightCard(
     hapticStrength: Int = 60
 ) {
     val categoryColor = insight.category.getColor()
-    val quarryHaptic = rememberQuarryHaptic(hapticsEnabled, hapticStrength)
+    val haptics = LocalQuarryHaptics.current
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .combinedClickable(
-                onClick = onClick,
+                onClick = {
+                    haptics.click()
+                    onClick()
+                },
                 onLongClick = {
-                    quarryHaptic()
+                    haptics.longPress()
                     onLongClick?.invoke()
                 }
             ),

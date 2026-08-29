@@ -77,6 +77,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeItemListBottomSheet(
@@ -100,7 +102,7 @@ fun HomeItemListBottomSheet(
 
     val categoryColor = category.getColor()
     val totalBytes = files.sumOf { it.size }
-    val quarryHaptic = rememberQuarryHaptic(enabled = hapticsEnabled, strength = hapticStrength)
+    val haptics = LocalQuarryHaptics.current
     val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
 
     val filteredFiles = remember(files, searchQuery, sortByLargest) {
@@ -189,6 +191,7 @@ fun HomeItemListBottomSheet(
                         val isAllSelected = filteredFiles.isNotEmpty() && filteredFiles.all { selectedPaths.contains(it.path) }
                         IconButton(
                             onClick = {
+                                haptics.selection()
                                 if (isAllSelected) {
                                     selectedPaths = emptySet()
                                 } else {
@@ -204,6 +207,7 @@ fun HomeItemListBottomSheet(
                         }
                         IconButton(
                             onClick = {
+                                haptics.click()
                                 isSelectionMode = false
                                 selectedPaths = emptySet()
                             }
@@ -256,7 +260,10 @@ fun HomeItemListBottomSheet(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         IconButton(
-                            onClick = { sortByLargest = !sortByLargest }
+                            onClick = {
+                                haptics.click()
+                                sortByLargest = !sortByLargest
+                            }
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Sort,
@@ -264,7 +271,10 @@ fun HomeItemListBottomSheet(
                                 tint = if (sortByLargest) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = {
+                            haptics.click()
+                            onDismiss()
+                        }) {
                             Icon(
                                 imageVector = Icons.Rounded.Close,
                                 contentDescription = "Close",
@@ -290,7 +300,10 @@ fun HomeItemListBottomSheet(
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
+                            IconButton(onClick = {
+                                haptics.click()
+                                searchQuery = ""
+                            }) {
                                 Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear search")
                             }
                         }
@@ -351,17 +364,19 @@ fun HomeItemListBottomSheet(
                             isSelectionMode = isSelectionMode,
                             onClick = {
                                 if (isSelectionMode) {
+                                    haptics.selection()
                                     selectedPaths = if (isSelected) {
                                         selectedPaths - file.path
                                     } else {
                                         selectedPaths + file.path
                                     }
                                 } else {
+                                    haptics.click()
                                     onFileClick(file)
                                 }
                             },
                             onLongClick = {
-                                quarryHaptic()
+                                haptics.longPress()
                                 if (!isSelectionMode) {
                                     isSelectionMode = true
                                     selectedPaths = setOf(file.path)
@@ -393,6 +408,7 @@ fun HomeItemListBottomSheet(
                     FilledTonalButton(
                         onClick = {
                             if (selectedFiles.isNotEmpty()) {
+                                haptics.warning()
                                 onMoveToTrashSelected(selectedFiles) {
                                     selectedPaths = emptySet()
                                     isSelectionMode = false

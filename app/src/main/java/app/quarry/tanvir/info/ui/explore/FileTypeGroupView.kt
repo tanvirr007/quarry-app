@@ -77,6 +77,8 @@ fun FileTypeGroupView(
         return
     }
 
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -100,7 +102,10 @@ fun FileTypeGroupView(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { isExpanded = !isExpanded }
+                            .clickable {
+                                haptics.click()
+                                isExpanded = !isExpanded
+                            }
                             .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -151,7 +156,10 @@ fun FileTypeGroupView(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable { onFileClick(file) }
+                                        .clickable {
+                                            haptics.click()
+                                            onFileClick(file)
+                                        }
                                         .padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
