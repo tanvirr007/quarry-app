@@ -257,7 +257,7 @@ fun HomeItemListBottomSheet(
                             Icon(
                                 imageVector = Icons.Rounded.Sort,
                                 contentDescription = if (sortByLargest) "Sorted by Size" else "Sorted by Date",
-                                tint = if (sortByLargest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (sortByLargest) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         IconButton(onClick = onDismiss) {
@@ -498,11 +498,11 @@ private fun FileItemCard(
             ),
         shape = RoundedCornerShape(14.dp),
         border = if (isSelected) {
-            BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+            BorderStroke(1.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f))
         } else null,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
             } else {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
             }

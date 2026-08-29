@@ -40,7 +40,7 @@ class UserPreferencesRepository private constructor(private val context: Context
     }
 
     val isDynamicColorEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[DYNAMIC_COLOR_KEY] ?: true
+        preferences[DYNAMIC_COLOR_KEY] ?: false
     }
 
     val scanHiddenFiles: Flow<Boolean> = context.dataStore.data.map { preferences ->

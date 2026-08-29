@@ -141,8 +141,8 @@ fun ScanProgressCard(
                         .fillMaxWidth()
                         .height(10.dp)
                         .clip(RoundedCornerShape(5.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    color = MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
                 )
             } else {
                 LinearProgressIndicator(
@@ -150,7 +150,7 @@ fun ScanProgressCard(
                         .fillMaxWidth()
                         .height(10.dp)
                         .clip(RoundedCornerShape(5.dp)),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.tertiary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
@@ -197,7 +197,7 @@ private fun FolderStatusChip(folder: FolderScanStatus) {
             .clip(RoundedCornerShape(8.dp))
             .background(
                 if (folder.isCompleted) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-                else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                else MaterialTheme.colorScheme.tertiaryContainer
             )
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
@@ -209,7 +209,7 @@ private fun FolderStatusChip(folder: FolderScanStatus) {
                 text = folder.name,
                 style = MaterialTheme.typography.labelSmall,
                 color = if (folder.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
-                else MaterialTheme.colorScheme.primary,
+                else MaterialTheme.colorScheme.onTertiaryContainer,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -218,14 +218,14 @@ private fun FolderStatusChip(folder: FolderScanStatus) {
                 Icon(
                     imageVector = Icons.Rounded.CheckCircle,
                     contentDescription = "Completed",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(12.dp)
                 )
             } else {
                 Icon(
                     imageVector = Icons.Rounded.HourglassTop,
                     contentDescription = "In progress",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(12.dp)
                 )
             }

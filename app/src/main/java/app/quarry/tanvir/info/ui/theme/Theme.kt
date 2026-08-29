@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -22,37 +23,69 @@ private val DarkColorScheme = darkColorScheme(
     onPrimaryContainer = DarkOnPrimaryContainer,
     secondary = TealGrey80,
     onSecondary = TealGrey40,
+    secondaryContainer = Color(0xFF2E3E3D),
+    onSecondaryContainer = Color(0xFFCCE8E5),
     tertiary = Mint80,
     onTertiary = Mint40,
+    tertiaryContainer = DarkTertiaryContainer,
+    onTertiaryContainer = DarkOnTertiaryContainer,
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
     background = DarkBackground,
     onBackground = DarkOnBackground,
     surface = DarkSurface,
     onSurface = DarkOnSurface,
     surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = DarkOnSurfaceVariant
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = Color(0xFF889392),
+    outlineVariant = Color(0xFF3A4948),
+    scrim = Color(0xFF000000),
+    surfaceContainerLowest = Color(0xFF0A0F0F),
+    surfaceContainerLow = Color(0xFF1B2121),
+    surfaceContainer = Color(0xFF1F2525),
+    surfaceContainerHigh = Color(0xFF2A3231),
+    surfaceContainerHighest = Color(0xFF353D3C)
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Teal40,
-    onPrimary = LightBackground,
+    onPrimary = Color.White,
     primaryContainer = LightPrimaryContainer,
     onPrimaryContainer = LightOnPrimaryContainer,
     secondary = TealGrey40,
-    onSecondary = LightBackground,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFCCE8E5),
+    onSecondaryContainer = Color(0xFF051F1E),
     tertiary = Mint40,
-    onTertiary = LightBackground,
+    onTertiary = Color.White,
+    tertiaryContainer = LightTertiaryContainer,
+    onTertiaryContainer = LightOnTertiaryContainer,
+    error = Color(0xFFBA1A1A),
+    onError = Color.White,
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
     background = LightBackground,
     onBackground = LightOnBackground,
     surface = LightSurface,
     onSurface = LightOnSurface,
     surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = LightOnSurfaceVariant
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = Color(0xFF6F7978),
+    outlineVariant = Color(0xFFBFC9C7),
+    scrim = Color(0xFF000000),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF1F4F3),
+    surfaceContainer = Color(0xFFEBEFED),
+    surfaceContainerHigh = Color(0xFFE6E9E8),
+    surfaceContainerHighest = Color(0xFFE0E3E2)
 )
 
 @Composable
 fun QuarryTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val darkTheme = when (themeMode) {
