@@ -54,11 +54,16 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppearanceDialog(
     currentTheme: ThemeMode,
+    isDynamicColor: Boolean,
     onSelectTheme: (ThemeMode) -> Unit,
+    onToggleDynamicColor: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -192,7 +197,7 @@ fun AppearanceDialog(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Material You Dynamic Palette Note
+                // Material You Dynamic Palette Card with Switch Toggle
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -204,27 +209,70 @@ fun AppearanceDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.AutoAwesome,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = "Dynamic Material You",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        text = "Dynamic Color",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Material You wallpaper colors (Android 12+)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Switch(
+                                checked = isDynamicColor,
+                                onCheckedChange = onToggleDynamicColor,
+                                thumbContent = if (isDynamicColor) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
+                                } else null
                             )
                         }
 
                         Text(
-                            text = "Quarry dynamically extracts harmonious colors from your wallpaper on Android 12+ while maintaining complete on-device privacy.",
+                            text = if (isDynamicColor) {
+                                "Quarry dynamically extracts harmonious colors from your device wallpaper while maintaining complete on-device privacy."
+                            } else {
+                                "Using Quarry's signature high-contrast mineral color palette."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

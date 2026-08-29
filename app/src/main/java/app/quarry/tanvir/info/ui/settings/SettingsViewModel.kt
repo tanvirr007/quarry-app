@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val isDynamicColorEnabled: Boolean = true,
     val isBiometricEnabled: Boolean = true,
     val deleteCountdownSeconds: Int = 5,
     val excludedFolders: Set<String> = emptySet(),
@@ -46,13 +47,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
             prefsRepo.themeMode,
+            prefsRepo.isDynamicColorEnabled,
             prefsRepo.isBiometricAuthEnabled,
             prefsRepo.deleteCountdownSeconds,
             prefsRepo.excludedFolders,
             prefsRepo.scanHiddenFiles
-        ) { theme, biometric, countdown, exclusions, scanHidden ->
+        ) { theme, dynamicColor, biometric, countdown, exclusions, scanHidden ->
             SettingsUiState(
                 themeMode = theme,
+                isDynamicColorEnabled = dynamicColor,
                 isBiometricEnabled = biometric,
                 deleteCountdownSeconds = countdown,
                 excludedFolders = exclusions,
@@ -95,7 +98,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             prefsRepo.setThemeMode(mode)
-            _isThemeDialogVisible.value = false
+        }
+    }
+
+    fun toggleDynamicColor(enabled: Boolean) {
+        viewModelScope.launch {
+            prefsRepo.setDynamicColorEnabled(enabled)
         }
     }
 

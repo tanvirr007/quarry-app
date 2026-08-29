@@ -15,7 +15,8 @@ sealed interface MainUiState {
     data object Loading : MainUiState
     data class Success(
         val isOnboardingCompleted: Boolean,
-        val themeMode: ThemeMode
+        val themeMode: ThemeMode,
+        val isDynamicColor: Boolean
     ) : MainUiState
 }
 
@@ -24,11 +25,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val uiState: StateFlow<MainUiState> = combine(
         prefsRepo.isOnboardingCompleted,
-        prefsRepo.themeMode
-    ) { isOnboardingCompleted, themeMode ->
+        prefsRepo.themeMode,
+        prefsRepo.isDynamicColorEnabled
+    ) { isOnboardingCompleted, themeMode, isDynamicColor ->
         MainUiState.Success(
             isOnboardingCompleted = isOnboardingCompleted,
-            themeMode = themeMode
+            themeMode = themeMode,
+            isDynamicColor = isDynamicColor
         )
     }.stateIn(
         scope = viewModelScope,

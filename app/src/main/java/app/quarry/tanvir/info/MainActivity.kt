@@ -56,7 +56,10 @@ class MainActivity : FragmentActivity() {
                     // Retained by splash screen
                 }
                 is MainUiState.Success -> {
-                    QuarryTheme(themeMode = state.themeMode) {
+                    QuarryTheme(
+                        themeMode = state.themeMode,
+                        dynamicColor = state.isDynamicColor
+                    ) {
                         if (!state.isOnboardingCompleted) {
                             OnboardingScreen(
                                 onCompleted = {

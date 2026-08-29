@@ -179,7 +179,9 @@ fun SettingsScreen(
     if (uiState.isThemeDialogVisible) {
         AppearanceDialog(
             currentTheme = uiState.themeMode,
+            isDynamicColor = uiState.isDynamicColorEnabled,
             onSelectTheme = { viewModel.setThemeMode(it) },
+            onToggleDynamicColor = { viewModel.toggleDynamicColor(it) },
             onDismiss = { viewModel.hideThemeDialog() }
         )
     }

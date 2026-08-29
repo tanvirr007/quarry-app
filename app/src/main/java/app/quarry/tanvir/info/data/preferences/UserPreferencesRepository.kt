@@ -23,6 +23,7 @@ enum class ThemeMode(val displayName: String) {
 class UserPreferencesRepository private constructor(private val context: Context) {
 
     private val THEME_KEY = stringPreferencesKey("theme_mode")
+    private val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color_enabled")
     private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
     private val BIOMETRIC_AUTH_KEY = booleanPreferencesKey("biometric_auth_enabled")
     private val DELETE_COUNTDOWN_KEY = intPreferencesKey("delete_countdown_seconds")
@@ -36,6 +37,10 @@ class UserPreferencesRepository private constructor(private val context: Context
         } catch (e: Exception) {
             ThemeMode.SYSTEM
         }
+    }
+
+    val isDynamicColorEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[DYNAMIC_COLOR_KEY] ?: true
     }
 
     val scanHiddenFiles: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -61,6 +66,12 @@ class UserPreferencesRepository private constructor(private val context: Context
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_KEY] = mode.name
+        }
+    }
+
+    suspend fun setDynamicColorEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[DYNAMIC_COLOR_KEY] = enabled
         }
     }
 
