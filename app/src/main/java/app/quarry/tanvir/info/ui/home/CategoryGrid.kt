@@ -1,7 +1,8 @@
 package app.quarry.tanvir.info.ui.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.StorageCategoryData
@@ -34,6 +37,7 @@ import app.quarry.tanvir.info.ui.components.getIcon
 fun CategoryGrid(
     categories: List<StorageCategoryData>,
     onCategoryClick: (StorageCategory) -> Unit,
+    onCategoryLongClick: ((StorageCategory) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -56,6 +60,7 @@ fun CategoryGrid(
                 CategoryCard(
                     categoryData = pair[0],
                     onClick = { onCategoryClick(pair[0].category) },
+                    onLongClick = onCategoryLongClick?.let { { it(pair[0].category) } },
                     modifier = Modifier.weight(1f)
                 )
 
@@ -63,6 +68,7 @@ fun CategoryGrid(
                     CategoryCard(
                         categoryData = pair[1],
                         onClick = { onCategoryClick(pair[1].category) },
+                        onLongClick = onCategoryLongClick?.let { { it(pair[1].category) } },
                         modifier = Modifier.weight(1f)
                     )
                 } else {
@@ -73,18 +79,27 @@ fun CategoryGrid(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CategoryCard(
     categoryData: StorageCategoryData,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val categoryColor = categoryData.category.getColor()
+    val haptic = LocalHapticFeedback.current
 
     Card(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick?.invoke()
+                }
+            ),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

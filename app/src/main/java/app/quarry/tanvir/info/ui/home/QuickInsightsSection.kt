@@ -1,7 +1,8 @@
 package app.quarry.tanvir.info.ui.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
@@ -33,6 +36,7 @@ import app.quarry.tanvir.info.ui.components.getIcon
 fun QuickInsightsSection(
     insights: List<QuickInsight>,
     onInsightClick: (QuickInsight) -> Unit,
+    onInsightLongClick: ((QuickInsight) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (insights.isEmpty()) return
@@ -62,24 +66,34 @@ fun QuickInsightsSection(
         insights.forEach { insight ->
             QuickInsightCard(
                 insight = insight,
-                onClick = { onInsightClick(insight) }
+                onClick = { onInsightClick(insight) },
+                onLongClick = onInsightLongClick?.let { { it(insight) } }
             )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun QuickInsightCard(
     insight: QuickInsight,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
 ) {
     val categoryColor = insight.category.getColor()
+    val haptic = LocalHapticFeedback.current
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick?.invoke()
+                }
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

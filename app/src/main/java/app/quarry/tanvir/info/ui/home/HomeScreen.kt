@@ -159,6 +159,9 @@ fun HomeScreen(
                 } else {
                     viewModel.selectInsight(insight)
                 }
+            },
+            onInsightLongClick = { insight ->
+                viewModel.selectInsight(insight, startInSelectionMode = true)
             }
         )
 
@@ -171,6 +174,9 @@ fun HomeScreen(
                 } else {
                     viewModel.selectCategory(category)
                 }
+            },
+            onCategoryLongClick = { category ->
+                viewModel.selectCategory(category, startInSelectionMode = true)
             }
         )
 
@@ -183,8 +189,15 @@ fun HomeScreen(
             title = sheetData.title,
             category = sheetData.category,
             files = sheetData.files,
+            startInSelectionMode = sheetData.startInSelectionMode,
             onFileClick = { file ->
                 viewModel.selectDetailFile(file)
+            },
+            onMoveToTrashSelected = { files, onComplete ->
+                viewModel.moveToTrashBatch(activity, files, onComplete)
+            },
+            onDeleteSelected = { files, onComplete ->
+                viewModel.deletePermanentlyBatch(activity, files, onComplete)
             },
             onDismiss = {
                 viewModel.dismissSheet()

@@ -31,7 +31,8 @@ import kotlinx.coroutines.launch
 data class HomeSheetData(
     val title: String,
     val category: StorageCategory,
-    val files: List<FileEntity>
+    val files: List<FileEntity>,
+    val startInSelectionMode: Boolean = false
 )
 
 data class HomeUiState(
@@ -163,20 +164,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun selectCategory(category: StorageCategory) {
+    fun selectCategory(category: StorageCategory, startInSelectionMode: Boolean = false) {
         activeSheetCollectJob?.cancel()
         activeSheetCollectJob = viewModelScope.launch(Dispatchers.IO) {
             repository.getFilesByCategory(category.name).collect { files ->
                 _activeSheetData.value = HomeSheetData(
                     title = category.displayName,
                     category = category,
-                    files = files
+                    files = files,
+                    startInSelectionMode = startInSelectionMode
                 )
             }
         }
     }
 
-    fun selectInsight(insight: QuickInsight) {
+    fun selectInsight(insight: QuickInsight, startInSelectionMode: Boolean = false) {
         activeSheetCollectJob?.cancel()
         activeSheetCollectJob = viewModelScope.launch(Dispatchers.IO) {
             val flow = when (insight.id) {
@@ -189,7 +191,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _activeSheetData.value = HomeSheetData(
                     title = insight.title,
                     category = insight.category,
-                    files = files
+                    files = files,
+                    startInSelectionMode = startInSelectionMode
                 )
             }
         }
@@ -282,6 +285,41 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun moveToTrashBatch(activity: FragmentActivity?, files: List<FileEntity>, onComplete: () -> Unit = {}) {
+        val paths = files.map { it.path }
+        if (paths.isEmpty()) return
+
+        val performBulkMoveToTrash: () -> Unit = {
+            viewModelScope.launch(Dispatchers.IO) {
+                val results = fileOperationsManager.bulkMoveToTrash(paths)
+                val successCount = results.count { it.value }
+                _userMessage.value = "Moved $successCount items to Trash"
+                onComplete()
+            }
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performBulkMoveToTrash()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Move to Trash",
+                    subtitle = "Authenticate to move ${paths.size} files to Trash",
+                    onSuccess = performBulkMoveToTrash,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
+    }
+
     fun deleteFile(activity: FragmentActivity?, file: FileEntity) {
         val performDelete: () -> Unit = {
             viewModelScope.launch(Dispatchers.IO) {
@@ -309,6 +347,44 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     title = "Confirm File Deletion",
                     subtitle = "Authenticate to delete ${file.name}",
                     onSuccess = performDelete,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
+    }
+
+    fun deletePermanentlyBatch(activity: FragmentActivity?, files: List<FileEntity>, onComplete: () -> Unit = {}) {
+        val paths = files.map { it.path }
+        if (paths.isEmpty()) return
+
+        val performBulkDelete: () -> Unit = {
+            viewModelScope.launch(Dispatchers.IO) {
+                val results = fileOperationsManager.bulkDelete(paths)
+                val successCount = results.count { it.value }
+                _userMessage.value = "Deleted $successCount files permanently"
+                onComplete()
+            }
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performBulkDelete()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                val title = if (files.size == 1) "Confirm Deletion" else "Confirm Bulk Deletion"
+                val subtitle = if (files.size == 1) "Authenticate to delete ${files[0].name}" else "Authenticate to delete ${files.size} files"
+
+                securityManager.authenticate(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle,
+                    onSuccess = performBulkDelete,
                     onError = { error ->
                         _userMessage.value = error
                     }

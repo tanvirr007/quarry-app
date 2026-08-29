@@ -1,7 +1,16 @@
 package app.quarry.tanvir.info.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,13 +27,22 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Deselect
 import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.RestoreFromTrash
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.Sort
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +51,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +61,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,6 +71,7 @@ import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
+import app.quarry.tanvir.info.ui.explore.DeleteCountdownDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,12 +82,19 @@ fun HomeItemListBottomSheet(
     title: String,
     category: StorageCategory,
     files: List<FileEntity>,
+    startInSelectionMode: Boolean = false,
     onFileClick: (FileEntity) -> Unit,
+    onMoveToTrashSelected: (List<FileEntity>, () -> Unit) -> Unit,
+    onDeleteSelected: (List<FileEntity>, () -> Unit) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var searchQuery by remember { mutableStateOf("") }
     var sortByLargest by remember { mutableStateOf(true) }
+    var isSelectionMode by remember(startInSelectionMode) { mutableStateOf(startInSelectionMode) }
+    var selectedPaths by remember { mutableStateOf(setOf<String>()) }
+    var deleteCandidates by remember { mutableStateOf<List<FileEntity>?>(null) }
+    val haptic = LocalHapticFeedback.current
 
     val categoryColor = category.getColor()
     val totalBytes = files.sumOf { it.size }
@@ -83,6 +112,13 @@ fun HomeItemListBottomSheet(
         }
     }
 
+    val selectedFiles = remember(files, selectedPaths) {
+        files.filter { selectedPaths.contains(it.path) }
+    }
+    val selectedBytes = remember(selectedFiles) {
+        selectedFiles.sumOf { it.size }
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -92,70 +128,145 @@ fun HomeItemListBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f)
+                .fillMaxHeight(0.88f)
                 .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header
+            // Header: Switches dynamically between standard header and selection mode header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(categoryColor.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
+                if (isSelectionMode) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            imageVector = category.getIcon(),
-                            contentDescription = null,
-                            tint = categoryColor,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column {
+                            Text(
+                                text = "${selectedPaths.size} selected",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (selectedPaths.isNotEmpty()) {
+                                    StorageFormatter.formatBytes(selectedBytes)
+                                } else {
+                                    "Tap items to mark"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
-                    Column {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "${files.size} files · ${StorageFormatter.formatBytes(totalBytes)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    IconButton(
-                        onClick = { sortByLargest = !sortByLargest }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Sort,
-                            contentDescription = if (sortByLargest) "Sorted by Size" else "Sorted by Date",
-                            tint = if (sortByLargest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        val isAllSelected = filteredFiles.isNotEmpty() && filteredFiles.all { selectedPaths.contains(it.path) }
+                        IconButton(
+                            onClick = {
+                                if (isAllSelected) {
+                                    selectedPaths = emptySet()
+                                } else {
+                                    selectedPaths = filteredFiles.map { it.path }.toSet()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (isAllSelected) Icons.Rounded.Deselect else Icons.Rounded.SelectAll,
+                                contentDescription = if (isAllSelected) "Deselect All" else "Select All",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                isSelectionMode = false
+                                selectedPaths = emptySet()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "Cancel selection",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(categoryColor.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = category.getIcon(),
+                                contentDescription = null,
+                                tint = categoryColor,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${files.size} files · ${StorageFormatter.formatBytes(totalBytes)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        IconButton(
+                            onClick = { sortByLargest = !sortByLargest }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Sort,
+                                contentDescription = if (sortByLargest) "Sorted by Size" else "Sorted by Date",
+                                tint = if (sortByLargest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "Close",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -227,23 +338,148 @@ fun HomeItemListBottomSheet(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredFiles, key = { it.path }) { file ->
+                        val isSelected = selectedPaths.contains(file.path)
+
                         FileItemCard(
                             file = file,
-                            onClick = { onFileClick(file) }
+                            isSelected = isSelected,
+                            isSelectionMode = isSelectionMode,
+                            onClick = {
+                                if (isSelectionMode) {
+                                    selectedPaths = if (isSelected) {
+                                        selectedPaths - file.path
+                                    } else {
+                                        selectedPaths + file.path
+                                    }
+                                } else {
+                                    onFileClick(file)
+                                }
+                            },
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (!isSelectionMode) {
+                                    isSelectionMode = true
+                                    selectedPaths = setOf(file.path)
+                                } else {
+                                    selectedPaths = if (isSelected) {
+                                        selectedPaths - file.path
+                                    } else {
+                                        selectedPaths + file.path
+                                    }
+                                }
+                            }
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Bottom Action Bar for Bulk Selection (Trash / Delete Permanently)
+            AnimatedVisibility(
+                visible = isSelectionMode,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            if (selectedFiles.isNotEmpty()) {
+                                onMoveToTrashSelected(selectedFiles) {
+                                    selectedPaths = emptySet()
+                                    isSelectionMode = false
+                                }
+                            }
+                        },
+                        enabled = selectedPaths.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.RestoreFromTrash,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (selectedPaths.isEmpty()) "To Trash" else "To Trash (${selectedPaths.size})",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (selectedFiles.isNotEmpty()) {
+                                deleteCandidates = selectedFiles
+                            }
+                        },
+                        enabled = selectedPaths.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.DeleteForever,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (selectedPaths.isEmpty()) "Delete" else "Delete (${StorageFormatter.formatBytes(selectedBytes)})",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
         }
+    }
+
+    // Delete Confirmation Dialog
+    deleteCandidates?.let { candidates ->
+        DeleteCountdownDialog(
+            candidates = candidates,
+            isBiometricAuthRequired = true,
+            onDismiss = { deleteCandidates = null },
+            onConfirmAuthenticatedDelete = {
+                val toDelete = candidates
+                deleteCandidates = null
+                onDeleteSelected(toDelete) {
+                    selectedPaths = emptySet()
+                    isSelectionMode = false
+                }
+            }
+        )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileItemCard(
     file: FileEntity,
-    onClick: () -> Unit
+    isSelected: Boolean,
+    isSelectionMode: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     val fileCategory = StorageCategory.fromExtension(file.extension)
     val color = fileCategory.getColor()
@@ -256,19 +492,41 @@ private fun FileItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(14.dp),
+        border = if (isSelected) {
+            BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+        } else null,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            }
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            AnimatedVisibility(
+                visible = isSelectionMode,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally()
+            ) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() },
+                    modifier = Modifier.padding(end = 2.dp)
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .size(40.dp)
