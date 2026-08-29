@@ -5,8 +5,8 @@
 **See where your device storage really goes**
 
 [![Android](https://img.shields.io/badge/Android-12.0%2B%20(API%2031%2B)-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2024.12.01-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2026.08.00-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Material 3](https://img.shields.io/badge/Material_3-M3-6750A4?style=flat&logo=materialdesign&logoColor=white)](https://m3.material.io)
 
 <br/>
@@ -51,8 +51,8 @@ Quarry is built following **Clean Architecture** and **Unidirectional Data Flow 
 
 | Component | Technology |
 | :--- | :--- |
-| **Language** | [Kotlin 2.0.21](https://kotlinlang.org/) |
-| **UI Framework** | [Jetpack Compose](https://developer.android.com/jetpack/compose) (BOM `2024.12.01`) + Material 3 |
+| **Language** | [Kotlin 2.2.21](https://kotlinlang.org/) |
+| **UI Framework** | [Jetpack Compose](https://developer.android.com/jetpack/compose) (BOM `2026.08.00`) + Material 3 |
 | **Typography** | [Google Sans Rounded](https://fonts.google.com/) (Embedded `res/font/`) |
 | **Navigation** | [Compose Navigation](https://developer.android.com/guide/navigation/navigation-compose) |
 | **Local Database** | [Room Database 2.6.1](https://developer.android.com/training/data-storage/room) with [KSP](https://kotlinlang.org/docs/ksp-overview.html) |
