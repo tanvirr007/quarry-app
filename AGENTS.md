@@ -57,7 +57,7 @@ app/src/main/java/app/quarry/tanvir/info/
 │   ├── home/                     # Dashboard, storage breakdown, visual category charts (Quick Insights gating, filtered categories)
 │   ├── navigation/               # NavHost, screens, bottom navigation bar
 │   ├── onboarding/               # First-run permission & onboarding dialogs
-│   ├── settings/                 # Settings + dialogs (Appearance, Exclusions, Storage Volumes, CategoryVisibilityDialog, Miscellaneous card)
+│   ├── settings/                 # Settings + dialogs (Appearance, Exclusions, Storage Volumes, CategoryVisibilityDialog, MiscellaneousDialog)
 │   └── theme/                    # Material 3 ColorScheme, Typography, Theme setup
 └── worker/                       # WorkManager workers (background scanning/cleanup)
 ```

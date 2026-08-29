@@ -34,6 +34,7 @@ data class SettingsUiState(
     val isExclusionsDialogVisible: Boolean = false,
     val isCategoryDialogVisible: Boolean = false,
     val isDevInfoVisible: Boolean = false,
+    val isMiscDialogVisible: Boolean = false,
     val userMessage: String? = null
 )
 
@@ -49,6 +50,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isExclusionsDialogVisible = MutableStateFlow(false)
     private val _isCategoryDialogVisible = MutableStateFlow(false)
     private val _isDevInfoVisible = MutableStateFlow(false)
+    private val _isMiscDialogVisible = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -86,9 +88,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isVolumesDialogVisible,
             _isExclusionsDialogVisible,
             _isCategoryDialogVisible,
-            _isDevInfoVisible
-        ) { themeD, volD, exclD, catD, devInfoD ->
-            listOf(themeD, volD, exclD, catD, devInfoD)
+            _isDevInfoVisible,
+            _isMiscDialogVisible
+        ) { themeD, volD, exclD, catD, devInfoD, miscD ->
+            listOf(themeD, volD, exclD, catD, devInfoD, miscD)
         },
         _userMessage
     ) { baseState, volumes, dialogStates, userMsg ->
@@ -99,6 +102,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isExclusionsDialogVisible = dialogStates[2],
             isCategoryDialogVisible = dialogStates[3],
             isDevInfoVisible = dialogStates[4],
+            isMiscDialogVisible = dialogStates[5],
             userMessage = userMsg
         )
     }.stateIn(
@@ -216,6 +220,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun showDevInfo() { _isDevInfoVisible.value = true }
     fun hideDevInfo() { _isDevInfoVisible.value = false }
+
+    fun showMiscDialog() { _isMiscDialogVisible.value = true }
+    fun hideMiscDialog() { _isMiscDialogVisible.value = false }
 
     fun setQuickInsightsEnabled(enabled: Boolean) {
         viewModelScope.launch { prefsRepo.setQuickInsightsEnabled(enabled) }
