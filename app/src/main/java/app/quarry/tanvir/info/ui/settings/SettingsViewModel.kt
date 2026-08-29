@@ -52,14 +52,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             prefsRepo.deleteCountdownSeconds,
             prefsRepo.excludedFolders,
             prefsRepo.scanHiddenFiles
-        ) { theme, dynamicColor, biometric, countdown, exclusions, scanHidden ->
+        ) { args: Array<Any?> ->
+            @Suppress("UNCHECKED_CAST")
             SettingsUiState(
-                themeMode = theme,
-                isDynamicColorEnabled = dynamicColor,
-                isBiometricEnabled = biometric,
-                deleteCountdownSeconds = countdown,
-                excludedFolders = exclusions,
-                scanHiddenFiles = scanHidden
+                themeMode = args[0] as ThemeMode,
+                isDynamicColorEnabled = args[1] as Boolean,
+                isBiometricEnabled = args[2] as Boolean,
+                deleteCountdownSeconds = args[3] as Int,
+                excludedFolders = args[4] as Set<String>,
+                scanHiddenFiles = args[5] as Boolean
             )
         },
         _detectedVolumes,
