@@ -40,10 +40,11 @@ app/src/main/java/app/quarry/tanvir/info/
 ├── data/                         # Repositories, Room DAOs, DataStore, file scanners
 │   ├── database/                 # Room database, entities, DAOs (QuarryDatabase, FileDao, FileEntity)
 │   ├── model/                    # Data models, category enums, file items
-│   ├── preferences/              # DataStore user preferences & theme management
+│   ├── preferences/              # DataStore user preferences, theme, haptics, keep-screen-on, category visibility
 │   └── repository/               # Repository implementations
 ├── domain/                       # Use cases and domain business logic
 │   ├── file/                     # File operations (trash, delete, rename, batch actions)
+│   ├── haptics/                  # Centralized vibration helper (QuarryHaptics, strength mapping, VibratorManager)
 │   ├── model/                    # Domain models (StorageCategory, StorageFormatter)
 │   ├── scanner/                  # Local storage scanners & metadata indexing
 │   ├── security/                 # Biometric authentication management
@@ -53,10 +54,10 @@ app/src/main/java/app/quarry/tanvir/info/
 │   ├── cleanup/                  # Storage cleaner & duplicate/large file screens
 │   ├── components/               # Reusable UI widgets (cards, charts, buttons, dialogs)
 │   ├── explore/                  # Treemap canvas, file lists, category explorer, breadcrumb navigation
-│   ├── home/                     # Dashboard, storage breakdown, visual category charts
+│   ├── home/                     # Dashboard, storage breakdown, visual category charts (Quick Insights gating, filtered categories)
 │   ├── navigation/               # NavHost, screens, bottom navigation bar
 │   ├── onboarding/               # First-run permission & onboarding dialogs
-│   ├── settings/                 # Full-screen dialogs (Appearance, Exclusions, Storage Volumes) & settings
+│   ├── settings/                 # Settings + dialogs (Appearance, Exclusions, Storage Volumes, CategoryVisibilityDialog, Miscellaneous card)
 │   └── theme/                    # Material 3 ColorScheme, Typography, Theme setup
 └── worker/                       # WorkManager workers (background scanning/cleanup)
 ```
@@ -81,8 +82,15 @@ app/src/main/java/app/quarry/tanvir/info/
 - **Dispatchers**: Always offload disk I/O, file traversal, and database queries to `Dispatchers.IO`. Keep UI logic on `Dispatchers.Main`.
 - **Cancellation**: Ensure recursive directory traversals and heavy scanner operations respect coroutine cancellation (`yield()` / `isActive`).
 
+### Miscellaneous Settings
+- **Quick Insights toggle**: DataStore `quick_insights_enabled` (default true); `HomeViewModel` filters `StorageOverviewData.quickInsights` → `visibleQuickInsights`.
+- **Storage Categories visibility**: DataStore `enabled_categories` seeded with all 8 `StorageCategory` entries; `SettingsViewModel.toggleCategory()` enforces minimum 4 visible, Home falls back to full list if <4; managed via `CategoryVisibilityDialog`.
+- **Haptics**: `domain/haptics/QuarryHaptics.kt` wraps `VibratorManager`/`VibrationEffect.createOneShot(amplitude=strength*255/100, duration~20-55ms)` gated by `haptics_enabled` + `haptic_strength (1-100)`; `rememberQuarryHaptic()` composes `LocalHapticFeedback.LongPress` + `performQuarryHaptic()`; permission `VIBRATE` (normal) in manifest; no-op when `hasVibrator()==false`.
+- **Keep Screen On**: DataStore `keep_screen_on` (default false); `MainViewModel` exposes in `MainUiState.Success`; `MainActivity` applies `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` via `DisposableEffect`, cleared on dispose/background.
+
 ### Storage & Permissions
 - Follow Android 12+ scoped storage and `MANAGE_EXTERNAL_STORAGE` guidelines with transparent, in-app rationale prior to requesting system prompts.
+- `VIBRATE` is normal permission, no runtime prompt; `FLAG_KEEP_SCREEN_ON` requires no permission.
 
 ---
 

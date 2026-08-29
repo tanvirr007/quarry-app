@@ -24,11 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
+import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 
@@ -37,6 +36,8 @@ fun QuickInsightsSection(
     insights: List<QuickInsight>,
     onInsightClick: (QuickInsight) -> Unit,
     onInsightLongClick: ((QuickInsight) -> Unit)? = null,
+    hapticsEnabled: Boolean = true,
+    hapticStrength: Int = 60,
     modifier: Modifier = Modifier
 ) {
     if (insights.isEmpty()) return
@@ -67,7 +68,9 @@ fun QuickInsightsSection(
             QuickInsightCard(
                 insight = insight,
                 onClick = { onInsightClick(insight) },
-                onLongClick = onInsightLongClick?.let { { it(insight) } }
+                onLongClick = onInsightLongClick?.let { { it(insight) } },
+                hapticsEnabled = hapticsEnabled,
+                hapticStrength = hapticStrength
             )
         }
     }
@@ -78,10 +81,12 @@ fun QuickInsightsSection(
 private fun QuickInsightCard(
     insight: QuickInsight,
     onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null
+    onLongClick: (() -> Unit)? = null,
+    hapticsEnabled: Boolean = true,
+    hapticStrength: Int = 60
 ) {
     val categoryColor = insight.category.getColor()
-    val haptic = LocalHapticFeedback.current
+    val quarryHaptic = rememberQuarryHaptic(hapticsEnabled, hapticStrength)
 
     Card(
         modifier = Modifier
@@ -90,7 +95,7 @@ private fun QuickInsightCard(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    quarryHaptic()
                     onLongClick?.invoke()
                 }
             ),

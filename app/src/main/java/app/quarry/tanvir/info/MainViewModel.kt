@@ -16,7 +16,8 @@ sealed interface MainUiState {
     data class Success(
         val isOnboardingCompleted: Boolean,
         val themeMode: ThemeMode,
-        val isDynamicColor: Boolean
+        val isDynamicColor: Boolean,
+        val isKeepScreenOn: Boolean = false
     ) : MainUiState
 }
 
@@ -26,12 +27,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<MainUiState> = combine(
         prefsRepo.isOnboardingCompleted,
         prefsRepo.themeMode,
-        prefsRepo.isDynamicColorEnabled
-    ) { isOnboardingCompleted, themeMode, isDynamicColor ->
+        prefsRepo.isDynamicColorEnabled,
+        prefsRepo.isKeepScreenOn
+    ) { args ->
+        @Suppress("UNCHECKED_CAST")
+        val isOnboardingCompleted = args[0] as Boolean
+        val themeMode = args[1] as ThemeMode
+        val isDynamicColor = args[2] as Boolean
+        val isKeepScreenOn = args[3] as Boolean
         MainUiState.Success(
             isOnboardingCompleted = isOnboardingCompleted,
             themeMode = themeMode,
-            isDynamicColor = isDynamicColor
+            isDynamicColor = isDynamicColor,
+            isKeepScreenOn = isKeepScreenOn
         )
     }.stateIn(
         scope = viewModelScope,

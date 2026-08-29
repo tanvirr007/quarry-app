@@ -155,8 +155,9 @@ fun HomeScreen(
         }
 
         // Quick Insights Section
-        QuickInsightsSection(
-            insights = uiState.overview.quickInsights,
+        if (uiState.isQuickInsightsEnabled) {
+            QuickInsightsSection(
+                insights = uiState.visibleQuickInsights,
             onInsightClick = { insight ->
                 if (onNavigateToInsight != null) {
                     onNavigateToInsight(insight)
@@ -164,14 +165,17 @@ fun HomeScreen(
                     viewModel.selectInsight(insight)
                 }
             },
-            onInsightLongClick = { insight ->
-                viewModel.selectInsight(insight, startInSelectionMode = true)
-            }
-        )
+                onInsightLongClick = { insight ->
+                    viewModel.selectInsight(insight, startInSelectionMode = true)
+                },
+                hapticsEnabled = uiState.isHapticsEnabled,
+                hapticStrength = uiState.hapticStrength
+            )
+        }
 
-        // 8 Storage Categories Grid
+        // Storage Categories Grid (respects Miscellaneous visibility, min 4)
         CategoryGrid(
-            categories = uiState.overview.categoryBreakdown,
+            categories = uiState.visibleCategoryBreakdown,
             onCategoryClick = { category ->
                 if (category == StorageCategory.APPS) {
                     appManagerStartSelection = false
@@ -189,7 +193,9 @@ fun HomeScreen(
                 } else {
                     viewModel.selectCategory(category, startInSelectionMode = true)
                 }
-            }
+            },
+            hapticsEnabled = uiState.isHapticsEnabled,
+            hapticStrength = uiState.hapticStrength
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -202,6 +208,8 @@ fun HomeScreen(
             category = sheetData.category,
             files = sheetData.files,
             startInSelectionMode = sheetData.startInSelectionMode,
+            hapticsEnabled = uiState.isHapticsEnabled,
+            hapticStrength = uiState.hapticStrength,
             onFileClick = { file ->
                 viewModel.selectDetailFile(file)
             },
@@ -228,6 +236,8 @@ fun HomeScreen(
 
         AppManagerBottomSheet(
             viewModel = appManagerViewModel,
+            hapticsEnabled = uiState.isHapticsEnabled,
+            hapticStrength = uiState.hapticStrength,
             onDismiss = {
                 showAppManager = false
                 appManagerViewModel.setSelectionMode(false)

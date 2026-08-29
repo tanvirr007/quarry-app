@@ -38,12 +38,18 @@ data class HomeSheetData(
 
 data class HomeUiState(
     val overview: StorageOverviewData = StorageOverviewData(),
+    val visibleCategoryBreakdown: List<app.quarry.tanvir.info.domain.analyzer.StorageCategoryData> = emptyList(),
+    val visibleQuickInsights: List<QuickInsight> = emptyList(),
     val scanState: ScanState = ScanState.Idle,
     val hasStoragePermission: Boolean = true,
     val isInitialLoading: Boolean = false,
     val activeSheetData: HomeSheetData? = null,
     val selectedDetailFile: FileEntity? = null,
-    val userMessage: String? = null
+    val userMessage: String? = null,
+    val isQuickInsightsEnabled: Boolean = true,
+    val enabledCategories: Set<String> = emptySet(),
+    val isHapticsEnabled: Boolean = true,
+    val hapticStrength: Int = 60
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -72,7 +78,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             repository.getScreenshots(),
             _permissionState,
             _appsSize,
-            _appsCount
+            _appsCount,
+            prefsRepo.isQuickInsightsEnabled,
+            prefsRepo.enabledCategories,
+            prefsRepo.isHapticsEnabled,
+            prefsRepo.hapticStrength
         ) { args ->
             @Suppress("UNCHECKED_CAST")
             val scanState = args[0] as ScanState
@@ -89,6 +99,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val hasPermission = args[6] as Boolean
             val appsSize = args[7] as Long
             val appsCount = args[8] as Long
+            val quickInsightsEnabled = args[9] as Boolean
+            @Suppress("UNCHECKED_CAST")
+            val enabledCats = args[10] as Set<String>
+            val hapticsEnabled = args[11] as Boolean
+            val hapticStrength = args[12] as Int
 
             val rootDir = Environment.getExternalStorageDirectory()
             val totalBytes = FastStorageScanner.getTotalStorageBytes(rootDir)
@@ -115,25 +130,63 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 appsCount = appsCount
             )
 
-            Triple(overview, scanState, hasPermission)
+            val allCats = StorageCategory.entries.map { it.name }.toSet()
+            val effectiveEnabled = if (enabledCats.isEmpty()) allCats else enabledCats
+            val visibleCategories = if (effectiveEnabled.size < 4) {
+                overview.categoryBreakdown
+            } else {
+                val filtered = overview.categoryBreakdown.filter { effectiveEnabled.contains(it.category.name) }
+                if (filtered.size < 4) overview.categoryBreakdown else filtered
+            }
+            val visibleInsights = if (quickInsightsEnabled) overview.quickInsights else emptyList()
+            // Pack: overview + visibles + flags in a single object via 7-tuple map not ideal, use custom holder
+            OverviewWithVisibility(
+                overview = overview,
+                visibleCategories = visibleCategories,
+                visibleInsights = visibleInsights,
+                scanState = scanState,
+                hasPermission = hasPermission,
+                isQuickInsightsEnabled = quickInsightsEnabled,
+                enabledCategories = effectiveEnabled,
+                isHapticsEnabled = hapticsEnabled,
+                hapticStrength = hapticStrength
+            )
         },
         _activeSheetData,
         _selectedDetailFile,
         _userMessage
-    ) { (overview, scanState, hasPermission), activeSheet, detailFile, message ->
+    ) { vis, activeSheet, detailFile, message ->
         HomeUiState(
-            overview = overview,
-            scanState = scanState,
-            hasStoragePermission = hasPermission,
+            overview = vis.overview,
+            visibleCategoryBreakdown = vis.visibleCategories,
+            visibleQuickInsights = vis.visibleInsights,
+            scanState = vis.scanState,
+            hasStoragePermission = vis.hasPermission,
             isInitialLoading = false,
             activeSheetData = activeSheet,
             selectedDetailFile = detailFile,
-            userMessage = message
+            userMessage = message,
+            isQuickInsightsEnabled = vis.isQuickInsightsEnabled,
+            enabledCategories = vis.enabledCategories,
+            isHapticsEnabled = vis.isHapticsEnabled,
+            hapticStrength = vis.hapticStrength
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HomeUiState()
+    )
+
+    private data class OverviewWithVisibility(
+        val overview: StorageOverviewData,
+        val visibleCategories: List<app.quarry.tanvir.info.domain.analyzer.StorageCategoryData>,
+        val visibleInsights: List<QuickInsight>,
+        val scanState: ScanState,
+        val hasPermission: Boolean,
+        val isQuickInsightsEnabled: Boolean,
+        val enabledCategories: Set<String>,
+        val isHapticsEnabled: Boolean,
+        val hapticStrength: Int
     )
 
     init {

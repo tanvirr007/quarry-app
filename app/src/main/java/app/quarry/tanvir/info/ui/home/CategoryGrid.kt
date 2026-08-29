@@ -23,11 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.StorageCategoryData
+import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.ui.components.getColor
@@ -38,6 +37,8 @@ fun CategoryGrid(
     categories: List<StorageCategoryData>,
     onCategoryClick: (StorageCategory) -> Unit,
     onCategoryLongClick: ((StorageCategory) -> Unit)? = null,
+    hapticsEnabled: Boolean = true,
+    hapticStrength: Int = 60,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -61,6 +62,8 @@ fun CategoryGrid(
                     categoryData = pair[0],
                     onClick = { onCategoryClick(pair[0].category) },
                     onLongClick = onCategoryLongClick?.let { { it(pair[0].category) } },
+                    hapticsEnabled = hapticsEnabled,
+                    hapticStrength = hapticStrength,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -69,6 +72,8 @@ fun CategoryGrid(
                         categoryData = pair[1],
                         onClick = { onCategoryClick(pair[1].category) },
                         onLongClick = onCategoryLongClick?.let { { it(pair[1].category) } },
+                        hapticsEnabled = hapticsEnabled,
+                        hapticStrength = hapticStrength,
                         modifier = Modifier.weight(1f)
                     )
                 } else {
@@ -85,10 +90,12 @@ private fun CategoryCard(
     categoryData: StorageCategoryData,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    hapticsEnabled: Boolean = true,
+    hapticStrength: Int = 60,
     modifier: Modifier = Modifier
 ) {
     val categoryColor = categoryData.category.getColor()
-    val haptic = LocalHapticFeedback.current
+    val quarryHaptic = rememberQuarryHaptic(hapticsEnabled, hapticStrength)
 
     Card(
         modifier = modifier
@@ -96,7 +103,7 @@ private fun CategoryCard(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    quarryHaptic()
                     onLongClick?.invoke()
                 }
             ),

@@ -24,6 +24,7 @@ import app.quarry.tanvir.info.ui.navigation.QuarryNavHost
 import app.quarry.tanvir.info.ui.navigation.Screen
 import app.quarry.tanvir.info.ui.theme.QuarryTheme
 
+import android.view.WindowManager
 import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
@@ -56,6 +57,19 @@ class MainActivity : FragmentActivity() {
                     // Retained by splash screen
                 }
                 is MainUiState.Success -> {
+                    val activity = this@MainActivity
+                    androidx.compose.runtime.DisposableEffect(state.isKeepScreenOn) {
+                        if (state.isKeepScreenOn) {
+                            activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        } else {
+                            activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                        onDispose {
+                            if (state.isKeepScreenOn) {
+                                activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            }
+                        }
+                    }
                     QuarryTheme(
                         themeMode = state.themeMode,
                         dynamicColor = state.isDynamicColor

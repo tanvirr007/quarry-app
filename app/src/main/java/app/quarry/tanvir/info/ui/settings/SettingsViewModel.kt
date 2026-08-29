@@ -24,9 +24,15 @@ data class SettingsUiState(
     val excludedFolders: Set<String> = emptySet(),
     val scanHiddenFiles: Boolean = false,
     val detectedVolumes: List<StorageVolumeInfo> = emptyList(),
+    val isQuickInsightsEnabled: Boolean = true,
+    val enabledCategories: Set<String> = emptySet(),
+    val isHapticsEnabled: Boolean = true,
+    val hapticStrength: Int = 60,
+    val isKeepScreenOn: Boolean = false,
     val isThemeDialogVisible: Boolean = false,
     val isVolumesDialogVisible: Boolean = false,
     val isExclusionsDialogVisible: Boolean = false,
+    val isCategoryDialogVisible: Boolean = false,
     val isDevInfoVisible: Boolean = false,
     val userMessage: String? = null
 )
@@ -41,6 +47,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isThemeDialogVisible = MutableStateFlow(false)
     private val _isVolumesDialogVisible = MutableStateFlow(false)
     private val _isExclusionsDialogVisible = MutableStateFlow(false)
+    private val _isCategoryDialogVisible = MutableStateFlow(false)
     private val _isDevInfoVisible = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
 
@@ -51,7 +58,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             prefsRepo.isBiometricAuthEnabled,
             prefsRepo.deleteCountdownSeconds,
             prefsRepo.excludedFolders,
-            prefsRepo.scanHiddenFiles
+            prefsRepo.scanHiddenFiles,
+            prefsRepo.isQuickInsightsEnabled,
+            prefsRepo.enabledCategories,
+            prefsRepo.isHapticsEnabled,
+            prefsRepo.hapticStrength,
+            prefsRepo.isKeepScreenOn
         ) { args: Array<Any?> ->
             @Suppress("UNCHECKED_CAST")
             SettingsUiState(
@@ -60,7 +72,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 isBiometricEnabled = args[2] as Boolean,
                 deleteCountdownSeconds = args[3] as Int,
                 excludedFolders = args[4] as Set<String>,
-                scanHiddenFiles = args[5] as Boolean
+                scanHiddenFiles = args[5] as Boolean,
+                isQuickInsightsEnabled = args[6] as Boolean,
+                enabledCategories = args[7] as Set<String>,
+                isHapticsEnabled = args[8] as Boolean,
+                hapticStrength = args[9] as Int,
+                isKeepScreenOn = args[10] as Boolean
             )
         },
         _detectedVolumes,
@@ -68,9 +85,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isThemeDialogVisible,
             _isVolumesDialogVisible,
             _isExclusionsDialogVisible,
+            _isCategoryDialogVisible,
             _isDevInfoVisible
-        ) { themeD, volD, exclD, devInfoD ->
-            listOf(themeD, volD, exclD, devInfoD)
+        ) { themeD, volD, exclD, catD, devInfoD ->
+            listOf(themeD, volD, exclD, catD, devInfoD)
         },
         _userMessage
     ) { baseState, volumes, dialogStates, userMsg ->
@@ -79,7 +97,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isThemeDialogVisible = dialogStates[0],
             isVolumesDialogVisible = dialogStates[1],
             isExclusionsDialogVisible = dialogStates[2],
-            isDevInfoVisible = dialogStates[3],
+            isCategoryDialogVisible = dialogStates[3],
+            isDevInfoVisible = dialogStates[4],
             userMessage = userMsg
         )
     }.stateIn(
@@ -192,6 +211,34 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun showExclusionsDialog() { _isExclusionsDialogVisible.value = true }
     fun hideExclusionsDialog() { _isExclusionsDialogVisible.value = false }
 
+    fun showCategoryDialog() { _isCategoryDialogVisible.value = true }
+    fun hideCategoryDialog() { _isCategoryDialogVisible.value = false }
+
     fun showDevInfo() { _isDevInfoVisible.value = true }
     fun hideDevInfo() { _isDevInfoVisible.value = false }
+
+    fun setQuickInsightsEnabled(enabled: Boolean) {
+        viewModelScope.launch { prefsRepo.setQuickInsightsEnabled(enabled) }
+    }
+
+    fun toggleCategory(categoryName: String) {
+        viewModelScope.launch {
+            val applied = prefsRepo.toggleCategory(categoryName)
+            if (!applied) {
+                _userMessage.value = "At least 4 categories must stay visible"
+            }
+        }
+    }
+
+    fun setHapticsEnabled(enabled: Boolean) {
+        viewModelScope.launch { prefsRepo.setHapticsEnabled(enabled) }
+    }
+
+    fun setHapticStrength(strength: Int) {
+        viewModelScope.launch { prefsRepo.setHapticStrength(strength) }
+    }
+
+    fun setKeepScreenOn(enabled: Boolean) {
+        viewModelScope.launch { prefsRepo.setKeepScreenOn(enabled) }
+    }
 }

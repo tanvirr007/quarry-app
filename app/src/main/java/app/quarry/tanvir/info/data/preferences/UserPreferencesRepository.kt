@@ -29,6 +29,11 @@ class UserPreferencesRepository private constructor(private val context: Context
     private val DELETE_COUNTDOWN_KEY = intPreferencesKey("delete_countdown_seconds")
     private val EXCLUDED_FOLDERS_KEY = stringSetPreferencesKey("excluded_folders")
     private val SCAN_HIDDEN_FILES_KEY = booleanPreferencesKey("scan_hidden_files")
+    private val QUICK_INSIGHTS_ENABLED_KEY = booleanPreferencesKey("quick_insights_enabled")
+    private val ENABLED_CATEGORIES_KEY = stringSetPreferencesKey("enabled_categories")
+    private val HAPTICS_ENABLED_KEY = booleanPreferencesKey("haptics_enabled")
+    private val HAPTIC_STRENGTH_KEY = intPreferencesKey("haptic_strength")
+    private val KEEP_SCREEN_ON_KEY = booleanPreferencesKey("keep_screen_on")
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
         val raw = preferences[THEME_KEY] ?: ThemeMode.SYSTEM.name
@@ -61,6 +66,29 @@ class UserPreferencesRepository private constructor(private val context: Context
 
     val excludedFolders: Flow<Set<String>> = context.dataStore.data.map { preferences ->
         preferences[EXCLUDED_FOLDERS_KEY] ?: emptySet()
+    }
+
+    val isQuickInsightsEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[QUICK_INSIGHTS_ENABLED_KEY] ?: true
+    }
+
+    val enabledCategories: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        val stored = preferences[ENABLED_CATEGORIES_KEY]
+        if (stored.isNullOrEmpty()) {
+            app.quarry.tanvir.info.domain.model.StorageCategory.entries.map { it.name }.toSet()
+        } else stored
+    }
+
+    val isHapticsEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[HAPTICS_ENABLED_KEY] ?: true
+    }
+
+    val hapticStrength: Flow<Int> = context.dataStore.data.map { preferences ->
+        (preferences[HAPTIC_STRENGTH_KEY] ?: 60).coerceIn(1, 100)
+    }
+
+    val isKeepScreenOn: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEEP_SCREEN_ON_KEY] ?: false
     }
 
     suspend fun setThemeMode(mode: ThemeMode) {
@@ -114,6 +142,54 @@ class UserPreferencesRepository private constructor(private val context: Context
         context.dataStore.edit { preferences ->
             val current = preferences[EXCLUDED_FOLDERS_KEY] ?: emptySet()
             preferences[EXCLUDED_FOLDERS_KEY] = current + cleaned
+        }
+    }
+
+    suspend fun setQuickInsightsEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[QUICK_INSIGHTS_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun setEnabledCategories(categories: Set<String>) {
+        val cleaned = categories.filter { it.isNotBlank() }.toSet()
+        if (cleaned.size < 4) return
+        context.dataStore.edit { preferences ->
+            preferences[ENABLED_CATEGORIES_KEY] = cleaned
+        }
+    }
+
+    suspend fun toggleCategory(categoryName: String): Boolean {
+        var applied = false
+        context.dataStore.edit { preferences ->
+            val current = preferences[ENABLED_CATEGORIES_KEY]
+                ?: app.quarry.tanvir.info.domain.model.StorageCategory.entries.map { it.name }.toSet()
+            val next = if (current.contains(categoryName)) {
+                if (current.size <= 4) current else current - categoryName
+            } else {
+                current + categoryName
+            }
+            applied = next != current
+            if (applied) preferences[ENABLED_CATEGORIES_KEY] = next
+        }
+        return applied
+    }
+
+    suspend fun setHapticsEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[HAPTICS_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun setHapticStrength(strength: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[HAPTIC_STRENGTH_KEY] = strength.coerceIn(1, 100)
+        }
+    }
+
+    suspend fun setKeepScreenOn(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEEP_SCREEN_ON_KEY] = enabled
         }
     }
 

@@ -61,9 +61,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
@@ -83,6 +82,8 @@ fun HomeItemListBottomSheet(
     category: StorageCategory,
     files: List<FileEntity>,
     startInSelectionMode: Boolean = false,
+    hapticsEnabled: Boolean = true,
+    hapticStrength: Int = 60,
     onFileClick: (FileEntity) -> Unit,
     onMoveToTrashSelected: (List<FileEntity>, () -> Unit) -> Unit,
     onDeleteSelected: (List<FileEntity>, () -> Unit) -> Unit,
@@ -94,10 +95,10 @@ fun HomeItemListBottomSheet(
     var isSelectionMode by remember(startInSelectionMode) { mutableStateOf(startInSelectionMode) }
     var selectedPaths by remember { mutableStateOf(setOf<String>()) }
     var deleteCandidates by remember { mutableStateOf<List<FileEntity>?>(null) }
-    val haptic = LocalHapticFeedback.current
 
     val categoryColor = category.getColor()
     val totalBytes = files.sumOf { it.size }
+    val quarryHaptic = rememberQuarryHaptic(enabled = hapticsEnabled, strength = hapticStrength)
 
     val filteredFiles = remember(files, searchQuery, sortByLargest) {
         val list = if (searchQuery.isBlank()) {
@@ -356,7 +357,7 @@ fun HomeItemListBottomSheet(
                                 }
                             },
                             onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                quarryHaptic()
                                 if (!isSelectionMode) {
                                     isSelectionMode = true
                                     selectedPaths = setOf(file.path)

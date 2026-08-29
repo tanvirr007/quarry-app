@@ -57,8 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,11 +69,13 @@ import app.quarry.tanvir.info.domain.model.StorageFormatter
 @Composable
 fun AppManagerBottomSheet(
     viewModel: AppManagerViewModel,
+    hapticsEnabled: Boolean = true,
+    hapticStrength: Int = 60,
     onDismiss: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val haptic = LocalHapticFeedback.current
+    val quarryHaptic = rememberQuarryHaptic(enabled = hapticsEnabled, strength = hapticStrength)
 
     val sortedApps = if (uiState.sortByName) {
         uiState.apps.sortedBy { it.label.lowercase() }
@@ -315,7 +316,7 @@ fun AppManagerBottomSheet(
                                 }
                             },
                             onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                quarryHaptic()
                                 if (!uiState.isSelectionMode) {
                                     viewModel.setSelectionMode(true)
                                 }
