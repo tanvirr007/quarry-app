@@ -45,9 +45,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.cleanup.CleanupCandidateGroup
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import app.quarry.tanvir.info.domain.model.StorageItem
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
+import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +63,7 @@ fun CleanupCategoryDetailBottomSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
     val selectedItems = group.items.filter { selectedPaths.contains(it.path) }
     val selectedBytes = selectedItems.sumOf { it.size }
 
@@ -113,7 +115,8 @@ fun CleanupCategoryDetailBottomSheet(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .weight(1f)
+                    .nestedScroll(blockNestedScrollConnection),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(group.items, key = { it.path }) { item ->

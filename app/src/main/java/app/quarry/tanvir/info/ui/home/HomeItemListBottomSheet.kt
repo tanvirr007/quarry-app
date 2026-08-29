@@ -68,8 +68,10 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
+import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 import app.quarry.tanvir.info.ui.explore.DeleteCountdownDialog
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -99,6 +101,7 @@ fun HomeItemListBottomSheet(
     val categoryColor = category.getColor()
     val totalBytes = files.sumOf { it.size }
     val quarryHaptic = rememberQuarryHaptic(enabled = hapticsEnabled, strength = hapticStrength)
+    val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
 
     val filteredFiles = remember(files, searchQuery, sortByLargest) {
         val list = if (searchQuery.isBlank()) {
@@ -335,7 +338,8 @@ fun HomeItemListBottomSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .nestedScroll(blockNestedScrollConnection),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredFiles, key = { it.path }) { file ->

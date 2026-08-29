@@ -64,10 +64,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import app.quarry.tanvir.info.domain.haptics.rememberQuarryHaptic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import app.quarry.tanvir.info.domain.app.InstalledApp
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +80,7 @@ fun AppManagerBottomSheet(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val quarryHaptic = rememberQuarryHaptic(enabled = hapticsEnabled, strength = hapticStrength)
+    val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
 
     // Re-check permissions and refresh app storage data when returning to app / foreground
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -320,7 +321,8 @@ fun AppManagerBottomSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .nestedScroll(blockNestedScrollConnection),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(sortedApps, key = { it.packageName }) { app ->

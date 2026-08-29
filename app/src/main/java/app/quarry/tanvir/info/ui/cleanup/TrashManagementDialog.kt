@@ -65,8 +65,10 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.file.TrashItem
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
+import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -84,6 +86,7 @@ fun TrashManagementDialog(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
     var searchQuery by remember { mutableStateOf("") }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
     var itemPendingPermanentDelete by remember { mutableStateOf<TrashItem?>(null) }
@@ -387,7 +390,8 @@ fun TrashManagementDialog(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .nestedScroll(blockNestedScrollConnection),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredItems, key = { it.id }) { item ->
