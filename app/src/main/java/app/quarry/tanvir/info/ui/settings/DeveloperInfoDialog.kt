@@ -254,18 +254,7 @@ fun DeveloperInfoDialog(
                     }
                 )
 
-                // 4. Source Code
-                DevInfoItemCard(
-                    icon = Icons.Rounded.Code,
-                    label = "Source Code",
-                    value = "quarry-app",
-                    actionUrl = "https://github.com/tanvirr007/quarry-app",
-                    onPrimaryClick = {
-                        openUrl(context, "https://github.com/tanvirr007/quarry-app")
-                    }
-                )
-
-                // 5. GitHub Profile
+                // 4. GitHub Profile
                 DevInfoItemCard(
                     painter = painterResource(id = R.drawable.ic_github),
                     label = "GitHub",
@@ -273,6 +262,17 @@ fun DeveloperInfoDialog(
                     actionUrl = "https://github.com/tanvirr007",
                     onPrimaryClick = {
                         openUrl(context, "https://github.com/tanvirr007")
+                    }
+                )
+
+                // 5. Source Code
+                DevInfoItemCard(
+                    icon = Icons.Rounded.Code,
+                    label = "Source Code",
+                    value = "quarry-app",
+                    actionUrl = "https://github.com/tanvirr007/quarry-app",
+                    onPrimaryClick = {
+                        openUrl(context, "https://github.com/tanvirr007/quarry-app")
                     }
                 )
 
