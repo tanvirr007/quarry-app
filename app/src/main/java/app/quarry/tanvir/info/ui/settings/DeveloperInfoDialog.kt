@@ -229,17 +229,7 @@ fun DeveloperInfoDialog(
                         .padding(start = 4.dp, top = 4.dp)
                 )
 
-                // 1. Email
-                DevInfoItemCard(
-                    icon = Icons.Rounded.Email,
-                    label = "Email",
-                    value = "tanvirhasan2005@proton.me",
-                    onPrimaryClick = {
-                        openEmail(context, "tanvirhasan2005@proton.me")
-                    }
-                )
-
-                // 2. Telegram
+                // 1. Telegram
                 DevInfoItemCard(
                     painter = painterResource(id = R.drawable.ic_telegram),
                     label = "Telegram",
@@ -250,7 +240,7 @@ fun DeveloperInfoDialog(
                     }
                 )
 
-                // 3. Website
+                // 2. Website
                 DevInfoItemCard(
                     icon = Icons.Rounded.Language,
                     label = "Website",
@@ -258,6 +248,16 @@ fun DeveloperInfoDialog(
                     actionUrl = "https://tanvir.info",
                     onPrimaryClick = {
                         openUrl(context, "https://tanvir.info")
+                    }
+                )
+
+                // 3. Email
+                DevInfoItemCard(
+                    icon = Icons.Rounded.Email,
+                    label = "Email",
+                    value = "tanvirhasan2005@proton.me",
+                    onPrimaryClick = {
+                        openEmail(context, "tanvirhasan2005@proton.me")
                     }
                 )
 
