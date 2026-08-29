@@ -61,6 +61,10 @@ fun HomeScreen(
     val context = LocalContext.current
     val activity = context as? FragmentActivity
     var renamingFile by remember { mutableStateOf<FileEntity?>(null) }
+    var showAppManager by remember { mutableStateOf(false) }
+    var appManagerStartSelection by remember { mutableStateOf(false) }
+    val appManagerViewModel: AppManagerViewModel = viewModel()
+    val appManagerState by appManagerViewModel.uiState.collectAsStateWithLifecycle()
 
     // User Message Toast
     LaunchedEffect(uiState.userMessage) {
@@ -169,14 +173,22 @@ fun HomeScreen(
         CategoryGrid(
             categories = uiState.overview.categoryBreakdown,
             onCategoryClick = { category ->
-                if (onNavigateToCategory != null) {
+                if (category == StorageCategory.APPS) {
+                    appManagerStartSelection = false
+                    showAppManager = true
+                } else if (onNavigateToCategory != null) {
                     onNavigateToCategory(category)
                 } else {
                     viewModel.selectCategory(category)
                 }
             },
             onCategoryLongClick = { category ->
-                viewModel.selectCategory(category, startInSelectionMode = true)
+                if (category == StorageCategory.APPS) {
+                    appManagerStartSelection = true
+                    showAppManager = true
+                } else {
+                    viewModel.selectCategory(category, startInSelectionMode = true)
+                }
             }
         )
 
@@ -203,6 +215,52 @@ fun HomeScreen(
                 viewModel.dismissSheet()
             }
         )
+    }
+
+    // App Manager Sheet
+    if (showAppManager) {
+        LaunchedEffect(showAppManager) {
+            if (appManagerStartSelection) {
+                appManagerViewModel.setSelectionMode(true)
+                appManagerStartSelection = false
+            }
+        }
+
+        AppManagerBottomSheet(
+            viewModel = appManagerViewModel,
+            onDismiss = {
+                showAppManager = false
+                appManagerViewModel.setSelectionMode(false)
+            }
+        )
+
+        appManagerState.detailApp?.let { app ->
+            AppDetailsBottomSheet(
+                app = app,
+                icon = appManagerViewModel.getIcon(app.packageName),
+                onOpen = {
+                    appManagerViewModel.openApp(app)
+                    appManagerViewModel.dismissDetails()
+                },
+                onAppInfo = {
+                    appManagerViewModel.openAppDetails(app)
+                },
+                onForceStop = {
+                    appManagerViewModel.openAppDetails(app)
+                },
+                onClearCache = {
+                    appManagerViewModel.openAppDetails(app)
+                },
+                onClearData = {
+                    appManagerViewModel.openAppDetails(app)
+                },
+                onUninstall = {
+                    appManagerViewModel.uninstall(app)
+                    appManagerViewModel.dismissDetails()
+                },
+                onDismiss = { appManagerViewModel.dismissDetails() }
+            )
+        }
     }
 
     // Individual File Details Sheet (Stays on Home)

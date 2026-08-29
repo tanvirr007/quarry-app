@@ -9,6 +9,7 @@ enum class StorageCategory(val displayName: String) {
     AUDIO("Audio"),
     ARCHIVES("Archives"),
     APKS("APKs"),
+    APPS("Apps"),
     OTHER("Other");
 
     companion object {
@@ -100,5 +101,9 @@ object StorageFormatter {
 
     fun formatFileCount(count: Long): String {
         return String.format(Locale.US, "%,d files", count)
+    }
+
+    fun formatAppCount(count: Long): String {
+        return String.format(Locale.US, "%,d apps", count)
     }
 }

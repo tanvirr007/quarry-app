@@ -133,7 +133,11 @@ private fun CategoryCard(
 
                 if (categoryData.fileCount > 0) {
                     Text(
-                        text = StorageFormatter.formatFileCount(categoryData.fileCount),
+                        text = if (categoryData.category == StorageCategory.APPS) {
+                            StorageFormatter.formatAppCount(categoryData.fileCount)
+                        } else {
+                            StorageFormatter.formatFileCount(categoryData.fileCount)
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

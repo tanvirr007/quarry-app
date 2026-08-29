@@ -11,6 +11,7 @@ import app.quarry.tanvir.info.data.database.ScanSnapshotEntity
 import app.quarry.tanvir.info.data.filesystem.FastStorageScanner
 import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
 import app.quarry.tanvir.info.domain.analyzer.QuickInsight
+import app.quarry.tanvir.info.domain.app.AppManager
 import app.quarry.tanvir.info.domain.analyzer.StorageAnalyzer
 import app.quarry.tanvir.info.domain.analyzer.StorageOverviewData
 import app.quarry.tanvir.info.domain.file.FileOperationsManager
@@ -51,11 +52,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
     private val fileOperationsManager = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
+    private val appManager = AppManager(application)
     private val _permissionState = MutableStateFlow(checkHasStoragePermission())
     private val _activeSheetData = MutableStateFlow<HomeSheetData?>(null)
     private val _selectedDetailFile = MutableStateFlow<FileEntity?>(null)
     private val _userMessage = MutableStateFlow<String?>(null)
+    private val _appsSize = MutableStateFlow(0L)
+    private val _appsCount = MutableStateFlow(0L)
     private var activeSheetCollectJob: Job? = null
+    private var appsLoadJob: Job? = null
 
     val uiState: StateFlow<HomeUiState> = combine(
         combine(
@@ -65,7 +70,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             repository.getLargeFiles(),
             repository.getApkFiles(),
             repository.getScreenshots(),
-            _permissionState
+            _permissionState,
+            _appsSize,
+            _appsCount
         ) { args ->
             @Suppress("UNCHECKED_CAST")
             val scanState = args[0] as ScanState
@@ -80,6 +87,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             @Suppress("UNCHECKED_CAST")
             val screenshots = args[5] as List<FileEntity>
             val hasPermission = args[6] as Boolean
+            val appsSize = args[7] as Long
+            val appsCount = args[8] as Long
 
             val rootDir = Environment.getExternalStorageDirectory()
             val totalBytes = FastStorageScanner.getTotalStorageBytes(rootDir)
@@ -101,7 +110,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 apksSize = apksSize,
                 apksCount = apks.size.toLong(),
                 screenshotsSize = screenshotsSize,
-                screenshotsCount = screenshots.size.toLong()
+                screenshotsCount = screenshots.size.toLong(),
+                appsSize = appsSize,
+                appsCount = appsCount
             )
 
             Triple(overview, scanState, hasPermission)
@@ -127,6 +138,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         checkAndTriggerInitialScan()
+        loadAppsInfo()
+    }
+
+    private fun loadAppsInfo() {
+        appsLoadJob?.cancel()
+        appsLoadJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val installedApps = appManager.getInstalledApps()
+                _appsSize.value = installedApps.sumOf { it.size.totalBytes }
+                _appsCount.value = installedApps.size.toLong()
+            } catch (e: Exception) {
+                // Apps info is optional; leave at zero on failure.
+            }
+        }
+    }
+
+    fun refreshAppsInfo() {
+        loadAppsInfo()
     }
 
     fun startScan() {
@@ -148,6 +177,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         if (hasPermission && (!previous || repository.scanState.value is ScanState.Idle)) {
             checkAndTriggerInitialScan()
         }
+        loadAppsInfo()
     }
 
     private fun checkAndTriggerInitialScan() {

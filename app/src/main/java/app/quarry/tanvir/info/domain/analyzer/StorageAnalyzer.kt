@@ -48,6 +48,8 @@ object StorageAnalyzer {
         apksCount: Long = 0L,
         screenshotsSize: Long = 0L,
         screenshotsCount: Long = 0L,
+        appsSize: Long = 0L,
+        appsCount: Long = 0L,
         duplicatesSize: Long = 0L,
         duplicatesCount: Long = 0L
     ): StorageOverviewData {
@@ -58,10 +60,15 @@ object StorageAnalyzer {
 
         var totalFilesCount = 0L
         val categoryDataList = StorageCategory.entries.map { category ->
-            val stat = statsMap[category.name]
-            val catBytes = stat?.totalBytes ?: 0L
-            val catCount = stat?.fileCount ?: 0L
-            totalFilesCount += catCount
+            val (catBytes, catCount) = if (category == StorageCategory.APPS) {
+                appsSize to appsCount
+            } else {
+                val stat = statsMap[category.name]
+                (stat?.totalBytes ?: 0L) to (stat?.fileCount ?: 0L)
+            }
+            if (category != StorageCategory.APPS) {
+                totalFilesCount += catCount
+            }
             val pct = if (usedBytes > 0) (catBytes.toFloat() / usedBytes.toFloat()).coerceIn(0f, 1f) else 0f
 
             StorageCategoryData(

@@ -2,6 +2,7 @@ package app.quarry.tanvir.info.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Android
+import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.FolderZip
@@ -28,6 +29,7 @@ fun StorageCategory.getColor(): Color = when (this) {
     StorageCategory.AUDIO -> CategoryAudio
     StorageCategory.ARCHIVES -> CategoryArchive
     StorageCategory.APKS -> CategoryApk
+    StorageCategory.APPS -> CategoryApp
     StorageCategory.OTHER -> CategoryOther
 }
 
@@ -38,5 +40,6 @@ fun StorageCategory.getIcon(): ImageVector = when (this) {
     StorageCategory.AUDIO -> Icons.Rounded.Headphones
     StorageCategory.ARCHIVES -> Icons.Rounded.FolderZip
     StorageCategory.APKS -> Icons.Rounded.Android
+    StorageCategory.APPS -> Icons.Rounded.Apps
     StorageCategory.OTHER -> Icons.Rounded.Folder
 }
