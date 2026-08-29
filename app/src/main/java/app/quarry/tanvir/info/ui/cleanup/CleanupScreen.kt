@@ -158,7 +158,7 @@ fun CleanupScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Estimated Recoverable",
+                                text = "Potential Cleanup",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
