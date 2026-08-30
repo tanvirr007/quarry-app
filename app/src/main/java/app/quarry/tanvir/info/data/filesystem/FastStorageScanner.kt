@@ -218,7 +218,13 @@ class FastStorageScanner {
                 val availableBytes = statFs.availableBytes
                 totalBytes - availableBytes
             } catch (e: Exception) {
-                0L
+                // StatFs fails on some external filesystems (NTFS-3G, exFAT via older FUSE).
+                // Fall back to File API which uses a different JNI path (statvfs).
+                try {
+                    val total = root.totalSpace
+                    val free = root.usableSpace
+                    (total - free).coerceAtLeast(0L)
+                } catch (_: Exception) { 0L }
             }
         }
 
@@ -227,7 +233,7 @@ class FastStorageScanner {
                 val statFs = StatFs(root.absolutePath)
                 statFs.totalBytes
             } catch (e: Exception) {
-                0L
+                try { root.totalSpace } catch (_: Exception) { 0L }
             }
         }
 
@@ -236,7 +242,10 @@ class FastStorageScanner {
                 val statFs = StatFs(root.absolutePath)
                 statFs.availableBytes
             } catch (e: Exception) {
-                0L
+                // Prefer usableSpace (accounts for reserved blocks), fall back to freeSpace
+                try { root.usableSpace } catch (_: Exception) {
+                    try { root.freeSpace } catch (_: Exception) { 0L }
+                }
             }
         }
     }

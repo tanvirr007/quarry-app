@@ -47,22 +47,35 @@ class StorageVolumeManager(private val context: Context) {
                 val isPrimary = vol.isPrimary
                 val isRemovable = vol.isRemovable
                 val name = vol.getDescription(context) ?: if (isPrimary) "Internal Storage" else "External Storage"
-                val dir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    vol.directory
+
+                val dir: File? = if (isPrimary) {
+                    // Primary volume: always use the standard API path
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        vol.directory ?: Environment.getExternalStorageDirectory()
+                    } else {
+                        Environment.getExternalStorageDirectory()
+                    }
                 } else {
-                    if (isPrimary) Environment.getExternalStorageDirectory() else null
-                } ?: if (isPrimary) Environment.getExternalStorageDirectory() else null
+                    // Non-primary (USB OTG, SD card, etc.): multi-probe resolution
+                    resolveAccessibleDirectory(vol.uuid)
+                }
 
                 val total: Long
                 val free: Long
                 val used: Long
                 val isDirectAccess: Boolean
 
-                if (dir != null && dir.exists()) {
+                if (dir != null && dir.exists() && dir.canRead()) {
                     total = FastStorageScanner.getTotalStorageBytes(dir)
                     free = FastStorageScanner.getFreeStorageBytes(dir)
                     used = (total - free).coerceAtLeast(0L)
-                    isDirectAccess = dir.canRead()
+                    isDirectAccess = true
+                } else if (dir != null && dir.exists()) {
+                    // Path exists but not readable -- try stats anyway (some ROMs allow StatFs but not listing)
+                    total = FastStorageScanner.getTotalStorageBytes(dir)
+                    free = FastStorageScanner.getFreeStorageBytes(dir)
+                    used = (total - free).coerceAtLeast(0L)
+                    isDirectAccess = total > 0 && dir.canRead()
                 } else {
                     total = 0L
                     free = 0L
@@ -131,5 +144,67 @@ class StorageVolumeManager(private val context: Context) {
         }
 
         return volumeList
+    }
+
+    /**
+     * Resolves the accessible filesystem directory for a non-primary volume.
+     *
+     * StorageVolume.getDirectory() often returns /mnt/media_rw/<UUID> -- the raw kernel
+     * mount point restricted to GID media_rw (1023). Apps cannot read this path.
+     * The user-visible FUSE projection is at /storage/<UUID>.
+     *
+     * This method probes multiple paths in priority order and returns the first one
+     * that is both exists() and canRead():
+     *
+     * 1. /storage/<UUID>  (standard Android FUSE mount)
+     * 2. getExternalFilesDirs(null) walk-up  (ROM-agnostic discovery)
+     * 3. vol.directory path as-is  (last resort, display-only)
+     */
+    private fun resolveAccessibleDirectory(uuid: String?): File? {
+        if (uuid == null) return null
+
+        // Priority 1: Standard FUSE mount at /storage/<UUID>
+        val storagePath = File("/storage/$uuid")
+        if (storagePath.exists() && storagePath.canRead()) {
+            return storagePath
+        }
+
+        // Priority 2: Discover via getExternalFilesDirs (ROM-agnostic).
+        // Returns app-scoped dirs on all mounted volumes, e.g.:
+        // /storage/EE6E-76E2/Android/data/<pkg>/files
+        // Walk up to find the volume root containing this UUID.
+        try {
+            val externalDirs = context.getExternalFilesDirs(null)
+            for (extDir in externalDirs) {
+                if (extDir == null) continue
+                val extPath = extDir.absolutePath
+                if (extPath.contains(uuid, ignoreCase = true)) {
+                    // Walk up from the app-scoped dir to the volume root.
+                    // The UUID segment marks the volume root: /storage/<UUID>/Android/data/...
+                    var candidate = extDir
+                    while (candidate.parentFile != null) {
+                        if (candidate.name.equals(uuid, ignoreCase = true)) {
+                            if (candidate.exists() && candidate.canRead()) {
+                                return candidate
+                            }
+                            break
+                        }
+                        candidate = candidate.parentFile!!
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // getExternalFilesDirs can throw on some devices
+        }
+
+        // Priority 3: /mnt/media_rw/<UUID> (raw mount -- usually not readable, but try)
+        val rawPath = File("/mnt/media_rw/$uuid")
+        if (rawPath.exists() && rawPath.canRead()) {
+            return rawPath
+        }
+
+        // Return the standard FUSE path for display even if not readable,
+        // so the UI shows a meaningful path instead of a generated ID.
+        return if (storagePath.exists()) storagePath else rawPath.takeIf { it.exists() }
     }
 }
