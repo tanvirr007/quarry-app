@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Deselect
+import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.RestoreFromTrash
 import androidx.compose.material.icons.rounded.Search
@@ -76,6 +77,8 @@ import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 import app.quarry.tanvir.info.ui.explore.DeleteCountdownDialog
+import app.quarry.tanvir.info.ui.explore.FileSortOrder
+import app.quarry.tanvir.info.ui.explore.FilterSortBottomSheet
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -98,7 +101,9 @@ fun HomeItemListBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var searchQuery by remember { mutableStateOf("") }
-    var sortByLargest by remember { mutableStateOf(true) }
+    var sortOrder by remember { mutableStateOf(FileSortOrder.SIZE_DESC) }
+    var showHiddenFiles by remember { mutableStateOf(true) }
+    var showFilterSheet by remember { mutableStateOf(false) }
     var isSelectionMode by remember(startInSelectionMode) { mutableStateOf(startInSelectionMode) }
     var selectedPaths by remember { mutableStateOf(setOf<String>()) }
     var deleteCandidates by remember { mutableStateOf<List<FileEntity>?>(null) }
@@ -108,16 +113,24 @@ fun HomeItemListBottomSheet(
     val haptics = LocalQuarryHaptics.current
     val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
 
-    val filteredFiles = remember(files, searchQuery, sortByLargest) {
-        val list = if (searchQuery.isBlank()) {
+    val filteredFiles = remember(files, searchQuery, sortOrder, showHiddenFiles) {
+        val searched = if (searchQuery.isBlank()) {
             files
         } else {
             files.filter { app.quarry.tanvir.info.domain.model.SearchMatcher.matches(it.name, it.path, searchQuery) }
         }
-        if (sortByLargest) {
-            list.sortedByDescending { it.size }
+        val hiddenFiltered = if (showHiddenFiles) {
+            searched
         } else {
-            list.sortedByDescending { it.lastModified }
+            searched.filter { !it.name.startsWith(".") && !it.path.contains("/.") }
+        }
+        when (sortOrder) {
+            FileSortOrder.SIZE_DESC -> hiddenFiltered.sortedByDescending { it.size }
+            FileSortOrder.SIZE_ASC -> hiddenFiltered.sortedBy { it.size }
+            FileSortOrder.NAME_ASC -> hiddenFiltered.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            FileSortOrder.NAME_DESC -> hiddenFiltered.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name })
+            FileSortOrder.DATE_DESC -> hiddenFiltered.sortedByDescending { it.lastModified }
+            FileSortOrder.DATE_ASC -> hiddenFiltered.sortedBy { it.lastModified }
         }
     }
 
@@ -135,11 +148,12 @@ fun HomeItemListBottomSheet(
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
-        val hasActiveSheetState = deleteCandidates != null || isSelectionMode || selectedPaths.isNotEmpty() || searchQuery.isNotEmpty()
+        val hasActiveSheetState = showFilterSheet || deleteCandidates != null || isSelectionMode || selectedPaths.isNotEmpty() || searchQuery.isNotEmpty()
 
         BackHandler(enabled = true) {
             haptics.click()
             when {
+                showFilterSheet -> showFilterSheet = false
                 deleteCandidates != null -> deleteCandidates = null
                 isSelectionMode || selectedPaths.isNotEmpty() -> {
                     isSelectionMode = false
@@ -280,13 +294,13 @@ fun HomeItemListBottomSheet(
                         IconButton(
                             onClick = {
                                 haptics.click()
-                                sortByLargest = !sortByLargest
+                                showFilterSheet = true
                             }
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Sort,
-                                contentDescription = if (sortByLargest) "Sorted by Size" else "Sorted by Date",
-                                tint = if (sortByLargest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                imageVector = Icons.Rounded.FilterList,
+                                contentDescription = "Filter and sort options",
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                         IconButton(onClick = {
@@ -509,6 +523,19 @@ fun HomeItemListBottomSheet(
                     isSelectionMode = false
                 }
             }
+        )
+    }
+
+    // Filter & Sort Bottom Sheet
+    if (showFilterSheet) {
+        FilterSortBottomSheet(
+            currentSort = sortOrder,
+            showHiddenFiles = showHiddenFiles,
+            onApply = { newSort, newHidden ->
+                sortOrder = newSort
+                showHiddenFiles = newHidden
+            },
+            onDismiss = { showFilterSheet = false }
         )
     }
 }
