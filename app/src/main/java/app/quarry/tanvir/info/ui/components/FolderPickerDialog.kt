@@ -2,6 +2,7 @@ package app.quarry.tanvir.info.ui.components
 
 import android.os.Environment
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -216,7 +217,8 @@ fun FolderPickerDialog(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                 ) {
                     Row(
                         modifier = Modifier
@@ -336,7 +338,8 @@ fun FolderPickerDialog(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surface
-                                )
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                             ) {
                                 Row(
                                     modifier = Modifier

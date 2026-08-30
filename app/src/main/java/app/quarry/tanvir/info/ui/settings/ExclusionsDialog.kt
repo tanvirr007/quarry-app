@@ -1,6 +1,7 @@
 package app.quarry.tanvir.info.ui.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -161,7 +162,8 @@ fun ExclusionsDialog(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                 ) {
                     Row(
                         modifier = Modifier
@@ -206,7 +208,8 @@ fun ExclusionsDialog(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                 ) {
                     Column(
                         modifier = Modifier
@@ -367,7 +370,8 @@ fun ExclusionsDialog(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
-                        )
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -407,7 +411,8 @@ fun ExclusionsDialog(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surface
-                                )
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                             ) {
                                 Row(
                                     modifier = Modifier

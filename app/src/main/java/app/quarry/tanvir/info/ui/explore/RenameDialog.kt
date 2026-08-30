@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.explore
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,7 +91,8 @@ fun RenameDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-                        )
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                     ) {
                         Row(
                             modifier = Modifier

@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.explore
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -101,6 +102,11 @@ fun FileListView(
                         }
                     ),
                 shape = RoundedCornerShape(14.dp),
+                border = if (isSelected) {
+                    BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
+                } else {
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
+                },
                 colors = CardDefaults.cardColors(
                     containerColor = if (isSelected) {
                         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)

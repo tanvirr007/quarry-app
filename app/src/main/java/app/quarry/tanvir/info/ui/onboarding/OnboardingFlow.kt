@@ -3,6 +3,7 @@ package app.quarry.tanvir.info.ui.onboarding
 import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -328,8 +329,9 @@ private fun OnboardingStepContent(step: OnboardingStepData) {
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-            )
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
         ) {
             Column(
                 modifier = Modifier

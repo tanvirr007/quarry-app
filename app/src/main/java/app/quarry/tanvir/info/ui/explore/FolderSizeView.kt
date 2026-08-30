@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.explore
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -75,7 +76,8 @@ fun FolderSizeView(
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
             ) {
                 Column(
                     modifier = Modifier
