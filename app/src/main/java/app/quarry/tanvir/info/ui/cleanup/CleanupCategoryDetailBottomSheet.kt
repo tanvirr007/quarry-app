@@ -232,6 +232,7 @@ fun CleanupCategoryDetailBottomSheet(
                     }
                 }
             }
+        }
 
             // Bottom Action Bar (Move to Trash + Clean)
             if (selectedItems.isNotEmpty()) {
