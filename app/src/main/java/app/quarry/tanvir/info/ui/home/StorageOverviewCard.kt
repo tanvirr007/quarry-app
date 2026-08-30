@@ -115,14 +115,14 @@ fun StorageOverviewCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.tertiaryContainer)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = "${(usedPercentageAnim * 100).toInt()}% used",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                     if (onClick != null) {
@@ -144,7 +144,7 @@ fun StorageOverviewCard(
             ) {
                 Column {
                     Text(
-                        text = "${StorageFormatter.formatBytes(overview.usedBytes)} used",
+                        text = StorageFormatter.formatBytes(overview.usedBytes),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -158,8 +158,7 @@ fun StorageOverviewCard(
 
                 Text(
                     text = "Total: ${StorageFormatter.formatBytes(overview.totalBytes)}",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -182,14 +181,14 @@ fun StorageOverviewCard(
                     Icon(
                         imageVector = Icons.Rounded.TrendingUp,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         text = overview.storageGrowthText,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
