@@ -41,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
@@ -52,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +62,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +73,7 @@ fun FilterSortBottomSheet(
     onDismiss: () -> Unit
 ) {
     val haptics = LocalQuarryHaptics.current
+    val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var stagedSort by remember(currentSort) { mutableStateOf(currentSort) }
@@ -88,12 +92,22 @@ fun FilterSortBottomSheet(
     }
 
     BackHandler(enabled = true) {
-        handleDismissAttempt()
+        if (showDiscardDialog) {
+            showDiscardDialog = false
+            coroutineScope.launch {
+                if (!sheetState.isVisible) {
+                    sheetState.show()
+                }
+            }
+        } else {
+            handleDismissAttempt()
+        }
     }
 
     ModalBottomSheet(
         onDismissRequest = handleDismissAttempt,
         sheetState = sheetState,
+        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = {
@@ -398,7 +412,14 @@ fun FilterSortBottomSheet(
     // Unsaved Changes Confirmation Dialog
     if (showDiscardDialog) {
         AlertDialog(
-            onDismissRequest = { showDiscardDialog = false },
+            onDismissRequest = {
+                showDiscardDialog = false
+                coroutineScope.launch {
+                    if (!sheetState.isVisible) {
+                        sheetState.show()
+                    }
+                }
+            },
             icon = {
                 Icon(
                     imageVector = Icons.Rounded.Warning,
@@ -437,7 +458,14 @@ fun FilterSortBottomSheet(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showDiscardDialog = false }
+                    onClick = {
+                        showDiscardDialog = false
+                        coroutineScope.launch {
+                            if (!sheetState.isVisible) {
+                                sheetState.show()
+                            }
+                        }
+                    }
                 ) {
                     Text("Keep Editing")
                 }
