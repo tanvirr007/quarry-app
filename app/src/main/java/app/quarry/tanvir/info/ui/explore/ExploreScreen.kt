@@ -4,8 +4,10 @@ import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -116,76 +118,7 @@ fun ExploreScreen(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Search & View Mode Bar
-        // Search & Filter Bar
         var showFilterSheet by remember { mutableStateOf(false) }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                placeholder = { Text("Search files & folders…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = {
-                            haptics.click()
-                            viewModel.setSearchQuery("")
-                        }) {
-                            Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear search")
-                        }
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(28.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
-                ),
-                singleLine = true
-            )
-
-            // Modern Filter & Sort Button
-            IconButton(
-                onClick = {
-                    haptics.click()
-                    showFilterSheet = true
-                },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.FilterList,
-                    contentDescription = "Filter and sort options",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-        if (showFilterSheet) {
-            FilterSortBottomSheet(
-                currentSort = uiState.sortOrder,
-                showHiddenFiles = uiState.showHiddenFiles,
-                onApply = { newSort, newHidden ->
-                    viewModel.setSortOrder(newSort)
-                    if (newHidden != uiState.showHiddenFiles) {
-                        viewModel.toggleShowHiddenFiles()
-                    }
-                },
-                onDismiss = { showFilterSheet = false }
-            )
-        }
 
         // View Mode Selector Chips
         val viewModeScroll = rememberScrollState()
@@ -209,6 +142,80 @@ fun ExploreScreen(
                     )
                 )
             }
+        }
+
+        // Search & Filter Bar (Active & visible only for non-Treemap modes)
+        AnimatedVisibility(
+            visible = uiState.viewMode != ExploreViewMode.TREEMAP,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = { viewModel.setSearchQuery(it) },
+                    placeholder = { Text("Search files & folders…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    trailingIcon = {
+                        if (uiState.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                haptics.click()
+                                viewModel.setSearchQuery("")
+                            }) {
+                                Icon(imageVector = Icons.Rounded.Close, contentDescription = "Clear search")
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
+                    ),
+                    singleLine = true
+                )
+
+                // Modern Filter & Sort Button
+                IconButton(
+                    onClick = {
+                        haptics.click()
+                        showFilterSheet = true
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.FilterList,
+                        contentDescription = "Filter and sort options",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        if (showFilterSheet && uiState.viewMode != ExploreViewMode.TREEMAP) {
+            FilterSortBottomSheet(
+                currentSort = uiState.sortOrder,
+                showHiddenFiles = uiState.showHiddenFiles,
+                onApply = { newSort, newHidden ->
+                    viewModel.setSortOrder(newSort)
+                    if (newHidden != uiState.showHiddenFiles) {
+                        viewModel.toggleShowHiddenFiles()
+                    }
+                },
+                onDismiss = { showFilterSheet = false }
+            )
         }
 
         // Breadcrumb Navigation Bar (Visible in Treemap, List, Folders modes)

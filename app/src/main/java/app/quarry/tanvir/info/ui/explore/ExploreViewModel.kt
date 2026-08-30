@@ -269,6 +269,9 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     fun setViewMode(mode: ExploreViewMode) {
         _viewMode.value = mode
+        if (mode == ExploreViewMode.TREEMAP) {
+            _searchQuery.value = ""
+        }
     }
 
     fun setSearchQuery(query: String) {
