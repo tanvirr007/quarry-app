@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,8 +32,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -41,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -117,6 +117,9 @@ fun ExploreScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // Search & View Mode Bar
+        // Search & Filter Bar
+        var showFilterSheet by remember { mutableStateOf(false) }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -125,11 +128,12 @@ fun ExploreScreen(
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = { viewModel.setSearchQuery(it) },
-                placeholder = { Text("Search…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                placeholder = { Text("Search files & folders…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Rounded.Search,
-                        contentDescription = "Search"
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 },
                 trailingIcon = {
@@ -143,73 +147,44 @@ fun ExploreScreen(
                     }
                 },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
+                ),
                 singleLine = true
             )
 
-            // Sort & Filter Dropdown
-            var showSortMenu by remember { mutableStateOf(false) }
-            Box {
-                IconButton(
-                    onClick = {
-                        haptics.click()
-                        showSortMenu = true
-                    },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.FilterList,
-                        contentDescription = "Sort options",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                DropdownMenu(
-                    expanded = showSortMenu,
-                    onDismissRequest = { showSortMenu = false }
-                ) {
-                    FileSortOrder.entries.forEach { sortOption ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = sortOption.displayName,
-                                    fontWeight = if (uiState.sortOrder == sortOption) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (uiState.sortOrder == sortOption) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
-                            },
-                            onClick = {
-                                haptics.selection()
-                                viewModel.setSortOrder(sortOption)
-                                showSortMenu = false
-                            }
-                        )
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    DropdownMenuItem(
-                        text = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Show Hidden Files",
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Switch(
-                                    checked = uiState.showHiddenFiles,
-                                    onCheckedChange = null
-                                )
-                            }
-                        },
-                        onClick = {
-                            haptics.selection()
-                            viewModel.toggleShowHiddenFiles()
-                        }
-                    )
-                }
+            // Modern Filter & Sort Button
+            IconButton(
+                onClick = {
+                    haptics.click()
+                    showFilterSheet = true
+                },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.FilterList,
+                    contentDescription = "Filter and sort options",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
+        }
+
+        if (showFilterSheet) {
+            FilterSortBottomSheet(
+                currentSort = uiState.sortOrder,
+                showHiddenFiles = uiState.showHiddenFiles,
+                onApply = { newSort, newHidden ->
+                    viewModel.setSortOrder(newSort)
+                    if (newHidden != uiState.showHiddenFiles) {
+                        viewModel.toggleShowHiddenFiles()
+                    }
+                },
+                onDismiss = { showFilterSheet = false }
+            )
         }
 
         // View Mode Selector Chips
@@ -263,7 +238,8 @@ fun ExploreScreen(
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
-                )
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
             ) {
                 Row(
                     modifier = Modifier
