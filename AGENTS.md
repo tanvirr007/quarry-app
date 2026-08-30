@@ -120,5 +120,6 @@ Follow the repository commit guidelines:
 3. **Change-Id & Signoff**: Include `Change-Id` footer and always commit with `-s` (`git commit -s`).
 
 ### Continuous Integration (GitHub Actions)
-- Pushing to `main` triggers `.github/workflows/build.yml`.
+- Pushing to `main` with code or build configuration changes triggers `.github/workflows/build.yml` (path whitelist automatically skips documentation, `assets/`, issue templates, and git config changes).
+- Builds are managed with sequential concurrency (`release-main`) to prevent overlapping releases.
 - The CI calculates semantic versions dynamically, updates `app/build.gradle.kts`, executes `./gradlew assembleRelease`, signs the APK (if keystore secrets are present), generates changelog notes from Git commits, creates a GitHub Release, and notifies Telegram with real-time build logs.
