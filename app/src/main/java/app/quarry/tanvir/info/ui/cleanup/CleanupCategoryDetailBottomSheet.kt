@@ -258,7 +258,7 @@ fun CleanupCategoryDetailBottomSheet(
                         Icon(imageVector = Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Delete (${StorageFormatter.formatBytes(selectedBytes)})",
+                            text = "Delete (${selectedItems.size})",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,

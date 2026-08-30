@@ -356,7 +356,7 @@ fun DuplicateGroupView(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Clean ${selectedItems.size} ${if (selectedItems.size == 1) "Copy" else "Copies"} (${StorageFormatter.formatBytes(selectedBytes)})",
+                                        text = "Clean ${selectedItems.size} ${if (selectedItems.size == 1) "Copy" else "Copies"}",
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold
                                     )

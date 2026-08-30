@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface DuplicateScanState {
@@ -234,9 +235,17 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
                 val paths = itemsToTrash.map { it.path }
                 val results = fileOps.bulkMoveToTrash(paths)
                 val successCount = results.count { it.value }
+                val trashedPaths = results.filter { it.value }.keys
                 _userMessage.value = "Moved $successCount items to Trash"
                 _selectedItemPaths.value = emptySet()
-                _activeCandidateGroup.value = null
+                _activeCandidateGroup.update { grp ->
+                    if (grp == null) null
+                    else {
+                        val remaining = grp.items.filterNot { trashedPaths.contains(it.path) }
+                        if (remaining.isEmpty()) null
+                        else grp.copy(items = remaining, totalBytes = remaining.sumOf { it.size })
+                    }
+                }
                 loadCandidates()
                 if (_duplicateScanState.value is DuplicateScanState.Completed) {
                     scanForDuplicates()
@@ -275,10 +284,19 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
                 val paths = items.map { it.path }
                 val results = fileOps.bulkDelete(paths)
                 val count = results.count { it.value }
+                val deletedPaths = results.filter { it.value }.keys
                 _userMessage.value = "Cleaned up $count files"
                 _isDeleteCountdownVisible.value = false
                 _activeDeleteItems.value = emptyList()
                 _selectedItemPaths.value = emptySet()
+                _activeCandidateGroup.update { grp ->
+                    if (grp == null) null
+                    else {
+                        val remaining = grp.items.filterNot { deletedPaths.contains(it.path) }
+                        if (remaining.isEmpty()) null
+                        else grp.copy(items = remaining, totalBytes = remaining.sumOf { it.size })
+                    }
+                }
                 loadCandidates()
                 if (_duplicateScanState.value is DuplicateScanState.Completed) {
                     scanForDuplicates()

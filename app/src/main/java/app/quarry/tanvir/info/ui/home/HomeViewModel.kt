@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class HomeSheetData(
@@ -376,7 +377,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch(Dispatchers.IO) {
                 val results = fileOperationsManager.bulkMoveToTrash(paths)
                 val successCount = results.count { it.value }
+                val trashedPaths = results.filter { it.value }.keys
                 _userMessage.value = "Moved $successCount items to Trash"
+                _activeSheetData.update { current ->
+                    if (current == null) null
+                    else {
+                        val remaining = current.files.filterNot { trashedPaths.contains(it.path) }
+                        if (remaining.isEmpty()) null
+                        else current.copy(files = remaining)
+                    }
+                }
                 onComplete()
             }
         }
@@ -408,8 +418,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch(Dispatchers.IO) {
                 val result = fileOperationsManager.deletePermanently(file.path)
                 if (result.isSuccess) {
-                    _userMessage.value = "File deleted"
+                    _userMessage.value = "Permanently deleted \"${file.name}\""
                     _selectedDetailFile.value = null
+                    _activeSheetData.update { current ->
+                        if (current == null) null
+                        else {
+                            val remaining = current.files.filterNot { it.path == file.path }
+                            if (remaining.isEmpty()) null
+                            else current.copy(files = remaining)
+                        }
+                    }
                 } else {
                     _userMessage.value = "Delete failed: ${result.exceptionOrNull()?.message}"
                 }
@@ -446,7 +464,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch(Dispatchers.IO) {
                 val results = fileOperationsManager.bulkDelete(paths)
                 val successCount = results.count { it.value }
+                val deletedPaths = results.filter { it.value }.keys
                 _userMessage.value = "Deleted $successCount files permanently"
+                _activeSheetData.update { current ->
+                    if (current == null) null
+                    else {
+                        val remaining = current.files.filterNot { deletedPaths.contains(it.path) }
+                        if (remaining.isEmpty()) null
+                        else current.copy(files = remaining)
+                    }
+                }
                 onComplete()
             }
         }

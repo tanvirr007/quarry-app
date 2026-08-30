@@ -214,9 +214,9 @@ fun CleanupScreen(
                     )
                     Text(
                         text = if (uiState.trashItems.isNotEmpty()) {
-                            "${uiState.trashItems.size} items preserved · Safe temporary storage"
+                            "${uiState.trashItems.size} ${if (uiState.trashItems.size == 1) "item" else "items"}"
                         } else {
-                            "Empty · Files moved to Trash can be restored here"
+                            "Empty"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -495,7 +495,7 @@ fun HomeItemListBottomSheet(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (selectedPaths.isEmpty()) "Delete" else "Delete (${StorageFormatter.formatBytes(selectedBytes)})",
+                            text = if (selectedPaths.isEmpty()) "Delete" else "Delete (${selectedPaths.size})",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,

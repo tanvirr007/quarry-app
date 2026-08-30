@@ -95,6 +95,9 @@ class FileOperationsManager(
                 }
             }
             repository.deleteFileRecord(path)
+            try {
+                android.media.MediaScannerConnection.scanFile(context, arrayOf(path), null, null)
+            } catch (_: Exception) {}
             if (deleted) {
                 Result.success(true)
             } else {
@@ -136,6 +139,9 @@ class FileOperationsManager(
 
         if (deletedPaths.isNotEmpty()) {
             repository.deleteFileRecords(deletedPaths)
+            try {
+                android.media.MediaScannerConnection.scanFile(context, deletedPaths.toTypedArray(), null, null)
+            } catch (_: Exception) {}
         }
         results
     }
