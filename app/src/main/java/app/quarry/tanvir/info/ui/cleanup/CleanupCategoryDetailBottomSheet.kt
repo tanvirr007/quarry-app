@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.RestoreFromTrash
@@ -91,6 +93,7 @@ fun CleanupCategoryDetailBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
+                .nestedScroll(blockNestedScrollConnection)
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -129,14 +132,30 @@ fun CleanupCategoryDetailBottomSheet(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
             // Candidate List
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .nestedScroll(blockNestedScrollConnection),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(group.items, key = { it.path }) { item ->
+            if (group.items.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .nestedScroll(blockNestedScrollConnection),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No candidate files found",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .nestedScroll(blockNestedScrollConnection),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(group.items, key = { it.path }) { item ->
                     val isSelected = selectedPaths.contains(item.path)
                     val icon = item.category.getIcon()
                     val color = item.category.getColor()

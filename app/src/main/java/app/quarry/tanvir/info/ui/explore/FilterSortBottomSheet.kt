@@ -59,9 +59,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
+import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +77,7 @@ fun FilterSortBottomSheet(
     val haptics = LocalQuarryHaptics.current
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val blockNestedScrollConnection = rememberBlockNestedScrollConnection()
 
     var stagedSort by remember(currentSort) { mutableStateOf(currentSort) }
     var stagedHidden by remember(showHiddenFiles) { mutableStateOf(showHiddenFiles) }
@@ -196,7 +199,8 @@ fun FilterSortBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .nestedScroll(blockNestedScrollConnection),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Section: Sort Order
