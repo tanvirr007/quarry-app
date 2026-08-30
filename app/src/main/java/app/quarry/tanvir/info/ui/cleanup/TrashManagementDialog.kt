@@ -186,7 +186,7 @@ fun TrashManagementDialog(
                     // Normal mode header
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Trash & Recycle Bin",
+                            text = "Trash",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )

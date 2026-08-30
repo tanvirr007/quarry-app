@@ -186,7 +186,7 @@ fun CleanupScreen(
             }
         }
 
-        // Dedicated Trash & Recycle Bin Access Card
+        // Dedicated Trash Access Card
         val trashBytes = uiState.trashItems.sumOf { it.size }
         Card(
             modifier = Modifier
@@ -223,7 +223,7 @@ fun CleanupScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Trash & Recycle Bin",
+                        text = "Trash",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
