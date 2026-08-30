@@ -36,6 +36,7 @@ Quarry follows **Clean Architecture** and **Unidirectional Data Flow (UDF)**:
 ```
 app/src/main/java/app/quarry/tanvir/info/
 ├── MainActivity.kt               # Single-activity container, theme/onboarding root
+├── MainViewModel.kt              # App-wide UI state and global preferences holder
 ├── QuarryApp.kt                  # Application class
 ├── data/                         # Repositories, Room DAOs, DataStore, file scanners
 │   ├── database/                 # Room database, entities, DAOs (QuarryDatabase, FileDao, FileEntity)
@@ -43,16 +44,22 @@ app/src/main/java/app/quarry/tanvir/info/
 │   ├── preferences/              # DataStore user preferences, theme, haptics, keep-screen-on, category visibility
 │   └── repository/               # Repository implementations
 ├── domain/                       # Use cases and domain business logic
+│   ├── analyzer/                 # Deep storage analyzer and directory breakdown
+│   ├── app/                      # Installed applications and package space analysis
+│   ├── cleanup/                  # Cleanup rules, category calculation & strategies
+│   ├── duplicates/               # Fast hash calculation & duplicate detection engine
 │   ├── file/                     # File operations (trash, delete, rename, batch actions)
 │   ├── haptics/                  # Centralized vibration helper (QuarryHaptics, strength mapping, VibratorManager)
+│   ├── media/                    # Native high-performance ThumbnailLoader with LRU cache
 │   ├── model/                    # Domain models (StorageCategory, StorageFormatter)
+│   ├── report/                   # Storage breakdown reporting & summary generation
 │   ├── scanner/                  # Local storage scanners & metadata indexing
 │   ├── security/                 # Biometric authentication management
 │   ├── treemap/                  # Treemap layout engine (squarified algorithm, node hierarchy)
 │   └── volume/                   # Storage volume manager (internal & external volumes)
 ├── ui/                           # Jetpack Compose UI layer
 │   ├── cleanup/                  # Storage cleaner & duplicate/large file screens
-│   ├── components/               # Reusable UI widgets (cards, charts, buttons, dialogs)
+│   ├── components/               # Reusable UI widgets (cards, charts, buttons, dialogs, thumbnails)
 │   ├── explore/                  # Treemap canvas, file lists, category explorer, breadcrumb navigation
 │   ├── home/                     # Dashboard, storage breakdown, visual category charts (Quick Insights gating, filtered categories)
 │   ├── navigation/               # NavHost, screens, bottom navigation bar
@@ -71,6 +78,14 @@ app/src/main/java/app/quarry/tanvir/info/
 - **Guaranteed Visible Floor**: Small files and directories are assigned a balanced minimum visual area floor (~3.5% canvas area) to prevent collapsing into invisible or unclickable 1px slivers.
 - **Proximity-Aware Hit Detection**: `TreemapCanvas` evaluates touch events with distance tolerances to ensure direct, effortless tapping for both small and large tiles.
 - **Color Harmonization**: Every file and directory is rendered with distinct, harmonized HSL gradient tiles and high-contrast labels.
+
+### Native Thumbnail Pipeline
+- **Zero-Dependency Thumbnail Loader**: `ThumbnailLoader` decodes video frames, downsamples image bitmaps, and extracts APK badges asynchronously using coroutines and an in-memory LRU cache.
+- **UI Integration**: `FileThumbnail` composable seamlessly falls back to categorized Material vector icons when thumbnails are unavailable or during background decoding.
+
+### Search & Explorer Filters
+- **Smart Search**: Real-time keyword filtering across files, categories, and hierarchical lists with instant query matching. Treemap mode automatically collapses search inputs to maximize visual canvas area.
+- **Filter & Sort Sheet**: Modal bottom sheet provides multi-criteria sorting (Size, Name, Modified Date, Type), ascending/descending order toggles, and hidden dotfile visibility controls.
 
 ### Jetpack Compose & UI
 - **Stateless Composables**: Keep UI components decoupled from ViewModel instances by hoisting state and passing event lambdas.

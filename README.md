@@ -44,12 +44,17 @@
 - **Versatile Storage Explorer**:
   - Switch seamlessly between Treemap, List, Largest Files, Categories/Types, and Folders views.
   - Breadcrumb navigation with hierarchical directory traversal and system back integration.
-  - Search, sort by size/name/date, and toggle hidden dotfiles.
+  - Smart search with real-time keyword matching across files and categories.
+  - Compact modal filter sheet with multi-criteria sorting (Size, Name, Date, Type), ascending/descending order, and hidden dotfile visibility.
   - Multi-select batch actions for Trash and permanent Deletion.
-- **Smart Cleanup**:
+- **Native File Thumbnails**:
+  - High-performance, offline visual previews for images, video frames, and APK application badges with in-memory LRU caching and zero third-party dependencies.
+- **Smart Cleanup Hub**:
+  - Redesigned Hero overview card with instant potential space recovery metrics.
   - Identify and safely clean duplicate files with collapsible group sets and recoverable space badges.
   - Discover large files occupying significant storage.
   - Locate obsolete APK packages, empty directories, and orphaned caches.
+  - Fast Trash management with countdown confirmation and single-tap purge.
 - **Full-Screen Settings & Management**:
   - Appearance dialog with live theme preview cards (System, Light, Dark, Dynamic Material You).
   - Excluded Folders manager with preset chips and custom folder selection.
@@ -94,17 +99,11 @@ quarry-app/
 │       ├── AndroidManifest.xml
 │       ├── java/app/quarry/tanvir/info/
 │       │   ├── MainActivity.kt   # App root & theme provider
+│       │   ├── MainViewModel.kt  # App UI state & global preference holder
 │       │   ├── QuarryApp.kt      # Application initialization
 │       │   ├── data/             # Database, preferences & repositories
-│       │   ├── domain/           # Use cases, treemap engine, volumes, security & business logic
-│       │   ├── ui/               # Compose screens & components
-│       │   │   ├── cleanup/      # Storage cleanup & duplicate group UI
-│       │   │   ├── explore/      # Treemap canvas & file explorer UI
-│       │   │   ├── home/         # Storage dashboard UI
-│       │   │   ├── navigation/   # Navigation bar & routing
-│       │   │   ├── onboarding/   # Permissions & onboarding dialogs
-│       │   │   ├── settings/     # Settings UI & full-screen dialogs
-│       │   │   └── theme/        # Material 3 theme & color system
+│       │   ├── domain/           # Analyzer, app analysis, cleanup, duplicates, media, scanner, security, treemap, volumes
+│       │   ├── ui/               # Compose screens & components (cleanup, explore, home, settings, navigation, theme)
 │       │   └── worker/           # Background workers
 │       └── res/                  # Drawables, strings, mipmaps
 └── AGENTS.md                     # Agent & developer guidelines
