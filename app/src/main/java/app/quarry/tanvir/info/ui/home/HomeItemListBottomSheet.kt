@@ -307,7 +307,7 @@ fun HomeItemListBottomSheet(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Filter ${title.lowercase()}…") },
+                    placeholder = { Text("Search…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Search,

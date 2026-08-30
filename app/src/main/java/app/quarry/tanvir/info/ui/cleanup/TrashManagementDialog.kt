@@ -231,7 +231,7 @@ fun TrashManagementDialog(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Filter trash items…") },
+                    placeholder = { Text("Search…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Search,
