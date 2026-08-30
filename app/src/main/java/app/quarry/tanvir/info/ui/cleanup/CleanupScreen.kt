@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoDelete
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Difference
@@ -44,6 +45,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -110,62 +113,105 @@ fun CleanupScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Cleanup Header Card
+        // Overview Section
+        Text(
+            text = "Cleanup Overview",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+
+        // Potential Cleanup Hero Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
             ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.CleaningServices,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.totalRecoverableBytes > 0) {
+                                    Icons.Rounded.CleaningServices
+                                } else {
+                                    Icons.Rounded.CheckCircle
+                                },
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Text(
+                            text = "Potential Cleanup",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (uiState.totalRecoverableBytes > 0) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    ) {
+                        Text(
+                            text = if (uiState.totalRecoverableBytes > 0) "Candidates Found" else "Optimized",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (uiState.totalRecoverableBytes > 0) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Storage Cleanup",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Potential recoverable space",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Potential Cleanup",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(
                         text = StorageFormatter.formatBytes(uiState.totalRecoverableBytes),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = if (uiState.totalRecoverableBytes > 0) {
+                            "Total space available to review and reclaim safely"
+                        } else {
+                            "No temporary files or cleanup candidates found"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
