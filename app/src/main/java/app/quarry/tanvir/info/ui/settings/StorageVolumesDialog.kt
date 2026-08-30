@@ -26,11 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Difference
-import androidx.compose.material.icons.rounded.FolderSpecial
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.SdCard
 import androidx.compose.material.icons.rounded.SdStorage
@@ -41,7 +37,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -54,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -365,31 +359,6 @@ fun StorageVolumesDialog(
                                     )
                                 }
                             }
-
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                            // Capability Chips
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CapabilityBadge(
-                                    label = "Treemap",
-                                    supported = volume.supportsTreemap,
-                                    icon = Icons.Rounded.FolderSpecial
-                                )
-                                CapabilityBadge(
-                                    label = "Duplicates",
-                                    supported = volume.supportsDuplicateScan,
-                                    icon = Icons.Rounded.Difference
-                                )
-                                CapabilityBadge(
-                                    label = "Trash Bin",
-                                    supported = volume.supportsTrash,
-                                    icon = Icons.Rounded.DeleteSweep
-                                )
-                            }
                         }
                     }
                 }
@@ -426,37 +395,5 @@ fun StorageVolumesDialog(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun CapabilityBadge(
-    label: String,
-    supported: Boolean,
-    icon: ImageVector
-) {
-    Row(
-        modifier = Modifier
-            .background(
-                if (supported) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                RoundedCornerShape(6.dp)
-            )
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Icon(
-            imageVector = if (supported) Icons.Rounded.Check else icon,
-            contentDescription = null,
-            tint = if (supported) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(12.dp)
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-            color = if (supported) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }

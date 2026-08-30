@@ -58,7 +58,7 @@
 - **Full-Screen Settings & Management**:
   - Appearance dialog with live theme preview cards (System, Light, Dark, Dynamic Material You).
   - Excluded Folders manager with preset chips and custom folder selection.
-  - Storage Volumes overview with capacity statistics and filesystem capability badges.
+  - Storage Volumes overview with capacity statistics and mount path inspection.
   - **Miscellaneous** — Quick Insights show/hide, Storage Categories visibility (≥4 required), Haptic feedback with strength slider, and Keep Screen On while the app is open.
 - **Biometric Security**: Protect file browsing and sensitive storage details using device biometric authentication or PIN lock.
 - **Personalized Home**: Toggle Quick Insights and curate which Storage Category cards appear on Home; enforce a minimum of four visible categories so the grid never collapses.
