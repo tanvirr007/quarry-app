@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,12 +18,14 @@ fun QuarryCard(
     colors: CardColors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.surface
     ),
+    border: BorderStroke? = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = colors,
+        border = border,
         content = content
     )
 }

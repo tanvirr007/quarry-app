@@ -43,13 +43,13 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = DarkOnSurfaceVariant,
     outline = Color(0xFF889392),
-    outlineVariant = Color(0xFF3A4948),
+    outlineVariant = Color(0xFF33403F),
     scrim = Color(0xFF000000),
     surfaceContainerLowest = Color(0xFF0A0F0F),
-    surfaceContainerLow = Color(0xFF1B2121),
-    surfaceContainer = Color(0xFF1F2525),
-    surfaceContainerHigh = Color(0xFF2A3231),
-    surfaceContainerHighest = Color(0xFF353D3C)
+    surfaceContainerLow = Color(0xFF121717),
+    surfaceContainer = Color(0xFF171D1D),
+    surfaceContainerHigh = Color(0xFF1F2626),
+    surfaceContainerHighest = Color(0xFF263030)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -76,13 +76,13 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = LightOnSurfaceVariant,
     outline = Color(0xFF6F7978),
-    outlineVariant = Color(0xFFBFC9C7),
+    outlineVariant = Color(0xFFD0DCD9),
     scrim = Color(0xFF000000),
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF1F4F3),
-    surfaceContainer = Color(0xFFEBEFED),
-    surfaceContainerHigh = Color(0xFFE6E9E8),
-    surfaceContainerHighest = Color(0xFFE0E3E2)
+    surfaceContainerLow = Color(0xFFF7FAF9),
+    surfaceContainer = Color.White,
+    surfaceContainerHigh = Color(0xFFE8EEEC),
+    surfaceContainerHighest = Color(0xFFDFE6E4)
 )
 
 val LocalDarkTheme = compositionLocalOf { false }

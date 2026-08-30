@@ -14,8 +14,8 @@ val Mint40 = Color(0xFF006A60) // Deep ocean teal
 
 // Dark Theme Surfaces — cooler, less muddy green cast
 val DarkBackground = Color(0xFF0F1415)
-val DarkSurface = Color(0xFF171C1C)
-val DarkSurfaceVariant = Color(0xFF3A4948)
+val DarkSurface = Color(0xFF171D1D)
+val DarkSurfaceVariant = Color(0xFF263030)
 val DarkOnBackground = Color(0xFFE0E3E2)
 val DarkOnSurface = Color(0xFFE0E3E2)
 val DarkOnSurfaceVariant = Color(0xFFBFC9C7)
@@ -24,10 +24,10 @@ val DarkOnPrimaryContainer = Color(0xFFBCEBE7)
 val DarkTertiaryContainer = Color(0xFF1E4E49)
 val DarkOnTertiaryContainer = Color(0xFFBCEEE6)
 
-// Light Theme Surfaces — fresh, airy, not neon
-val LightBackground = Color(0xFFF4FBF9)
-val LightSurface = Color(0xFFEFF5F3)
-val LightSurfaceVariant = Color(0xFFDCE5E3)
+// Light Theme Surfaces — pure white cards over soft airy tinted background canvas
+val LightBackground = Color(0xFFEFF4F2)
+val LightSurface = Color(0xFFFFFFFF)
+val LightSurfaceVariant = Color(0xFFE2EBE9)
 val LightOnBackground = Color(0xFF191C1C)
 val LightOnSurface = Color(0xFF191C1C)
 val LightOnSurfaceVariant = Color(0xFF3F4948)
