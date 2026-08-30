@@ -236,7 +236,7 @@ fun FolderPickerDialog(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.North,
@@ -250,7 +250,7 @@ fun FolderPickerDialog(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -356,7 +356,7 @@ fun FolderPickerDialog(
                                                 if (isHidden) {
                                                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                                                 } else {
-                                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                                                 }
                                             ),
                                         contentAlignment = Alignment.Center

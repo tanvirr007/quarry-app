@@ -145,13 +145,13 @@ fun DuplicateGroupView(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Difference,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
@@ -183,7 +183,7 @@ fun DuplicateGroupView(
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier
                                     .background(
-                                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                        MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
                                         RoundedCornerShape(6.dp)
                                     )
                                     .padding(horizontal = 6.dp, vertical = 3.dp)
@@ -310,7 +310,7 @@ fun DuplicateGroupView(
                                                     color = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier
                                                         .background(
-                                                            MaterialTheme.colorScheme.primaryContainer,
+                                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                                             RoundedCornerShape(4.dp)
                                                         )
                                                         .padding(horizontal = 4.dp, vertical = 2.dp)

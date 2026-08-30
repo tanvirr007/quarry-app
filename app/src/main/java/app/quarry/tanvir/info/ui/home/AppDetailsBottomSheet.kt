@@ -133,18 +133,18 @@ fun AppDetailsBottomSheet(
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = if (app.isSystemApp) {
-                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+                                MaterialTheme.colorScheme.surfaceVariant
                             } else {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             }
                         ) {
                             Text(
                                 text = if (app.isSystemApp) "System App" else "User App",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (app.isSystemApp) {
-                                    MaterialTheme.colorScheme.onTertiaryContainer
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 } else {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                    MaterialTheme.colorScheme.primary
                                 },
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

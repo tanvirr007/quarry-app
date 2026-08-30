@@ -150,7 +150,7 @@ fun StorageVolumesDialog(
                                     modifier = Modifier
                                         .size(52.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -258,13 +258,13 @@ fun StorageVolumesDialog(
                                     modifier = Modifier
                                         .size(44.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = volumeIcon,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.secondary,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
@@ -289,7 +289,7 @@ fun StorageVolumesDialog(
                                                 color = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier
                                                     .background(
-                                                        MaterialTheme.colorScheme.primaryContainer,
+                                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                                         RoundedCornerShape(4.dp)
                                                     )
                                                     .padding(horizontal = 5.dp, vertical = 2.dp)

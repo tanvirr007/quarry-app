@@ -1,6 +1,7 @@
 package app.quarry.tanvir.info.ui.cleanup
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -149,11 +150,16 @@ fun CleanupCategoryDetailBottomSheet(
                                 onToggleSelect(item.path)
                             },
                         shape = RoundedCornerShape(12.dp),
+                        border = if (isSelected) {
+                            BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
+                        } else {
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
+                        },
                         colors = CardDefaults.cardColors(
                             containerColor = if (isSelected) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             } else {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                MaterialTheme.colorScheme.surface
                             }
                         )
                     ) {
