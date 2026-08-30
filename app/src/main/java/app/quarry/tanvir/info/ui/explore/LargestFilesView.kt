@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 
@@ -98,20 +99,14 @@ fun LargestFilesView(
                             modifier = Modifier.size(24.dp)
                         )
 
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(color.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = color,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        FileThumbnail(
+                            path = file.path,
+                            category = category,
+                            size = 38.dp,
+                            shape = RoundedCornerShape(8.dp),
+                            lastModified = file.lastModified,
+                            isDirectory = file.isDirectory
+                        )
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(

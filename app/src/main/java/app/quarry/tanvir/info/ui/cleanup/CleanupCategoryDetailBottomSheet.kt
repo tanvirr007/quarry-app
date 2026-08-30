@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.cleanup.CleanupCandidateGroup
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
@@ -171,20 +172,14 @@ fun CleanupCategoryDetailBottomSheet(
                                 }
                             )
 
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(color.copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = null,
-                                    tint = color,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                            FileThumbnail(
+                                path = item.path,
+                                category = item.category,
+                                size = 38.dp,
+                                shape = RoundedCornerShape(8.dp),
+                                lastModified = item.lastModified,
+                                isDirectory = item.isDirectory
+                            )
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(

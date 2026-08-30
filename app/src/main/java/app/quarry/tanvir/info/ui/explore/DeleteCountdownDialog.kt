@@ -29,7 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
+import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 
 @Composable
 fun DeleteCountdownDialog(
@@ -80,6 +82,86 @@ fun DeleteCountdownDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Visual thumbnail preview of files to be deleted
+                if (candidates.size == 1) {
+                    val singleFile = candidates.first()
+                    val cat = StorageCategory.fromExtension(singleFile.extension)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            FileThumbnail(
+                                path = singleFile.path,
+                                category = cat,
+                                size = 44.dp,
+                                shape = RoundedCornerShape(8.dp),
+                                lastModified = singleFile.lastModified,
+                                isDirectory = singleFile.isDirectory
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = singleFile.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = singleFile.path,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                } else if (candidates.size > 1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        candidates.take(5).forEach { item ->
+                            val cat = StorageCategory.fromExtension(item.extension)
+                            FileThumbnail(
+                                path = item.path,
+                                category = cat,
+                                size = 40.dp,
+                                shape = RoundedCornerShape(8.dp),
+                                lastModified = item.lastModified,
+                                isDirectory = item.isDirectory
+                            )
+                        }
+                        if (candidates.size > 5) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "+${candidates.size - 5}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),

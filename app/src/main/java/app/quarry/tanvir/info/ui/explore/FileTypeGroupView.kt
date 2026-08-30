@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 
@@ -164,6 +165,15 @@ fun FileTypeGroupView(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    FileThumbnail(
+                                        path = file.path,
+                                        category = category,
+                                        size = 32.dp,
+                                        shape = RoundedCornerShape(6.dp),
+                                        lastModified = file.lastModified,
+                                        isDirectory = file.isDirectory
+                                    )
+
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = file.name,

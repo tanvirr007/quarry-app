@@ -71,6 +71,7 @@ import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
@@ -565,20 +566,14 @@ private fun FileItemCard(
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+            FileThumbnail(
+                path = file.path,
+                category = fileCategory,
+                size = 42.dp,
+                shape = RoundedCornerShape(10.dp),
+                lastModified = file.lastModified,
+                isDirectory = file.isDirectory
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(

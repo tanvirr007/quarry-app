@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 import java.text.SimpleDateFormat
@@ -96,20 +97,14 @@ fun FileDetailsBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(color.copy(alpha = 0.18f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = color,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
+                FileThumbnail(
+                    path = file.path,
+                    category = category,
+                    size = 56.dp,
+                    shape = RoundedCornerShape(12.dp),
+                    lastModified = file.lastModified,
+                    isDirectory = file.isDirectory
+                )
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(

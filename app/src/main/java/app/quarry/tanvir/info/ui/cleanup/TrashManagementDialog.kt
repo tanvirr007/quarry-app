@@ -68,6 +68,7 @@ import app.quarry.tanvir.info.domain.file.TrashItem
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
@@ -477,20 +478,15 @@ fun TrashManagementDialog(
                                     }
                                 )
 
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(color.copy(alpha = 0.18f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = color,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
+                                val thumbnailPath = item.trashPath.ifEmpty { item.originalPath }
+                                FileThumbnail(
+                                    path = thumbnailPath,
+                                    category = category,
+                                    size = 40.dp,
+                                    shape = RoundedCornerShape(10.dp),
+                                    lastModified = item.deletedTimestamp,
+                                    isDirectory = item.isDirectory
+                                )
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.duplicates.DuplicateGroup
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.model.StorageItem
+import app.quarry.tanvir.info.ui.components.FileThumbnail
 
 @Composable
 fun DuplicateGroupView(
@@ -126,19 +127,31 @@ fun DuplicateGroupView(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.tertiaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Difference,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(22.dp)
+                        val firstItem = group.items.firstOrNull()
+                        if (firstItem != null) {
+                            FileThumbnail(
+                                path = firstItem.path,
+                                category = firstItem.category,
+                                size = 42.dp,
+                                shape = RoundedCornerShape(10.dp),
+                                lastModified = firstItem.lastModified,
+                                isDirectory = firstItem.isDirectory
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Difference,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
@@ -262,6 +275,15 @@ fun DuplicateGroupView(
                                             if (checked) newSet.add(item.path) else newSet.remove(item.path)
                                             selectedPaths = newSet
                                         }
+                                    )
+
+                                    FileThumbnail(
+                                        path = item.path,
+                                        category = item.category,
+                                        size = 36.dp,
+                                        shape = RoundedCornerShape(8.dp),
+                                        lastModified = item.lastModified,
+                                        isDirectory = item.isDirectory
                                     )
 
                                     Column(modifier = Modifier.weight(1f)) {
