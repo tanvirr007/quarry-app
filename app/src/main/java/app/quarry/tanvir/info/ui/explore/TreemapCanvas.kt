@@ -1,5 +1,6 @@
 package app.quarry.tanvir.info.ui.explore
 
+import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -33,8 +34,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.core.content.res.ResourcesCompat
+import app.quarry.tanvir.info.R
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.treemap.TreemapNode
 import app.quarry.tanvir.info.domain.treemap.TreemapRect
@@ -60,6 +64,7 @@ fun TreemapCanvas(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
     val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
@@ -69,22 +74,28 @@ fun TreemapCanvas(
         Color.Black.copy(alpha = 0.14f)
     }
 
-    val textPaint = remember(density, isDark) {
-        android.graphics.Paint().apply {
-            color = android.graphics.Color.WHITE
-            textSize = density.run { 12.dp.toPx() }
-            isAntiAlias = true
-            isFakeBoldText = true
-            setShadowLayer(4f, 0f, 2f, android.graphics.Color.argb(220, 0, 0, 0))
+    val customTypeface = remember(context) {
+        try {
+            ResourcesCompat.getFont(context, R.font.google_sans_rounded)
+        } catch (_: Exception) {
+            Typeface.DEFAULT
         }
     }
 
-    val subtextPaint = remember(density, isDark) {
+    val textPaint = remember(density, isDark, customTypeface) {
+        android.graphics.Paint().apply {
+            color = android.graphics.Color.WHITE
+            typeface = customTypeface?.let { Typeface.create(it, Typeface.BOLD) } ?: Typeface.DEFAULT_BOLD
+            isAntiAlias = true
+            isFakeBoldText = true
+        }
+    }
+
+    val subtextPaint = remember(density, isDark, customTypeface) {
         android.graphics.Paint().apply {
             color = android.graphics.Color.argb(240, 255, 255, 255)
-            textSize = density.run { 10.dp.toPx() }
+            typeface = customTypeface ?: Typeface.DEFAULT
             isAntiAlias = true
-            setShadowLayer(3f, 0f, 1f, android.graphics.Color.argb(200, 0, 0, 0))
         }
     }
 
@@ -228,9 +239,37 @@ fun TreemapCanvas(
                             translationY = offset.y
                         )
                 ) {
-                    val strokeWidthPx = 1.2.dp.toPx()
-                    val cornerRadiusPx = 6.dp.toPx()
+                    val strokeWidthPx = (1.0.dp.toPx() / scale).coerceAtLeast(0.5f)
+                    val cornerRadiusPx = (6.dp.toPx() / scale.coerceAtLeast(1f)).coerceAtLeast(2f / scale)
                     val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
+
+                    val baseTitleSize = density.run { 11.5.dp.toPx() }
+                    val baseSubtextSize = density.run { 9.5.dp.toPx() }
+
+                    textPaint.textSize = baseTitleSize / scale
+                    textPaint.setShadowLayer(
+                        (3f / scale).coerceAtLeast(0.5f),
+                        0f,
+                        (1.5f / scale).coerceAtLeast(0.5f),
+                        android.graphics.Color.argb(220, 0, 0, 0)
+                    )
+
+                    subtextPaint.textSize = baseSubtextSize / scale
+                    subtextPaint.setShadowLayer(
+                        (2.5f / scale).coerceAtLeast(0.5f),
+                        0f,
+                        (1f / scale).coerceAtLeast(0.5f),
+                        android.graphics.Color.argb(200, 0, 0, 0)
+                    )
+
+                    val minVisualWForTitle = density.run { 26.dp.toPx() }
+                    val minVisualHForTitle = density.run { 16.dp.toPx() }
+                    val minVisualWForSubtext = density.run { 30.dp.toPx() }
+                    val minVisualHForSubtext = density.run { 28.dp.toPx() }
+
+                    val paddingX = density.run { 5.dp.toPx() } / scale
+                    val titleTopOffset = density.run { 12.dp.toPx() } / scale
+                    val subtextTopOffset = density.run { 11.dp.toPx() } / scale
 
                     nodes.forEachIndexed { index, node ->
                         val rect = node.rect
@@ -244,10 +283,11 @@ fun TreemapCanvas(
                                 isDark = isDark
                             )
 
-                            val drawRectTopLeft = Offset(rect.left + 1f, rect.top + 1f)
+                            val halfStroke = strokeWidthPx / 2f
+                            val drawRectTopLeft = Offset(rect.left + halfStroke, rect.top + halfStroke)
                             val drawRectSize = Size(
-                                (w - 2f).coerceAtLeast(1f),
-                                (h - 2f).coerceAtLeast(1f)
+                                (w - strokeWidthPx).coerceAtLeast(0.5f),
+                                (h - strokeWidthPx).coerceAtLeast(0.5f)
                             )
 
                             drawRoundRect(
@@ -269,29 +309,68 @@ fun TreemapCanvas(
                                 style = Stroke(width = strokeWidthPx)
                             )
 
-                            if (w > 28.dp.toPx() && h > 18.dp.toPx()) {
-                                drawContext.canvas.nativeCanvas.apply {
-                                    val paddingPx = density.run { 6.dp.toPx() }
-                                    val maxChars = (w / density.run { 7.dp.toPx() }).toInt().coerceAtLeast(3)
-                                    val displayName = if (node.name.length > maxChars) {
-                                        node.name.take(maxChars - 1) + "…"
+                            val visualW = w * scale
+                            val visualH = h * scale
+
+                            if (visualW >= minVisualWForTitle && visualH >= minVisualHForTitle) {
+                                val maxTextWidth = w - (2f * paddingX)
+                                if (maxTextWidth > 0f) {
+                                    val fullName = node.name
+                                    val nameWidth = textPaint.measureText(fullName)
+                                    val displayName = if (nameWidth <= maxTextWidth) {
+                                        fullName
                                     } else {
-                                        node.name
+                                        val ellipsis = "…"
+                                        val ellipsisWidth = textPaint.measureText(ellipsis)
+                                        val availableForChars = maxTextWidth - ellipsisWidth
+                                        if (availableForChars > 0f) {
+                                            val charsCount = textPaint.breakText(fullName, true, availableForChars, null)
+                                            if (charsCount > 0) {
+                                                fullName.take(charsCount) + ellipsis
+                                            } else {
+                                                ""
+                                            }
+                                        } else {
+                                            ""
+                                        }
                                     }
 
-                                    val sizeText = StorageFormatter.formatBytes(node.size)
-                                    val xPos = rect.left + paddingPx
-                                    val yPos = rect.top + density.run { 13.dp.toPx() }
+                                    if (displayName.isNotEmpty()) {
+                                        val xPos = rect.left + paddingX
+                                        val yPos = rect.top + titleTopOffset
 
-                                    drawText(displayName, xPos, yPos, textPaint)
+                                        drawContext.canvas.nativeCanvas.drawText(displayName, xPos, yPos, textPaint)
 
-                                    if (h > 30.dp.toPx()) {
-                                        drawText(
-                                            sizeText,
-                                            xPos,
-                                            yPos + density.run { 12.dp.toPx() },
-                                            subtextPaint
-                                        )
+                                        if (visualW >= minVisualWForSubtext && visualH >= minVisualHForSubtext) {
+                                            val sizeText = StorageFormatter.formatBytes(node.size)
+                                            val sizeWidth = subtextPaint.measureText(sizeText)
+                                            val displaySize = if (sizeWidth <= maxTextWidth) {
+                                                sizeText
+                                            } else {
+                                                val ellipsis = "…"
+                                                val ellipsisWidth = subtextPaint.measureText(ellipsis)
+                                                val availableForChars = maxTextWidth - ellipsisWidth
+                                                if (availableForChars > 0f) {
+                                                    val charsCount = subtextPaint.breakText(sizeText, true, availableForChars, null)
+                                                    if (charsCount >= 3) {
+                                                        sizeText.take(charsCount) + ellipsis
+                                                    } else {
+                                                        ""
+                                                    }
+                                                } else {
+                                                    ""
+                                                }
+                                            }
+
+                                            if (displaySize.isNotEmpty()) {
+                                                drawContext.canvas.nativeCanvas.drawText(
+                                                    displaySize,
+                                                    xPos,
+                                                    yPos + subtextTopOffset,
+                                                    subtextPaint
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
