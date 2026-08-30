@@ -139,59 +139,33 @@ fun CleanupScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.totalRecoverableBytes > 0) {
-                                    Icons.Rounded.CleaningServices
-                                } else {
-                                    Icons.Rounded.CheckCircle
-                                },
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        Text(
-                            text = "Potential Cleanup",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (uiState.totalRecoverableBytes > 0) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ) {
-                        Text(
-                            text = if (uiState.totalRecoverableBytes > 0) "Candidates Found" else "Optimized",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (uiState.totalRecoverableBytes > 0) {
-                                MaterialTheme.colorScheme.primary
+                        Icon(
+                            imageVector = if (uiState.totalRecoverableBytes > 0) {
+                                Icons.Rounded.CleaningServices
                             } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                Icons.Rounded.CheckCircle
                             },
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
+
+                    Text(
+                        text = "Potential Cleanup",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
 
                 Column(
@@ -206,9 +180,9 @@ fun CleanupScreen(
                     )
                     Text(
                         text = if (uiState.totalRecoverableBytes > 0) {
-                            "Total space available to review and reclaim safely"
+                            "Space available to clean up"
                         } else {
-                            "No temporary files or cleanup candidates found"
+                            "Storage is clean and optimized"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
