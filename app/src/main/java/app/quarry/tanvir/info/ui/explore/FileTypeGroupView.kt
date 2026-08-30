@@ -46,6 +46,7 @@ import app.quarry.tanvir.info.ui.components.getIcon
 @Composable
 fun FileTypeGroupView(
     files: List<FileEntity>,
+    sortOrder: FileSortOrder = FileSortOrder.SIZE_DESC,
     onFileClick: (FileEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -61,11 +62,22 @@ fun FileTypeGroupView(
     }
 
     val nonDirFiles = files.filter { !it.isDirectory }
-    val grouped = StorageCategory.entries.mapNotNull { category ->
-        val catFiles = nonDirFiles.filter { StorageCategory.fromExtension(it.extension) == category }
+    val baseGrouped = StorageCategory.entries.mapNotNull { category ->
+        val catFiles = nonDirFiles
+            .filter { StorageCategory.fromExtension(it.extension) == category }
+            .sortedWith(sortOrder.comparator(keepDirectoriesFirst = false))
         if (catFiles.isNotEmpty()) {
             category to catFiles
         } else null
+    }
+
+    val grouped = when (sortOrder) {
+        FileSortOrder.SIZE_DESC -> baseGrouped.sortedByDescending { (_, catFiles) -> catFiles.sumOf { it.size } }
+        FileSortOrder.SIZE_ASC -> baseGrouped.sortedBy { (_, catFiles) -> catFiles.sumOf { it.size } }
+        FileSortOrder.NAME_ASC -> baseGrouped.sortedBy { (category, _) -> category.displayName }
+        FileSortOrder.NAME_DESC -> baseGrouped.sortedByDescending { (category, _) -> category.displayName }
+        FileSortOrder.DATE_DESC -> baseGrouped.sortedByDescending { (_, catFiles) -> catFiles.maxOfOrNull { it.lastModified } ?: 0L }
+        FileSortOrder.DATE_ASC -> baseGrouped.sortedBy { (_, catFiles) -> catFiles.minOfOrNull { it.lastModified } ?: 0L }
     }
 
     if (grouped.isEmpty()) {

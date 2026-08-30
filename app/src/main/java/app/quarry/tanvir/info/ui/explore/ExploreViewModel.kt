@@ -42,7 +42,23 @@ enum class FileSortOrder(val displayName: String) {
     NAME_ASC("Name: A → Z"),
     NAME_DESC("Name: Z → A"),
     DATE_DESC("Date: Newest first"),
-    DATE_ASC("Date: Oldest first")
+    DATE_ASC("Date: Oldest first");
+
+    fun comparator(keepDirectoriesFirst: Boolean = false): Comparator<FileEntity> {
+        val baseComparator = when (this) {
+            SIZE_DESC -> compareByDescending<FileEntity> { it.size }
+            SIZE_ASC -> compareBy<FileEntity> { it.size }
+            NAME_ASC -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }
+            NAME_DESC -> compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name }
+            DATE_DESC -> compareByDescending { it.lastModified }
+            DATE_ASC -> compareBy { it.lastModified }
+        }
+        return if (keepDirectoriesFirst) {
+            compareByDescending<FileEntity> { it.isDirectory }.then(baseComparator)
+        } else {
+            baseComparator
+        }
+    }
 }
 
 private data class ExploreBaseState(
@@ -122,9 +138,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val filteredLargestFiles: StateFlow<List<FileEntity>> = combine(
         repository.getLargestFiles(100),
         prefsRepo.scanHiddenFiles,
-        prefsRepo.excludedFolders
-    ) { largest, showHidden, excluded ->
-        filterHiddenAndExcluded(largest, showHidden, excluded)
+        prefsRepo.excludedFolders,
+        _sortOrder
+    ) { largest, showHidden, excluded, sort ->
+        val filtered = filterHiddenAndExcluded(largest, showHidden, excluded)
+        filtered.sortedWith(sort.comparator(keepDirectoriesFirst = false))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -134,9 +152,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     val allFiles: StateFlow<List<FileEntity>> = combine(
         repository.getAllFiles(),
         prefsRepo.scanHiddenFiles,
-        prefsRepo.excludedFolders
-    ) { files, showHidden, excluded ->
-        filterHiddenAndExcluded(files, showHidden, excluded)
+        prefsRepo.excludedFolders,
+        _sortOrder
+    ) { files, showHidden, excluded, sort ->
+        val filtered = filterHiddenAndExcluded(files, showHidden, excluded)
+        filtered.sortedWith(sort.comparator(keepDirectoriesFirst = true))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -161,17 +181,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
             matching.sortedWith(
                 compareByDescending<FileEntity> { it.path.startsWith(currentPath) }
-                    .thenByDescending { it.isDirectory }
-                    .then(
-                        when (sort) {
-                            FileSortOrder.SIZE_DESC -> compareByDescending { it.size }
-                            FileSortOrder.SIZE_ASC -> compareBy { it.size }
-                            FileSortOrder.NAME_ASC -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }
-                            FileSortOrder.NAME_DESC -> compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name }
-                            FileSortOrder.DATE_DESC -> compareByDescending { it.lastModified }
-                            FileSortOrder.DATE_ASC -> compareBy { it.lastModified }
-                        }
-                    )
+                    .then(sort.comparator(keepDirectoriesFirst = true))
             )
         }
     }.flowOn(Dispatchers.Default).stateIn(
@@ -222,9 +232,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     val directoryFiles: StateFlow<List<FileEntity>> = combine(
         _currentPath.flatMapLatest { path -> repository.getChildren(path) },
         prefsRepo.scanHiddenFiles,
-        prefsRepo.excludedFolders
-    ) { children, showHidden, excluded ->
-        filterHiddenAndExcluded(children, showHidden, excluded)
+        prefsRepo.excludedFolders,
+        _sortOrder
+    ) { children, showHidden, excluded, sort ->
+        val filtered = filterHiddenAndExcluded(children, showHidden, excluded)
+        filtered.sortedWith(sort.comparator(keepDirectoriesFirst = true))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -234,9 +246,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     val allCategorizedFiles: StateFlow<List<FileEntity>> = combine(
         repository.getAllNonDirectoryFiles(),
         prefsRepo.scanHiddenFiles,
-        prefsRepo.excludedFolders
-    ) { files, showHidden, excluded ->
-        filterHiddenAndExcluded(files, showHidden, excluded)
+        prefsRepo.excludedFolders,
+        _sortOrder
+    ) { files, showHidden, excluded, sort ->
+        val filtered = filterHiddenAndExcluded(files, showHidden, excluded)
+        filtered.sortedWith(sort.comparator(keepDirectoriesFirst = false))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -305,6 +319,12 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val current = try { prefsRepo.scanHiddenFiles.first() } catch (e: Exception) { false }
             prefsRepo.setScanHiddenFiles(!current)
+        }
+    }
+
+    fun setShowHiddenFiles(show: Boolean) {
+        viewModelScope.launch {
+            prefsRepo.setScanHiddenFiles(show)
         }
     }
 

@@ -210,9 +210,7 @@ fun ExploreScreen(
                 showHiddenFiles = uiState.showHiddenFiles,
                 onApply = { newSort, newHidden ->
                     viewModel.setSortOrder(newSort)
-                    if (newHidden != uiState.showHiddenFiles) {
-                        viewModel.toggleShowHiddenFiles()
-                    }
+                    viewModel.setShowHiddenFiles(newHidden)
                 },
                 onDismiss = { showFilterSheet = false }
             )
@@ -387,6 +385,7 @@ fun ExploreScreen(
                     }
                     FileTypeGroupView(
                         files = filesToCategorize,
+                        sortOrder = uiState.sortOrder,
                         onFileClick = { file -> viewModel.showDetails(file) }
                     )
                 }
@@ -394,6 +393,7 @@ fun ExploreScreen(
                 ExploreViewMode.FOLDERS -> {
                     FolderSizeView(
                         folders = displayedFiles,
+                        sortOrder = uiState.sortOrder,
                         onFolderClick = { folder -> viewModel.navigateToDirectory(folder.path) }
                     )
                 }

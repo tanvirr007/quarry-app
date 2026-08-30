@@ -38,10 +38,13 @@ import app.quarry.tanvir.info.domain.model.StorageFormatter
 @Composable
 fun FolderSizeView(
     folders: List<FileEntity>,
+    sortOrder: FileSortOrder = FileSortOrder.SIZE_DESC,
     onFolderClick: (FileEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dirList = folders.filter { it.isDirectory }.sortedByDescending { it.size }
+    val dirList = folders
+        .filter { it.isDirectory }
+        .sortedWith(sortOrder.comparator(keepDirectoriesFirst = false))
 
     if (dirList.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -54,7 +57,7 @@ fun FolderSizeView(
         return
     }
 
-    val maxSizeBytes = dirList.firstOrNull()?.size?.coerceAtLeast(1L) ?: 1L
+    val maxSizeBytes = dirList.maxOfOrNull { it.size }?.coerceAtLeast(1L) ?: 1L
 
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 

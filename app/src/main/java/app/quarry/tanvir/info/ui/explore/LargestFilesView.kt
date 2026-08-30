@@ -55,7 +55,7 @@ fun LargestFilesView(
         return
     }
 
-    val maxSizeBytes = files.firstOrNull()?.size?.coerceAtLeast(1L) ?: 1L
+    val maxSizeBytes = files.maxOfOrNull { it.size }?.coerceAtLeast(1L) ?: 1L
 
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 

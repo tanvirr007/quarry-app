@@ -126,14 +126,7 @@ fun HomeItemListBottomSheet(
         } else {
             searched.filter { !it.name.startsWith(".") && !it.path.contains("/.") }
         }
-        when (sortOrder) {
-            FileSortOrder.SIZE_DESC -> hiddenFiltered.sortedByDescending { it.size }
-            FileSortOrder.SIZE_ASC -> hiddenFiltered.sortedBy { it.size }
-            FileSortOrder.NAME_ASC -> hiddenFiltered.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
-            FileSortOrder.NAME_DESC -> hiddenFiltered.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name })
-            FileSortOrder.DATE_DESC -> hiddenFiltered.sortedByDescending { it.lastModified }
-            FileSortOrder.DATE_ASC -> hiddenFiltered.sortedBy { it.lastModified }
-        }
+        hiddenFiltered.sortedWith(sortOrder.comparator(keepDirectoriesFirst = false))
     }
 
     val selectedFiles = remember(files, selectedPaths) {

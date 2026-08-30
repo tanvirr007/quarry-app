@@ -1,6 +1,20 @@
 package app.quarry.tanvir.info.ui.explore
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -58,6 +72,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
@@ -171,7 +186,11 @@ fun FilterSortBottomSheet(
                     )
                 }
 
-                if (hasPendingChanges) {
+                AnimatedVisibility(
+                    visible = hasPendingChanges,
+                    enter = fadeIn(tween(200)) + scaleIn(initialScale = 0.8f),
+                    exit = fadeOut(tween(150)) + scaleOut(targetScale = 0.8f)
+                ) {
                     TextButton(
                         onClick = {
                             haptics.click()
@@ -232,26 +251,48 @@ fun FilterSortBottomSheet(
                         ) {
                             SortCriterion.entries.forEach { criterion ->
                                 val isSelected = activeCriterion == criterion
-                                val containerColor = if (isSelected) {
+                                val targetContainerColor = if (isSelected) {
                                     MaterialTheme.colorScheme.primaryContainer
                                 } else {
                                     MaterialTheme.colorScheme.surface
                                 }
-                                val contentColor = if (isSelected) {
+                                val targetContentColor = if (isSelected) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant
                                 }
-                                val borderColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                val targetBorderColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                                 } else {
                                     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                                 }
+
+                                val containerColor by animateColorAsState(
+                                    targetValue = targetContainerColor,
+                                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                    label = "metricContainerColor"
+                                )
+                                val contentColor by animateColorAsState(
+                                    targetValue = targetContentColor,
+                                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                    label = "metricContentColor"
+                                )
+                                val borderColor by animateColorAsState(
+                                    targetValue = targetBorderColor,
+                                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                    label = "metricBorderColor"
+                                )
+                                val scale by animateFloatAsState(
+                                    targetValue = if (isSelected) 1.02f else 1.0f,
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                                    label = "metricScale"
+                                )
 
                                 Row(
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(44.dp)
+                                        .graphicsLayer(scaleX = scale, scaleY = scale)
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(containerColor)
                                         .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(12.dp))
@@ -288,64 +329,99 @@ fun FilterSortBottomSheet(
                             }
                         }
 
-                        // 2. Direction Segmented Row for Active Metric
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val options = listOf(
-                                activeCriterion.primaryOrder to activeCriterion.primaryLabel,
-                                activeCriterion.secondaryOrder to activeCriterion.secondaryLabel
-                            )
-
-                            options.forEach { (orderOption, label) ->
-                                val isSelected = stagedSort == orderOption
-                                val containerColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.surface
-                                }
-                                val contentColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                                val borderColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                                }
-
-                                Row(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(38.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(containerColor)
-                                        .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(10.dp))
-                                        .clickable {
-                                            haptics.selection()
-                                            stagedSort = orderOption
-                                        }
-                                        .padding(horizontal = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    if (isSelected) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Check,
-                                            contentDescription = null,
-                                            tint = contentColor,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                    }
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = contentColor
+                        // 2. Direction Segmented Row with AnimatedContent transition
+                        AnimatedContent(
+                            targetState = activeCriterion,
+                            transitionSpec = {
+                                (fadeIn(animationSpec = tween(200, delayMillis = 40)) +
+                                        slideInVertically(animationSpec = tween(200, delayMillis = 40)) { it / 3 })
+                                    .togetherWith(
+                                        fadeOut(animationSpec = tween(140)) +
+                                                slideOutVertically(animationSpec = tween(140)) { -it / 3 }
                                     )
+                            },
+                            label = "directionOptionsTransition"
+                        ) { currentCriterion ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val options = listOf(
+                                    currentCriterion.primaryOrder to currentCriterion.primaryLabel,
+                                    currentCriterion.secondaryOrder to currentCriterion.secondaryLabel
+                                )
+
+                                options.forEach { (orderOption, label) ->
+                                    val isSelected = stagedSort == orderOption
+                                    val targetContainerColor = if (isSelected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.surface
+                                    }
+                                    val targetContentColor = if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                    val targetBorderColor = if (isSelected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                    }
+
+                                    val containerColor by animateColorAsState(
+                                        targetValue = targetContainerColor,
+                                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                        label = "directionContainerColor"
+                                    )
+                                    val contentColor by animateColorAsState(
+                                        targetValue = targetContentColor,
+                                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                        label = "directionContentColor"
+                                    )
+                                    val borderColor by animateColorAsState(
+                                        targetValue = targetBorderColor,
+                                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                        label = "directionBorderColor"
+                                    )
+
+                                    Row(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(38.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(containerColor)
+                                            .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(10.dp))
+                                            .clickable {
+                                                haptics.selection()
+                                                stagedSort = orderOption
+                                            }
+                                            .padding(horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        AnimatedVisibility(
+                                            visible = isSelected,
+                                            enter = fadeIn(tween(150)) + scaleIn(initialScale = 0.5f),
+                                            exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.5f)
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Check,
+                                                    contentDescription = null,
+                                                    tint = contentColor,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                            }
+                                        }
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = contentColor
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -360,6 +436,16 @@ fun FilterSortBottomSheet(
                     color = MaterialTheme.colorScheme.primary
                 )
 
+                val hiddenCardBg by animateColorAsState(
+                    targetValue = if (stagedHidden) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.22f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    },
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "hiddenCardBg"
+                )
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -370,7 +456,7 @@ fun FilterSortBottomSheet(
                         },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        containerColor = hiddenCardBg
                     ),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 ) {
