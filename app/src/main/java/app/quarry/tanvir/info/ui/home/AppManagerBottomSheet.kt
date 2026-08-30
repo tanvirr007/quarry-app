@@ -119,9 +119,8 @@ fun AppManagerBottomSheet(
         if (searchQuery.isBlank()) {
             sortedApps
         } else {
-            val q = searchQuery.trim()
             sortedApps.filter {
-                it.label.contains(q, ignoreCase = true) || it.packageName.contains(q, ignoreCase = true)
+                app.quarry.tanvir.info.domain.model.SearchMatcher.matches(it.label, it.packageName, searchQuery)
             }
         }
     }
@@ -174,7 +173,7 @@ fun AppManagerBottomSheet(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -239,7 +238,7 @@ fun AppManagerBottomSheet(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -272,7 +271,7 @@ fun AppManagerBottomSheet(
                             Icon(
                                 imageVector = Icons.Rounded.Sort,
                                 contentDescription = if (uiState.sortByName) "Sorted by Name" else "Sorted by Size",
-                                tint = if (uiState.sortByName) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (uiState.sortByName) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         IconButton(onClick = {
@@ -299,7 +298,7 @@ fun AppManagerBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                     ),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                 ) {
@@ -313,7 +312,7 @@ fun AppManagerBottomSheet(
                         Icon(
                             imageVector = Icons.Rounded.Lock,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                         Column(modifier = Modifier.weight(1f)) {

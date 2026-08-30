@@ -131,6 +131,55 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
+    val allFiles: StateFlow<List<FileEntity>> = combine(
+        repository.getAllFiles(),
+        prefsRepo.scanHiddenFiles,
+        prefsRepo.excludedFolders
+    ) { files, showHidden, excluded ->
+        filterHiddenAndExcluded(files, showHidden, excluded)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private val searchResultsFlow: StateFlow<List<FileEntity>> = combine(
+        allFiles,
+        _searchQuery,
+        _selectedCategory,
+        _sortOrder,
+        _currentPath
+    ) { files, query, category, sort, currentPath ->
+        if (query.isBlank()) {
+            emptyList()
+        } else {
+            val matching = files.filter { file ->
+                val matchesCategory = category == null || (!file.isDirectory && StorageCategory.fromExtension(file.extension) == category)
+                val matchesQuery = app.quarry.tanvir.info.domain.model.SearchMatcher.matches(file.name, file.path, query)
+                matchesCategory && matchesQuery
+            }
+
+            matching.sortedWith(
+                compareByDescending<FileEntity> { it.path.startsWith(currentPath) }
+                    .thenByDescending { it.isDirectory }
+                    .then(
+                        when (sort) {
+                            FileSortOrder.SIZE_DESC -> compareByDescending { it.size }
+                            FileSortOrder.SIZE_ASC -> compareBy { it.size }
+                            FileSortOrder.NAME_ASC -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }
+                            FileSortOrder.NAME_DESC -> compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name }
+                            FileSortOrder.DATE_DESC -> compareByDescending { it.lastModified }
+                            FileSortOrder.DATE_ASC -> compareBy { it.lastModified }
+                        }
+                    )
+            )
+        }
+    }.flowOn(Dispatchers.Default).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     val uiState: StateFlow<ExploreUiState> = combine(
         combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder) { path, mode, query, cat, sort ->
             ExploreBaseState(path, mode, query, cat, sort)
@@ -141,10 +190,10 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         combine(_selectedPaths, _activeDetailsFile, _activeRenameFile, _activeDeleteCandidates, _isDeleteCountdownVisible) { selected, details, rename, deleteCandidates, deleteVisible ->
             DialogState(selected, details, rename, deleteCandidates, deleteVisible)
         },
-        combine(_userMessage, filteredLargestFiles) { msg, largest ->
-            Pair(msg, largest)
+        combine(_userMessage, filteredLargestFiles, searchResultsFlow) { msg, largest, searchResults ->
+            Triple(msg, largest, searchResults)
         }
-    ) { base, prefs, dialogs, msgAndLargest ->
+    ) { base, prefs, dialogs, msgLargestSearch ->
         ExploreUiState(
             currentPath = base.path,
             viewMode = base.mode,
@@ -159,8 +208,9 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
             activeRenameFile = dialogs.rename,
             activeDeleteCandidates = dialogs.deleteCandidates,
             isDeleteCountdownVisible = dialogs.deleteVisible,
-            userMessage = msgAndLargest.first,
-            largestFiles = msgAndLargest.second
+            userMessage = msgLargestSearch.first,
+            largestFiles = msgLargestSearch.second,
+            searchResults = msgLargestSearch.third
         )
     }.stateIn(
         scope = viewModelScope,

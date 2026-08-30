@@ -106,8 +106,7 @@ fun TrashManagementDialog(
         trashItems
     } else {
         trashItems.filter {
-            it.name.contains(searchQuery, ignoreCase = true) ||
-            it.originalPath.contains(searchQuery, ignoreCase = true)
+            app.quarry.tanvir.info.domain.model.SearchMatcher.matches(it.name, it.originalPath, searchQuery)
         }
     }
     val selectedItems = trashItems.filter { selectedIds.contains(it.id) }
@@ -199,21 +198,23 @@ fun TrashManagementDialog(
                     }
 
                     if (trashItems.isNotEmpty()) {
-                        Button(
+                        OutlinedButton(
                             onClick = {
                                 haptics.warning()
                                 showEmptyTrashConfirmDialog = true
                             },
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
+                                contentColor = MaterialTheme.colorScheme.error
                             ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.DeleteSweep,
                                 contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -221,6 +222,7 @@ fun TrashManagementDialog(
                                 text = "Empty Trash",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error,
                                 maxLines = 1,
                                 softWrap = false
                             )
@@ -588,12 +590,20 @@ fun TrashManagementDialog(
         AlertDialog(
             onDismissRequest = { showEmptyTrashConfirmDialog = false },
             icon = {
-                Icon(
-                    imageVector = Icons.Rounded.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             title = {
                 Text("Empty Trash?")
@@ -635,12 +645,20 @@ fun TrashManagementDialog(
         AlertDialog(
             onDismissRequest = { itemPendingRestore = null },
             icon = {
-                Icon(
-                    imageVector = Icons.Rounded.RestoreFromTrash,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.RestoreFromTrash,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             title = {
                 Text("Restore File?")
@@ -685,12 +703,20 @@ fun TrashManagementDialog(
         AlertDialog(
             onDismissRequest = { showBulkRestoreConfirmDialog = false },
             icon = {
-                Icon(
-                    imageVector = Icons.Rounded.RestoreFromTrash,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.RestoreFromTrash,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             title = {
                 Text("Restore $count items?")
@@ -734,12 +760,20 @@ fun TrashManagementDialog(
         AlertDialog(
             onDismissRequest = { itemPendingPermanentDelete = null },
             icon = {
-                Icon(
-                    imageVector = Icons.Rounded.DeleteForever,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.DeleteForever,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             title = {
                 Text("Delete Forever?")

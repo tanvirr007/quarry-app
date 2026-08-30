@@ -204,8 +204,8 @@ fun ExploreScreen(
                     },
                     label = { Text(mode.title, fontWeight = FontWeight.Medium) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        selectedLabelColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -237,9 +237,9 @@ fun ExploreScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                 ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
             ) {
                 Row(
                     modifier = Modifier
@@ -307,8 +307,8 @@ fun ExploreScreen(
 
         // Main View Content
         Box(modifier = Modifier.weight(1f)) {
-            val displayedFiles = if (uiState.searchQuery.isNotEmpty()) {
-                directoryFiles.filter { it.name.contains(uiState.searchQuery, ignoreCase = true) }
+            val displayedFiles = if (uiState.searchQuery.isNotBlank()) {
+                uiState.searchResults
             } else {
                 directoryFiles
             }
@@ -339,6 +339,11 @@ fun ExploreScreen(
                         files = displayedFiles,
                         selectedPaths = uiState.selectedPaths,
                         isSelectionMode = uiState.isSelectionMode,
+                        emptyMessage = if (uiState.searchQuery.isNotBlank()) {
+                            "No files matching \"${uiState.searchQuery}\""
+                        } else {
+                            "No files or folders in this location."
+                        },
                         onItemClick = { file ->
                             if (file.isDirectory) {
                                 viewModel.navigateToDirectory(file.path)
@@ -356,15 +361,20 @@ fun ExploreScreen(
                 }
 
                 ExploreViewMode.LARGEST -> {
+                    val largestToDisplay = if (uiState.searchQuery.isNotBlank()) {
+                        uiState.largestFiles.filter { app.quarry.tanvir.info.domain.model.SearchMatcher.matches(it.name, it.path, uiState.searchQuery) }
+                    } else {
+                        uiState.largestFiles
+                    }
                     LargestFilesView(
-                        files = uiState.largestFiles,
+                        files = largestToDisplay,
                         onFileClick = { file -> viewModel.showDetails(file) }
                     )
                 }
 
                 ExploreViewMode.TYPES -> {
-                    val filesToCategorize = if (uiState.searchQuery.isNotEmpty()) {
-                        allCategorizedFiles.filter { it.name.contains(uiState.searchQuery, ignoreCase = true) }
+                    val filesToCategorize = if (uiState.searchQuery.isNotBlank()) {
+                        allCategorizedFiles.filter { app.quarry.tanvir.info.domain.model.SearchMatcher.matches(it.name, it.path, uiState.searchQuery) }
                     } else {
                         allCategorizedFiles
                     }

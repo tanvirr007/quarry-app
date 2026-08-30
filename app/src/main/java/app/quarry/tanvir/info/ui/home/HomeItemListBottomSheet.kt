@@ -112,7 +112,7 @@ fun HomeItemListBottomSheet(
         val list = if (searchQuery.isBlank()) {
             files
         } else {
-            files.filter { it.name.contains(searchQuery.trim(), ignoreCase = true) }
+            files.filter { app.quarry.tanvir.info.domain.model.SearchMatcher.matches(it.name, it.path, searchQuery) }
         }
         if (sortByLargest) {
             list.sortedByDescending { it.size }
@@ -172,7 +172,7 @@ fun HomeItemListBottomSheet(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -286,7 +286,7 @@ fun HomeItemListBottomSheet(
                             Icon(
                                 imageVector = Icons.Rounded.Sort,
                                 contentDescription = if (sortByLargest) "Sorted by Size" else "Sorted by Date",
-                                tint = if (sortByLargest) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (sortByLargest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         IconButton(onClick = {
@@ -539,13 +539,13 @@ private fun FileItemCard(
             ),
         shape = RoundedCornerShape(14.dp),
         border = if (isSelected) {
-            BorderStroke(1.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f))
+            BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
         } else {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
         },
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
             } else {
                 MaterialTheme.colorScheme.surface
             }

@@ -50,6 +50,7 @@ fun FileListView(
     onItemClick: (FileEntity) -> Unit,
     onItemLongClick: (FileEntity) -> Unit,
     onToggleSelect: (String) -> Unit,
+    emptyMessage: String = "No files or folders in this location.",
     modifier: Modifier = Modifier
 ) {
     if (files.isEmpty()) {
@@ -58,7 +59,7 @@ fun FileListView(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No files or folders in this location.",
+                text = emptyMessage,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
