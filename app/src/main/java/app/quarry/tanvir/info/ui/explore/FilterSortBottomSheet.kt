@@ -3,6 +3,7 @@ package app.quarry.tanvir.info.ui.explore
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,7 +44,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -207,78 +207,142 @@ fun FilterSortBottomSheet(
                     color = MaterialTheme.colorScheme.primary
                 )
 
+                val activeCriterion = SortCriterion.fromSortOrder(stagedSort)
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                     ),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 ) {
                     Column(
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        FileSortOrder.entries.forEachIndexed { index, sortOption ->
-                            val isSelected = stagedSort == sortOption
-                            val icon = when (sortOption) {
-                                FileSortOrder.NAME_ASC, FileSortOrder.NAME_DESC -> Icons.Rounded.SortByAlpha
-                                FileSortOrder.SIZE_DESC, FileSortOrder.SIZE_ASC -> Icons.Rounded.DataUsage
-                                FileSortOrder.DATE_DESC, FileSortOrder.DATE_ASC -> Icons.Rounded.CalendarToday
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        haptics.selection()
-                                        stagedSort = sortOption
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.surface
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = if (isSelected) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                        // 1. Metric Segmented Row (Size / Name / Date)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            SortCriterion.entries.forEach { criterion ->
+                                val isSelected = activeCriterion == criterion
+                                val containerColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                }
+                                val contentColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                                val borderColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                                 }
 
-                                Text(
-                                    text = sortOption.displayName,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.weight(1f)
-                                )
-
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = {
-                                        haptics.selection()
-                                        stagedSort = sortOption
-                                    }
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(containerColor)
+                                        .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            haptics.selection()
+                                            if (isSelected) {
+                                                stagedSort = if (stagedSort == criterion.primaryOrder) {
+                                                    criterion.secondaryOrder
+                                                } else {
+                                                    criterion.primaryOrder
+                                                }
+                                            } else {
+                                                stagedSort = criterion.primaryOrder
+                                            }
+                                        }
+                                        .padding(horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = criterion.icon,
+                                        contentDescription = null,
+                                        tint = contentColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = criterion.title,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = contentColor
+                                    )
+                                }
                             }
+                        }
 
-                            if (index < FileSortOrder.entries.size - 1) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 14.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-                                )
+                        // 2. Direction Segmented Row for Active Metric
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val options = listOf(
+                                activeCriterion.primaryOrder to activeCriterion.primaryLabel,
+                                activeCriterion.secondaryOrder to activeCriterion.secondaryLabel
+                            )
+
+                            options.forEach { (orderOption, label) ->
+                                val isSelected = stagedSort == orderOption
+                                val containerColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                }
+                                val contentColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                                val borderColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(38.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(containerColor)
+                                        .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(10.dp))
+                                        .clickable {
+                                            haptics.selection()
+                                            stagedSort = orderOption
+                                        }
+                                        .padding(horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = contentColor,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = contentColor
+                                    )
+                                }
                             }
                         }
                     }
@@ -476,3 +540,46 @@ fun FilterSortBottomSheet(
         )
     }
 }
+
+private enum class SortCriterion(
+    val title: String,
+    val icon: ImageVector,
+    val primaryOrder: FileSortOrder,
+    val secondaryOrder: FileSortOrder,
+    val primaryLabel: String,
+    val secondaryLabel: String
+) {
+    SIZE(
+        title = "Size",
+        icon = Icons.Rounded.DataUsage,
+        primaryOrder = FileSortOrder.SIZE_DESC,
+        secondaryOrder = FileSortOrder.SIZE_ASC,
+        primaryLabel = "Largest first",
+        secondaryLabel = "Smallest first"
+    ),
+    NAME(
+        title = "Name",
+        icon = Icons.Rounded.SortByAlpha,
+        primaryOrder = FileSortOrder.NAME_ASC,
+        secondaryOrder = FileSortOrder.NAME_DESC,
+        primaryLabel = "A → Z",
+        secondaryLabel = "Z → A"
+    ),
+    DATE(
+        title = "Date",
+        icon = Icons.Rounded.CalendarToday,
+        primaryOrder = FileSortOrder.DATE_DESC,
+        secondaryOrder = FileSortOrder.DATE_ASC,
+        primaryLabel = "Newest first",
+        secondaryLabel = "Oldest first"
+    );
+
+    companion object {
+        fun fromSortOrder(order: FileSortOrder): SortCriterion = when (order) {
+            FileSortOrder.SIZE_DESC, FileSortOrder.SIZE_ASC -> SIZE
+            FileSortOrder.NAME_ASC, FileSortOrder.NAME_DESC -> NAME
+            FileSortOrder.DATE_DESC, FileSortOrder.DATE_ASC -> DATE
+        }
+    }
+}
+
