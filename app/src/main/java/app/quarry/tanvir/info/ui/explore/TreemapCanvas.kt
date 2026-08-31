@@ -1,6 +1,12 @@
 package app.quarry.tanvir.info.ui.explore
 
 import android.graphics.Typeface
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -19,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +49,7 @@ import app.quarry.tanvir.info.R
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.treemap.TreemapNode
 import app.quarry.tanvir.info.domain.treemap.TreemapRect
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.sqrt
 
@@ -51,9 +59,9 @@ private const val MAX_SCALE = 5f
 /**
  * Responsive, hardware-accelerated Treemap Canvas.
  * - Every individual file and folder is rendered with distinct, vibrant, harmonized colors.
- * - Direct tap interactions allow seamless navigation into folders or viewing file details.
- * - Pinch-to-zoom and pan (maps/photos style): two-finger pinch scales 1x-5x, one-finger drag pans
- *   when zoomed. Double-tap resets. Pan is clamped to content bounds; at 1x no scrolling.
+ * - Fluid navigation animations provide visual continuity when drilling down into or popping out of folders.
+ * - Tactile press feedback highlights tapped tiles with a luminous pulse.
+ * - Smooth animated zoom reset on double-tap and seamless gesture panning/zooming.
  * - Hit-testing is performed in unscaled content coordinates so tiny tiles stay tappable while zoomed.
  */
 @Composable
@@ -61,11 +69,13 @@ fun TreemapCanvas(
     nodes: List<TreemapNode>,
     onNodeClick: (TreemapNode) -> Unit,
     onSizeMeasured: (Float, Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentPath: String = ""
 ) {
     val density = LocalDensity.current
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
+    val coroutineScope = rememberCoroutineScope()
 
     val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
     val borderColor = if (isDark) {
@@ -99,24 +109,10 @@ fun TreemapCanvas(
         }
     }
 
-    if (nodes.isEmpty()) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(16.dp))
-                .background(surfaceColor.copy(alpha = 0.4f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "No files found in this directory.\nScan storage or select another folder.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.padding(24.dp)
-            )
-        }
-        return
-    }
+    // Directory Transition Animation
+    val transitionAnim = remember { Animatable(1f) }
+    var lastPath by remember { mutableStateOf(currentPath) }
+    var initialTransitionScale by remember { mutableFloatStateOf(1f) }
 
     BoxWithConstraints(
         modifier = modifier
@@ -130,6 +126,8 @@ fun TreemapCanvas(
 
         var scale by remember { mutableFloatStateOf(1f) }
         var offset by remember { mutableStateOf(Offset.Zero) }
+        var pressedNode by remember { mutableStateOf<TreemapNode?>(null) }
+
         val scaleUpdated by rememberUpdatedState(scale)
         val offsetUpdated by rememberUpdatedState(offset)
 
@@ -153,225 +151,337 @@ fun TreemapCanvas(
             offset = clampOffset(offset, scale)
         }
 
-        // Outer box handles pinch-zoom + pan (transform). Inner box handles taps.
-        // Split into nested boxes so tap and transform don't compete for pointer consumption.
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clipToBounds()
-                .pointerInput(widthPx, heightPx) {
-                    detectTransformGestures { centroid, pan, zoom, _ ->
-                        val oldScale = scaleUpdated
-                        val curOffset = offsetUpdated
-                        val newScale = (oldScale * zoom).coerceIn(MIN_SCALE, MAX_SCALE)
-                        if (newScale == oldScale && pan == Offset.Zero) return@detectTransformGestures
-
-                        val center = Offset(widthPx / 2f, heightPx / 2f)
-
-                        var newOffset = if (zoom != 1f && oldScale != 0f) {
-                            // Anchor zoom around fingers (maps/photos feel).
-                            // centroid is in screen coords; pan is already folded into new centroid.
-                            val contentUnderCentroid = Offset(
-                                x = (centroid.x - center.x - curOffset.x) / oldScale + center.x,
-                                y = (centroid.y - center.y - curOffset.y) / oldScale + center.y
-                            )
-                            Offset(
-                                x = centroid.x - center.x - (contentUnderCentroid.x - center.x) * newScale,
-                                y = centroid.y - center.y - (contentUnderCentroid.y - center.y) * newScale
-                            )
-                        } else {
-                            curOffset + pan
-                        }
-
-                        if (newScale <= 1f + 1e-3f) {
-                            scale = 1f
-                            offset = Offset.Zero
-                        } else {
-                            scale = newScale
-                            newOffset = clampOffset(newOffset, newScale)
-                            offset = newOffset
-                        }
-                    }
+        // Trigger smooth drill-down or drill-up navigation animation on path or nodes change
+        LaunchedEffect(currentPath, nodes) {
+            if (lastPath != currentPath && currentPath.isNotEmpty()) {
+                val isDrillDown = lastPath.isNotEmpty() && currentPath.startsWith(lastPath)
+                val isDrillUp = lastPath.isNotEmpty() && lastPath.startsWith(currentPath)
+                initialTransitionScale = when {
+                    isDrillDown -> 0.91f
+                    isDrillUp -> 1.09f
+                    else -> 0.95f
                 }
+                lastPath = currentPath
+
+                // Reset zoom when navigating directories
+                if (scale > 1.01f || offset != Offset.Zero) {
+                    scale = 1f
+                    offset = Offset.Zero
+                }
+
+                transitionAnim.snapTo(0f)
+                transitionAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
+                )
+            }
+        }
+
+        // Empty directory state with fade transition
+        AnimatedVisibility(
+            visible = nodes.isEmpty(),
+            enter = fadeIn(animationSpec = tween(220)),
+            exit = fadeOut(animationSpec = tween(150)),
+            modifier = Modifier.fillMaxSize()
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(nodes, widthPx, heightPx, touchRadiusPx) {
-                        detectTapGestures(
-                            onDoubleTap = {
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(surfaceColor.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No files found in this directory.\nScan storage or select another folder.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
+        }
+
+        if (nodes.isNotEmpty()) {
+            // Outer box handles pinch-zoom + pan (transform). Inner box handles taps.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clipToBounds()
+                    .pointerInput(widthPx, heightPx) {
+                        detectTransformGestures { centroid, pan, zoom, _ ->
+                            val oldScale = scaleUpdated
+                            val curOffset = offsetUpdated
+                            val newScale = (oldScale * zoom).coerceIn(MIN_SCALE, MAX_SCALE)
+                            if (newScale == oldScale && pan == Offset.Zero) return@detectTransformGestures
+
+                            val center = Offset(widthPx / 2f, heightPx / 2f)
+
+                            var newOffset = if (zoom != 1f && oldScale != 0f) {
+                                val contentUnderCentroid = Offset(
+                                    x = (centroid.x - center.x - curOffset.x) / oldScale + center.x,
+                                    y = (centroid.y - center.y - curOffset.y) / oldScale + center.y
+                                )
+                                Offset(
+                                    x = centroid.x - center.x - (contentUnderCentroid.x - center.x) * newScale,
+                                    y = centroid.y - center.y - (contentUnderCentroid.y - center.y) * newScale
+                                )
+                            } else {
+                                curOffset + pan
+                            }
+
+                            if (newScale <= 1f + 1e-3f) {
                                 scale = 1f
                                 offset = Offset.Zero
-                            },
-                            onTap = { tapOffset ->
-                                val currentScale = scaleUpdated
-                                val currentOffset = offsetUpdated
-                                val center = Offset(widthPx / 2f, heightPx / 2f)
-                                val contentTap = if (currentScale <= 1f) {
-                                    tapOffset
-                                } else {
-                                    Offset(
-                                        x = (tapOffset.x - center.x - currentOffset.x) / currentScale + center.x,
-                                        y = (tapOffset.y - center.y - currentOffset.y) / currentScale + center.y
-                                    )
-                                }
-                                val effectiveRadius = if (currentScale > 1f) touchRadiusPx / currentScale else touchRadiusPx
-                                val clickedNode = findBestMatchingNode(
-                                    nodes = nodes,
-                                    x = contentTap.x,
-                                    y = contentTap.y,
-                                    touchRadiusPx = effectiveRadius
-                                )
-                                if (clickedNode != null) {
-                                    onNodeClick(clickedNode)
-                                }
+                            } else {
+                                scale = newScale
+                                newOffset = clampOffset(newOffset, newScale)
+                                offset = newOffset
                             }
-                        )
+                        }
                     }
             ) {
-                Canvas(
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offset.x,
-                            translationY = offset.y
-                        )
-                ) {
-                    val strokeWidthPx = (1.0.dp.toPx() / scale).coerceAtLeast(0.5f)
-                    val cornerRadiusPx = (6.dp.toPx() / scale.coerceAtLeast(1f)).coerceAtLeast(2f / scale)
-                    val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
-
-                    val baseTitleSize = density.run { 11.5.dp.toPx() }
-                    val baseSubtextSize = density.run { 9.5.dp.toPx() }
-
-                    textPaint.textSize = baseTitleSize / scale
-                    textPaint.setShadowLayer(
-                        (3f / scale).coerceAtLeast(0.5f),
-                        0f,
-                        (1.5f / scale).coerceAtLeast(0.5f),
-                        android.graphics.Color.argb(220, 0, 0, 0)
-                    )
-
-                    subtextPaint.textSize = baseSubtextSize / scale
-                    subtextPaint.setShadowLayer(
-                        (2.5f / scale).coerceAtLeast(0.5f),
-                        0f,
-                        (1f / scale).coerceAtLeast(0.5f),
-                        android.graphics.Color.argb(200, 0, 0, 0)
-                    )
-
-                    val minVisualWForTitle = density.run { 26.dp.toPx() }
-                    val minVisualHForTitle = density.run { 16.dp.toPx() }
-                    val minVisualWForSubtext = density.run { 30.dp.toPx() }
-                    val minVisualHForSubtext = density.run { 28.dp.toPx() }
-
-                    val paddingX = density.run { 5.dp.toPx() } / scale
-                    val titleTopOffset = density.run { 12.dp.toPx() } / scale
-                    val subtextTopOffset = density.run { 11.dp.toPx() } / scale
-
-                    nodes.forEachIndexed { index, node ->
-                        val rect = node.rect
-                        val w = rect.width
-                        val h = rect.height
-
-                        if (w > 2f && h > 2f) {
-                            val (colorTop, colorBottom) = getTreemapTileColors(
-                                node = node,
-                                index = index,
-                                isDark = isDark
-                            )
-
-                            val halfStroke = strokeWidthPx / 2f
-                            val drawRectTopLeft = Offset(rect.left + halfStroke, rect.top + halfStroke)
-                            val drawRectSize = Size(
-                                (w - strokeWidthPx).coerceAtLeast(0.5f),
-                                (h - strokeWidthPx).coerceAtLeast(0.5f)
-                            )
-
-                            drawRoundRect(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(colorTop, colorBottom),
-                                    startY = rect.top,
-                                    endY = rect.bottom
-                                ),
-                                topLeft = drawRectTopLeft,
-                                size = drawRectSize,
-                                cornerRadius = cornerRadius
-                            )
-
-                            drawRoundRect(
-                                color = borderColor,
-                                topLeft = drawRectTopLeft,
-                                size = drawRectSize,
-                                cornerRadius = cornerRadius,
-                                style = Stroke(width = strokeWidthPx)
-                            )
-
-                            val visualW = w * scale
-                            val visualH = h * scale
-
-                            if (visualW >= minVisualWForTitle && visualH >= minVisualHForTitle) {
-                                val maxTextWidth = w - (2f * paddingX)
-                                if (maxTextWidth > 0f) {
-                                    val fullName = node.name
-                                    val nameWidth = textPaint.measureText(fullName)
-                                    val displayName = if (nameWidth <= maxTextWidth) {
-                                        fullName
+                        .pointerInput(nodes, widthPx, heightPx, touchRadiusPx) {
+                            detectTapGestures(
+                                onPress = { pressOffset ->
+                                    val currentScale = scaleUpdated
+                                    val currentOffset = offsetUpdated
+                                    val center = Offset(widthPx / 2f, heightPx / 2f)
+                                    val contentTap = if (currentScale <= 1f) {
+                                        pressOffset
                                     } else {
-                                        val ellipsis = "…"
-                                        val ellipsisWidth = textPaint.measureText(ellipsis)
-                                        val availableForChars = maxTextWidth - ellipsisWidth
-                                        if (availableForChars > 0f) {
-                                            val charsCount = textPaint.breakText(fullName, true, availableForChars, null)
-                                            if (charsCount > 0) {
-                                                fullName.take(charsCount) + ellipsis
-                                            } else {
-                                                ""
-                                            }
-                                        } else {
-                                            ""
-                                        }
+                                        Offset(
+                                            x = (pressOffset.x - center.x - currentOffset.x) / currentScale + center.x,
+                                            y = (pressOffset.y - center.y - currentOffset.y) / currentScale + center.y
+                                        )
                                     }
+                                    val effectiveRadius = if (currentScale > 1f) touchRadiusPx / currentScale else touchRadiusPx
+                                    val hitNode = findBestMatchingNode(
+                                        nodes = nodes,
+                                        x = contentTap.x,
+                                        y = contentTap.y,
+                                        touchRadiusPx = effectiveRadius
+                                    )
+                                    pressedNode = hitNode
+                                    try {
+                                        tryAwaitRelease()
+                                    } finally {
+                                        pressedNode = null
+                                    }
+                                },
+                                onDoubleTap = {
+                                    coroutineScope.launch {
+                                        val startScale = scale
+                                        val startOffset = offset
+                                        val resetAnim = Animatable(0f)
+                                        resetAnim.animateTo(
+                                            targetValue = 1f,
+                                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
+                                        ) {
+                                            scale = startScale + (1f - startScale) * value
+                                            offset = Offset(
+                                                startOffset.x * (1f - value),
+                                                startOffset.y * (1f - value)
+                                            )
+                                        }
+                                        scale = 1f
+                                        offset = Offset.Zero
+                                    }
+                                },
+                                onTap = { tapOffset ->
+                                    val currentScale = scaleUpdated
+                                    val currentOffset = offsetUpdated
+                                    val center = Offset(widthPx / 2f, heightPx / 2f)
+                                    val contentTap = if (currentScale <= 1f) {
+                                        tapOffset
+                                    } else {
+                                        Offset(
+                                            x = (tapOffset.x - center.x - currentOffset.x) / currentScale + center.x,
+                                            y = (tapOffset.y - center.y - currentOffset.y) / currentScale + center.y
+                                        )
+                                    }
+                                    val effectiveRadius = if (currentScale > 1f) touchRadiusPx / currentScale else touchRadiusPx
+                                    val clickedNode = findBestMatchingNode(
+                                        nodes = nodes,
+                                        x = contentTap.x,
+                                        y = contentTap.y,
+                                        touchRadiusPx = effectiveRadius
+                                    )
+                                    if (clickedNode != null) {
+                                        onNodeClick(clickedNode)
+                                    }
+                                }
+                            )
+                        }
+                ) {
+                    val animVal = transitionAnim.value
+                    val currentTransitionScale = initialTransitionScale + (1.0f - initialTransitionScale) * animVal
+                    val currentTransitionAlpha = (animVal * 1.35f).coerceAtMost(1f)
 
-                                    if (displayName.isNotEmpty()) {
-                                        val xPos = rect.left + paddingX
-                                        val yPos = rect.top + titleTopOffset
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = scale * currentTransitionScale,
+                                scaleY = scale * currentTransitionScale,
+                                translationX = offset.x,
+                                translationY = offset.y,
+                                alpha = currentTransitionAlpha
+                            )
+                    ) {
+                        val strokeWidthPx = (1.0.dp.toPx() / scale).coerceAtLeast(0.5f)
+                        val cornerRadiusPx = (6.dp.toPx() / scale.coerceAtLeast(1f)).coerceAtLeast(2f / scale)
+                        val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
 
-                                        drawContext.canvas.nativeCanvas.drawText(displayName, xPos, yPos, textPaint)
+                        val baseTitleSize = density.run { 11.5.dp.toPx() }
+                        val baseSubtextSize = density.run { 9.5.dp.toPx() }
 
-                                        if (visualW >= minVisualWForSubtext && visualH >= minVisualHForSubtext) {
-                                            val sizeText = StorageFormatter.formatBytes(node.size)
-                                            val sizeWidth = subtextPaint.measureText(sizeText)
-                                            val displaySize = if (sizeWidth <= maxTextWidth) {
-                                                sizeText
-                                            } else {
-                                                val ellipsis = "…"
-                                                val ellipsisWidth = subtextPaint.measureText(ellipsis)
-                                                val availableForChars = maxTextWidth - ellipsisWidth
-                                                if (availableForChars > 0f) {
-                                                    val charsCount = subtextPaint.breakText(sizeText, true, availableForChars, null)
-                                                    if (charsCount >= 3) {
-                                                        sizeText.take(charsCount) + ellipsis
-                                                    } else {
-                                                        ""
-                                                    }
+                        textPaint.textSize = baseTitleSize / scale
+                        textPaint.setShadowLayer(
+                            (3f / scale).coerceAtLeast(0.5f),
+                            0f,
+                            (1.5f / scale).coerceAtLeast(0.5f),
+                            android.graphics.Color.argb(220, 0, 0, 0)
+                        )
+
+                        subtextPaint.textSize = baseSubtextSize / scale
+                        subtextPaint.setShadowLayer(
+                            (2.5f / scale).coerceAtLeast(0.5f),
+                            0f,
+                            (1f / scale).coerceAtLeast(0.5f),
+                            android.graphics.Color.argb(200, 0, 0, 0)
+                        )
+
+                        val minVisualWForTitle = density.run { 26.dp.toPx() }
+                        val minVisualHForTitle = density.run { 16.dp.toPx() }
+                        val minVisualWForSubtext = density.run { 30.dp.toPx() }
+                        val minVisualHForSubtext = density.run { 28.dp.toPx() }
+
+                        val paddingX = density.run { 5.dp.toPx() } / scale
+                        val titleTopOffset = density.run { 12.dp.toPx() } / scale
+                        val subtextTopOffset = density.run { 11.dp.toPx() } / scale
+
+                        nodes.forEachIndexed { index, node ->
+                            val rect = node.rect
+                            val w = rect.width
+                            val h = rect.height
+
+                            if (w > 2f && h > 2f) {
+                                val (colorTop, colorBottom) = getTreemapTileColors(
+                                    node = node,
+                                    index = index,
+                                    isDark = isDark
+                                )
+
+                                val halfStroke = strokeWidthPx / 2f
+                                val drawRectTopLeft = Offset(rect.left + halfStroke, rect.top + halfStroke)
+                                val drawRectSize = Size(
+                                    (w - strokeWidthPx).coerceAtLeast(0.5f),
+                                    (h - strokeWidthPx).coerceAtLeast(0.5f)
+                                )
+
+                                drawRoundRect(
+                                    brush = Brush.verticalGradient(
+                                        colors = listOf(colorTop, colorBottom),
+                                        startY = rect.top,
+                                        endY = rect.bottom
+                                    ),
+                                    topLeft = drawRectTopLeft,
+                                    size = drawRectSize,
+                                    cornerRadius = cornerRadius
+                                )
+
+                                drawRoundRect(
+                                    color = borderColor,
+                                    topLeft = drawRectTopLeft,
+                                    size = drawRectSize,
+                                    cornerRadius = cornerRadius,
+                                    style = Stroke(width = strokeWidthPx)
+                                )
+
+                                val visualW = w * scale
+                                val visualH = h * scale
+
+                                if (visualW >= minVisualWForTitle && visualH >= minVisualHForTitle) {
+                                    val maxTextWidth = w - (2f * paddingX)
+                                    if (maxTextWidth > 0f) {
+                                        val fullName = node.name
+                                        val nameWidth = textPaint.measureText(fullName)
+                                        val displayName = if (nameWidth <= maxTextWidth) {
+                                            fullName
+                                        } else {
+                                            val ellipsis = "…"
+                                            val ellipsisWidth = textPaint.measureText(ellipsis)
+                                            val availableForChars = maxTextWidth - ellipsisWidth
+                                            if (availableForChars > 0f) {
+                                                val charsCount = textPaint.breakText(fullName, true, availableForChars, null)
+                                                if (charsCount > 0) {
+                                                    fullName.take(charsCount) + ellipsis
                                                 } else {
                                                     ""
                                                 }
+                                            } else {
+                                                ""
                                             }
+                                        }
 
-                                            if (displaySize.isNotEmpty()) {
-                                                drawContext.canvas.nativeCanvas.drawText(
-                                                    displaySize,
-                                                    xPos,
-                                                    yPos + subtextTopOffset,
-                                                    subtextPaint
-                                                )
+                                        if (displayName.isNotEmpty()) {
+                                            val xPos = rect.left + paddingX
+                                            val yPos = rect.top + titleTopOffset
+
+                                            drawContext.canvas.nativeCanvas.drawText(displayName, xPos, yPos, textPaint)
+
+                                            if (visualW >= minVisualWForSubtext && visualH >= minVisualHForSubtext) {
+                                                val sizeText = StorageFormatter.formatBytes(node.size)
+                                                val sizeWidth = subtextPaint.measureText(sizeText)
+                                                val displaySize = if (sizeWidth <= maxTextWidth) {
+                                                    sizeText
+                                                } else {
+                                                    val ellipsis = "…"
+                                                    val ellipsisWidth = subtextPaint.measureText(ellipsis)
+                                                    val availableForChars = maxTextWidth - ellipsisWidth
+                                                    if (availableForChars > 0f) {
+                                                        val charsCount = subtextPaint.breakText(sizeText, true, availableForChars, null)
+                                                        if (charsCount >= 3) {
+                                                            sizeText.take(charsCount) + ellipsis
+                                                        } else {
+                                                            ""
+                                                        }
+                                                    } else {
+                                                        ""
+                                                    }
+                                                }
+
+                                                if (displaySize.isNotEmpty()) {
+                                                    drawContext.canvas.nativeCanvas.drawText(
+                                                        displaySize,
+                                                        xPos,
+                                                        yPos + subtextTopOffset,
+                                                        subtextPaint
+                                                    )
+                                                }
                                             }
                                         }
                                     }
+                                }
+
+                                // Render glowing tactile feedback on actively pressed / tapped tile
+                                if (node == pressedNode) {
+                                    drawRoundRect(
+                                        color = Color.White.copy(alpha = 0.28f),
+                                        topLeft = drawRectTopLeft,
+                                        size = drawRectSize,
+                                        cornerRadius = cornerRadius
+                                    )
+                                    drawRoundRect(
+                                        color = Color.White.copy(alpha = 0.60f),
+                                        topLeft = drawRectTopLeft,
+                                        size = drawRectSize,
+                                        cornerRadius = cornerRadius,
+                                        style = Stroke(width = strokeWidthPx * 1.5f)
+                                    )
                                 }
                             }
                         }

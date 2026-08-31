@@ -385,6 +385,7 @@ fun ExploreScreen(
                 ExploreViewMode.TREEMAP -> {
                     TreemapCanvas(
                         nodes = treemapNodes,
+                        currentPath = uiState.currentPath,
                         onNodeClick = { node ->
                             haptics.click()
                             if (node.isDirectory) {
