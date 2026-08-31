@@ -514,6 +514,9 @@ fun ExploreScreen(
             onDelete = { viewModel.promptDeleteSingle(file) },
             onOpenContainingFolder = { folderPath ->
                 viewModel.navigateToDirectory(folderPath)
+                if (uiState.viewMode == ExploreViewMode.LARGEST || uiState.viewMode == ExploreViewMode.TYPES) {
+                    viewModel.setViewMode(ExploreViewMode.LIST)
+                }
             }
         )
     }
