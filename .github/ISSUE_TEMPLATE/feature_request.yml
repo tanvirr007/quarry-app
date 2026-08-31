@@ -6,32 +6,41 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for suggesting an improvement for Quarry. Please provide as much detail as possible about the feature and why it would be useful.
+        Thank you for helping make Quarry better! We welcome all ideas and suggestions from everyone, whether you are a beginner or an experienced user.
 
   - type: textarea
     id: problem_statement
     attributes:
       label: Problem or Use Case
-      description: Is your feature request related to a problem or a specific storage workflow?
-      placeholder: I always struggle when...
+      description: What problem are you trying to solve, or what would you like to do better in Quarry?
+      placeholder: Describe the situation or what is missing...
     validations:
       required: true
 
   - type: textarea
     id: proposed_solution
     attributes:
-      label: Proposed Solution
-      description: A clear and concise description of what you want to happen and how it should work.
-      placeholder: Add an option to...
+      label: Proposed Solution or Idea
+      description: Describe your idea and how you envision it working in Quarry.
+      placeholder: I would love it if Quarry could...
     validations:
       required: true
 
   - type: textarea
     id: alternatives_considered
     attributes:
-      label: Alternatives Considered
-      description: Any alternative solutions or workarounds you have considered.
-      placeholder: Describe alternatives...
+      label: Alternatives or Workarounds
+      description: Have you considered any alternative ways or seen how other apps do this?
+      placeholder: Describe any alternatives or existing solutions...
+    validations:
+      required: false
+
+  - type: textarea
+    id: visual_mockups_and_media
+    attributes:
+      label: Mockups / Screenshots / References
+      description: Drag and drop UI sketches, screenshots, or visual references here.
+      placeholder: Drag and drop images or sketches here...
     validations:
       required: false
 
@@ -39,6 +48,7 @@ body:
     id: additional_context
     attributes:
       label: Additional Context
-      description: Add any other context, UI concept sketches, or screenshots.
+      description: Any other details, questions, or context you would like to include.
+      placeholder: Any other thoughts...
     validations:
       required: false

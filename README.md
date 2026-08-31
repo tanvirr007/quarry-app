@@ -152,17 +152,17 @@ Contributions and bug reports are welcome to make Quarry better.
 
 ### Reporting a Bug
 When reporting a bug via the [Bug Report form](https://github.com/tanvirr007/quarry-app/issues/new?template=bug_report.yml), please provide:
-- **Quarry Version**: The version number and build number (e.g. `v1.0.0`).
+- **Quarry Version**: The version number or build number from Settings > About (or "Latest release" if unsure).
 - **Device Details**: Device model, manufacturer, and Android OS version / custom ROM.
-- **Permission State**: Whether "All Files Access" (`MANAGE_EXTERNAL_STORAGE`) was granted.
-- **Steps to Reproduce**: Clear, numbered step-by-step instructions to reproduce the issue.
+- **Permission State**: Storage permission status (e.g. "All Files Access").
+- **Steps to Reproduce**: Clear, numbered step-by-step instructions.
 - **Observed vs. Expected**: What happened versus what you expected to happen.
-- **Logs / Screenshots**: Logcat output or crash stack traces if applicable.
+- **Log Files & Screenshots**: Drag-and-drop your `.log` files, crash stack traces, screenshots, or screen recordings directly into the issue form.
 
 Before opening a new issue, please [search existing issues](https://github.com/tanvirr007/quarry-app/issues) to avoid duplicates.
 
 ### Requesting Features
-To suggest new features or enhancements, please submit a [Feature Request](https://github.com/tanvirr007/quarry-app/issues/new?template=feature_request.yml) describing your use case, proposed solution, and any alternatives considered.
+- **Feature Requests**: Submit a [Feature Request](https://github.com/tanvirr007/quarry-app/issues/new?template=feature_request.yml) describing your use case, proposed idea, and any mockups or alternatives.
 
 ---
 

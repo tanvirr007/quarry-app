@@ -6,14 +6,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for reporting an issue. Please fill out the sections below with as much detail as possible to help us investigate and fix the problem.
+        Thank you for reporting an issue! Anyone is welcome to report a bug. Even if you are not sure about all technical details, please fill out what you can. Every report helps us investigate and improve Quarry.
 
   - type: textarea
     id: description
     attributes:
       label: Bug Description
-      description: A clear and concise description of what the bug is.
-      placeholder: Describe what happened...
+      description: A clear and concise description of what went wrong or what happened.
+      placeholder: Tell us what happened in your own words...
     validations:
       required: true
 
@@ -21,30 +21,23 @@ body:
     id: reproduction_steps
     attributes:
       label: Steps to Reproduce
-      description: Provide step-by-step instructions to reproduce the issue.
+      description: What were you doing when the issue occurred? (Step-by-step instructions help us fix it faster).
       placeholder: |
         1. Open Quarry
-        2. Navigate to '...'
+        2. Go to '...'
         3. Tap on '...'
-        4. See error
+        4. Notice the error / crash
     validations:
       required: true
 
   - type: textarea
-    id: expected_behavior
+    id: expected_vs_actual
     attributes:
-      label: Expected Behavior
-      description: A clear and concise description of what you expected to happen.
-      placeholder: Describe what should have happened...
-    validations:
-      required: true
-
-  - type: textarea
-    id: actual_behavior
-    attributes:
-      label: Actual Behavior
-      description: Describe what actually happened instead.
-      placeholder: Describe the observed result...
+      label: Expected vs Actual Behavior
+      description: What did you expect to happen, and what actually happened instead?
+      placeholder: |
+        - Expected: The scan should finish and display the storage graph.
+        - Actual: The screen turned black and the app closed.
     validations:
       required: true
 
@@ -52,8 +45,8 @@ body:
     id: app_version
     attributes:
       label: Quarry Version
-      description: The version of Quarry you are running (e.g., v1.0.0 or build number from Settings).
-      placeholder: e.g. v1.0.0 (Build 5)
+      description: App version from Quarry (found in Settings > About) or release version.
+      placeholder: e.g. v1.0.0 (or "Latest release" if unsure)
     validations:
       required: true
 
@@ -61,8 +54,8 @@ body:
     id: device_info
     attributes:
       label: Device Model & Manufacturer
-      description: What device are you using?
-      placeholder: e.g. Google Pixel 8, Samsung Galaxy S24
+      description: What phone or tablet are you using?
+      placeholder: e.g. Samsung Galaxy S23, Google Pixel 8, Xiaomi 13
     validations:
       required: true
 
@@ -70,30 +63,39 @@ body:
     id: android_version
     attributes:
       label: Android Version / ROM
-      description: Android OS version and custom ROM (if applicable).
-      placeholder: e.g. Android 14 (One UI 6.1) / LineageOS 21
+      description: Android OS version and custom ROM / skin (if known).
+      placeholder: e.g. Android 14 (One UI 6.1) / Android 13 / LineageOS 21
     validations:
-      required: true
+      required: false
 
   - type: checkboxes
     id: permissions
     attributes:
-      label: Storage Permissions
-      description: Confirm the storage permission status granted to Quarry.
+      label: Storage Permissions Status
+      description: Which storage permissions were granted to Quarry?
       options:
-        - label: All Files Access (MANAGE_EXTERNAL_STORAGE) was granted
-        - label: Standard Media / Storage permission was granted
+        - label: All Files Access (MANAGE_EXTERNAL_STORAGE)
+        - label: Standard Media / Storage access
+        - label: Not sure / default permissions
 
   - type: textarea
-    id: logs
+    id: log_file_and_stacktrace
     attributes:
-      label: Relevant Logs / Stack Trace
-      description: Paste any logcat output or crash stack traces here.
-      placeholder: |
-        ```text
-        Paste logs or stack traces here
-        ```
-      render: text
+      label: Attach Log File / Logcat / Crash Stack Trace
+      description: |
+        Attach your log file (.log, .txt, .zip) or paste logcat / crash logs here.
+        - Tip: Tap "Add Files" below or drag and drop your file directly into this box.
+        - If using ADB: `adb logcat -d > quarry.log` and attach the file.
+      placeholder: Attach your .log / .txt / .zip file here, or paste error logs / stack traces...
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots_and_media
+    attributes:
+      label: Screenshots or Screen Recordings
+      description: Drag and drop screenshots or screen recordings here. Visual examples are super helpful for UI or display issues!
+      placeholder: Drag and drop images (.png, .jpg) or videos (.mp4, .gif) here...
     validations:
       required: false
 
@@ -101,6 +103,7 @@ body:
     id: additional_context
     attributes:
       label: Additional Context
-      description: Add any other context, screenshots, or screen recordings about the problem.
+      description: Any other information, thoughts, or questions you would like to share.
+      placeholder: Any extra details that might help us understand the problem...
     validations:
       required: false
