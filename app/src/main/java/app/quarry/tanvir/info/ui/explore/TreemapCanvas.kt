@@ -151,8 +151,8 @@ fun TreemapCanvas(
             offset = clampOffset(offset, scale)
         }
 
-        // Trigger smooth drill-down or drill-up navigation animation on path or nodes change
-        LaunchedEffect(currentPath, nodes) {
+        // Trigger smooth drill-down or drill-up navigation animation on path change
+        LaunchedEffect(currentPath) {
             if (lastPath != currentPath && currentPath.isNotEmpty()) {
                 val isDrillDown = lastPath.isNotEmpty() && currentPath.startsWith(lastPath)
                 val isDrillUp = lastPath.isNotEmpty() && lastPath.startsWith(currentPath)
@@ -174,6 +174,8 @@ fun TreemapCanvas(
                     targetValue = 1f,
                     animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
                 )
+            } else if (transitionAnim.value < 1f) {
+                transitionAnim.snapTo(1f)
             }
         }
 
