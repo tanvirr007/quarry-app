@@ -346,8 +346,8 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         _selectedPaths.value = current
     }
 
-    fun selectAll() {
-        val all = directoryFiles.value.map { it.path }.toSet()
+    fun selectAll(filesToSelect: Collection<FileEntity>? = null) {
+        val all = filesToSelect?.map { it.path }?.toSet() ?: directoryFiles.value.map { it.path }.toSet()
         _selectedPaths.value = all
     }
 
@@ -416,9 +416,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         _isDeleteCountdownVisible.value = true
     }
 
-    fun promptDeleteSelected() {
+    fun promptDeleteSelected(displayedFiles: List<FileEntity>? = null) {
         val paths = _selectedPaths.value
-        val files = directoryFiles.value.filter { paths.contains(it.path) }
+        if (paths.isEmpty()) return
+        val availableFiles = displayedFiles ?: (directoryFiles.value + allFiles.value).distinctBy { it.path }
+        val files = availableFiles.filter { paths.contains(it.path) }
         if (files.isNotEmpty()) {
             _activeDeleteCandidates.value = files
             _isDeleteCountdownVisible.value = true

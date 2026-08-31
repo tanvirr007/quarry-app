@@ -315,7 +315,7 @@ fun ExploreScreen(
                         IconButton(
                             onClick = {
                                 haptics.selection()
-                                if (isAllSelected) viewModel.clearSelection() else viewModel.selectAll()
+                                if (isAllSelected) viewModel.clearSelection() else viewModel.selectAll(currentFiles)
                             },
                             modifier = Modifier.size(36.dp)
                         ) {
@@ -354,7 +354,7 @@ fun ExploreScreen(
                         Button(
                             onClick = {
                                 haptics.warning()
-                                viewModel.promptDeleteSelected()
+                                viewModel.promptDeleteSelected(currentFiles)
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error,
