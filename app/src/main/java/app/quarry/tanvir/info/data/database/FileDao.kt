@@ -97,6 +97,28 @@ interface FileDao {
     }
 
     @Transaction
+    suspend fun renamePathPrefix(oldPath: String, newPath: String, updatedEntity: FileEntity) {
+        val allMatching = getAllFilesSync().filter { it.path.startsWith("$oldPath/") }
+        val updatedChildren = allMatching.map { entity ->
+            val updatedPath = newPath + entity.path.removePrefix(oldPath)
+            val updatedParent = entity.parentPath?.let { parent ->
+                if (parent == oldPath) newPath
+                else if (parent.startsWith("$oldPath/")) newPath + parent.removePrefix(oldPath)
+                else parent
+            }
+            entity.copy(
+                path = updatedPath,
+                parentPath = updatedParent
+            )
+        }
+        deleteByPath(oldPath)
+        val allToInsert = listOf(updatedEntity) + updatedChildren
+        allToInsert.chunked(500).forEach { chunk ->
+            insertBatch(chunk)
+        }
+    }
+
+    @Transaction
     suspend fun replaceAllFiles(files: List<FileEntity>) {
         clearAll()
         // Insert in chunks of 500 to keep memory footprint flat

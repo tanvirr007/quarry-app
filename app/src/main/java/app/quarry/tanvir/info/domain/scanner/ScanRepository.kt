@@ -148,6 +148,10 @@ class ScanRepository(
         database.fileDao().insertBatch(listOf(file))
     }
 
+    suspend fun renamePath(oldPath: String, newPath: String, updatedEntity: FileEntity) = withContext(Dispatchers.IO) {
+        database.fileDao().renamePathPrefix(oldPath, newPath, updatedEntity)
+    }
+
     suspend fun insertFiles(files: List<FileEntity>) = withContext(Dispatchers.IO) {
         database.fileDao().insertBatch(files)
     }

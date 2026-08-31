@@ -45,21 +45,24 @@ class FileOperationsManager(
                 return@withContext Result.failure(IllegalStateException("Could not rename file. Check filesystem permissions."))
             }
 
-            // Update database
-            repository.deleteFileRecord(oldPath)
+            // Update database and synchronize descendant paths if renaming directory
+            val isDir = targetFile.isDirectory
             val extension = targetFile.extension
             val category = StorageCategory.fromExtension(extension)
             val updatedEntity = FileEntity(
                 path = targetFile.absolutePath,
                 name = targetFile.name,
                 size = targetFile.length(),
-                isDirectory = targetFile.isDirectory,
+                isDirectory = isDir,
                 category = category.name,
                 lastModified = targetFile.lastModified(),
                 parentPath = parentDir.absolutePath,
                 extension = extension
             )
-            repository.insertFile(updatedEntity)
+            repository.renamePath(oldPath, targetFile.absolutePath, updatedEntity)
+            try {
+                android.media.MediaScannerConnection.scanFile(context, arrayOf(oldPath, targetFile.absolutePath), null, null)
+            } catch (_: Exception) {}
             Result.success(targetFile.absolutePath)
         } catch (e: Exception) {
             Result.failure(e)
