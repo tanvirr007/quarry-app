@@ -69,6 +69,7 @@ class FastStorageScanner {
 
             val children = try {
                 currentDir.listFiles()
+                    ?: currentDir.list()?.map { File(currentDir, it) }?.toTypedArray()
             } catch (e: Exception) {
                 null
             }
@@ -159,7 +160,7 @@ class FastStorageScanner {
             val dirSize = directorySizeMap[dirPath] ?: 0L
             val parentPath = dir.parentFile?.absolutePath
 
-            if (parentPath != null && directorySizeMap.containsKey(parentPath)) {
+            if (parentPath != null) {
                 directorySizeMap[parentPath] = (directorySizeMap[parentPath] ?: 0L) + dirSize
             }
 

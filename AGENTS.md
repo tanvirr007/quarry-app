@@ -105,6 +105,7 @@ app/src/main/java/app/quarry/tanvir/info/
 
 ### Storage & Permissions
 - Follow Android 12+ scoped storage and `MANAGE_EXTERNAL_STORAGE` guidelines with transparent, in-app rationale prior to requesting system prompts.
+- **Storage Scanner & Size Aggregation**: `FastStorageScanner` conducts breadth-first indexing and computes folder totals via bottom-up aggregation across all directories. Intermediate directories without direct files propagate cumulative descendant sizes upward unconditionally, with `File.list()` fallback when `listFiles()` returns null on certain OEM devices.
 - **Storage Volume Discovery**: `StorageVolumeManager` discovers mounted external/removable volumes for the Storage Volumes overview dialog using multi-probe path resolution (`/storage/<UUID>` FUSE mount first, then `getExternalFilesDirs()` walk-up, fallback to raw mount) and resilient `StatFs` + `File.totalSpace`/`usableSpace` storage calculation.
 - `VIBRATE` is normal permission, no runtime prompt; `FLAG_KEEP_SCREEN_ON` requires no permission.
 
