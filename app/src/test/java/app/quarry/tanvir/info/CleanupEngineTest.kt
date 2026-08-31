@@ -69,6 +69,28 @@ class CleanupEngineTest {
                 category = StorageCategory.OTHER,
                 extension = "tmp",
                 lastModified = now
+            ),
+            // Recent download (today) - must NOT be in Old Downloads
+            StorageItem(
+                id = 6,
+                path = "/storage/emulated/0/Download/recent_doc.pdf",
+                name = "recent_doc.pdf",
+                size = 1L * 1024 * 1024,
+                isDirectory = false,
+                category = StorageCategory.DOCUMENTS,
+                lastModified = now,
+                isDownload = true
+            ),
+            // Old download (45 days ago) - MUST be in Old Downloads
+            StorageItem(
+                id = 7,
+                path = "/storage/emulated/0/Download/old_archive.zip",
+                name = "old_archive.zip",
+                size = 8L * 1024 * 1024,
+                isDirectory = false,
+                category = StorageCategory.ARCHIVES,
+                lastModified = now - (45L * 24 * 60 * 60 * 1000),
+                isDownload = true
             )
         )
 
@@ -79,11 +101,16 @@ class CleanupEngineTest {
         assertTrue(titles.contains("Large Files"))
         assertTrue(titles.contains("Old APK Files"))
         assertTrue(titles.contains("Screenshots"))
+        assertTrue(titles.contains("Old Downloads"))
         assertTrue(titles.contains("Old & Untouched Files"))
         assertTrue(titles.contains("Temporary & Log Files"))
 
         val largeFilesGroup = candidates.first { it.title == "Large Files" }
         assertEquals(1, largeFilesGroup.items.size)
         assertEquals(120L * 1024 * 1024, largeFilesGroup.totalBytes)
+
+        val oldDownloadsGroup = candidates.first { it.title == "Old Downloads" }
+        assertEquals(1, oldDownloadsGroup.items.size)
+        assertEquals("old_archive.zip", oldDownloadsGroup.items.first().name)
     }
 }

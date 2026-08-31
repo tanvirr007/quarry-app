@@ -62,7 +62,8 @@ class DefaultCleanupEngine(
 
         // 4. Old Downloads (> 30 days)
         val oldDownloads = nonDirItems.filter {
-            it.isDownload || it.path.contains("/Download/", ignoreCase = true) && it.lastModified < thirtyDaysAgo
+            (it.isDownload || it.path.contains("/Download/", ignoreCase = true)) &&
+                    it.lastModified in 1..<thirtyDaysAgo
         }.sortedByDescending { it.size }
         if (oldDownloads.isNotEmpty()) {
             candidateGroups.add(
