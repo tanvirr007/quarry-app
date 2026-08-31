@@ -26,7 +26,7 @@ class DefaultCleanupEngine(
             candidateGroups.add(
                 CleanupCandidateGroup(
                     title = "Large Files",
-                    description = "Files exceeding 50 MB consuming significant space",
+                    description = "Files exceeding 50 MB",
                     items = largeFiles,
                     totalBytes = largeFiles.sumOf { it.size }
                 )
@@ -39,7 +39,7 @@ class DefaultCleanupEngine(
             candidateGroups.add(
                 CleanupCandidateGroup(
                     title = "Old APK Files",
-                    description = "Installation packages you may no longer need",
+                    description = "Downloaded installer packages",
                     items = apks,
                     totalBytes = apks.sumOf { it.size }
                 )
@@ -53,7 +53,7 @@ class DefaultCleanupEngine(
             candidateGroups.add(
                 CleanupCandidateGroup(
                     title = "Screenshots",
-                    description = "Captured screenshots that may be outdated",
+                    description = "Captured screenshot images",
                     items = screenshots,
                     totalBytes = screenshots.sumOf { it.size }
                 )
@@ -69,7 +69,7 @@ class DefaultCleanupEngine(
             candidateGroups.add(
                 CleanupCandidateGroup(
                     title = "Old Downloads",
-                    description = "Files downloaded more than 30 days ago",
+                    description = "Downloads older than 30 days",
                     items = oldDownloads,
                     totalBytes = oldDownloads.sumOf { it.size }
                 )
@@ -82,7 +82,7 @@ class DefaultCleanupEngine(
             candidateGroups.add(
                 CleanupCandidateGroup(
                     title = "Old & Untouched Files",
-                    description = "Files not modified for over 6 months",
+                    description = "Files not modified in over 6 months",
                     items = oldFiles,
                     totalBytes = oldFiles.sumOf { it.size }
                 )
@@ -99,7 +99,7 @@ class DefaultCleanupEngine(
             candidateGroups.add(
                 CleanupCandidateGroup(
                     title = "Temporary & Log Files",
-                    description = "Residual log files, cache chunks, and temporary files",
+                    description = "Residual logs, caches, and temporary files",
                     items = potentialJunk,
                     totalBytes = potentialJunk.sumOf { it.size }
                 )
@@ -112,7 +112,7 @@ class DefaultCleanupEngine(
             candidateGroups.add(
                 CleanupCandidateGroup(
                     title = "Empty Folders",
-                    description = "Directories containing 0 files",
+                    description = "Directories containing no files",
                     items = emptyDirs,
                     totalBytes = 0L
                 )
