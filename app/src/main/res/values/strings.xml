@@ -30,8 +30,7 @@
     <string name="grant_storage_access">Grant Storage Access</string>
 
     <!-- Exit Confirmation -->
-    <string name="exit_dialog_title">Exit Quarry</string>
-    <string name="exit_dialog_message">Do you want to exit the app?</string>
+    <string name="exit_dialog_title">Are you sure you want to exit?</string>
     <string name="exit_dialog_confirm">Yes</string>
     <string name="exit_dialog_dismiss">No</string>
 </resources>
