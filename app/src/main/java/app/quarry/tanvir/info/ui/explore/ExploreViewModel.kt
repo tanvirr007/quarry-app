@@ -541,6 +541,87 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun moveToTrashBatch(
+        activity: FragmentActivity?,
+        files: List<FileEntity>,
+        onComplete: () -> Unit = {}
+    ) {
+        val paths = files.map { it.path }
+        if (paths.isEmpty()) return
+
+        val performBulkMoveToTrash: () -> Unit = {
+            viewModelScope.launch {
+                val results = fileOps.bulkMoveToTrash(paths)
+                val successCount = results.count { it.value }
+                _userMessage.value = "Moved $successCount items to Trash"
+                onComplete()
+            }
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performBulkMoveToTrash()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                securityManager.authenticate(
+                    activity = activity,
+                    title = "Confirm Move to Trash",
+                    subtitle = "Authenticate to move ${paths.size} files to Trash",
+                    onSuccess = performBulkMoveToTrash,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
+    }
+
+    fun deletePermanentlyBatch(
+        activity: FragmentActivity?,
+        files: List<FileEntity>,
+        onComplete: () -> Unit = {}
+    ) {
+        val paths = files.map { it.path }
+        if (paths.isEmpty()) return
+
+        val performDelete: () -> Unit = {
+            viewModelScope.launch {
+                val results = fileOps.bulkDelete(paths)
+                val successCount = results.count { it.value }
+                _userMessage.value = "Deleted $successCount items"
+                onComplete()
+            }
+        }
+
+        viewModelScope.launch {
+            val isAuthEnabled = prefsRepo.isBiometricAuthEnabled.first()
+            if (!isAuthEnabled) {
+                performDelete()
+            } else {
+                if (activity == null) {
+                    _userMessage.value = "Unable to start authentication"
+                    return@launch
+                }
+                val title = if (files.size == 1) "Confirm Deletion" else "Confirm Bulk Deletion"
+                val subtitle = if (files.size == 1) "Authenticate to delete ${files[0].name}" else "Authenticate to delete ${files.size} files"
+
+                securityManager.authenticate(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle,
+                    onSuccess = performDelete,
+                    onError = { error ->
+                        _userMessage.value = error
+                    }
+                )
+            }
+        }
+    }
+
     fun openFile(file: FileEntity) {
         fileOps.openFile(file.path)
     }

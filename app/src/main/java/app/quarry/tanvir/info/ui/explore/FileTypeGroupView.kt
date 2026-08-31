@@ -1,6 +1,5 @@
 package app.quarry.tanvir.info.ui.explore
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,29 +17,23 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 
@@ -47,7 +41,7 @@ import app.quarry.tanvir.info.ui.components.getIcon
 fun FileTypeGroupView(
     files: List<FileEntity>,
     sortOrder: FileSortOrder = FileSortOrder.SIZE_DESC,
-    onFileClick: (FileEntity) -> Unit,
+    onCategoryClick: (StorageCategory, List<FileEntity>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (files.isEmpty()) {
@@ -65,7 +59,6 @@ fun FileTypeGroupView(
     val baseGrouped = StorageCategory.entries.mapNotNull { category ->
         val catFiles = nonDirFiles
             .filter { StorageCategory.fromExtension(it.extension) == category }
-            .sortedWith(sortOrder.comparator(keepDirectoriesFirst = false))
         if (catFiles.isNotEmpty()) {
             category to catFiles
         } else null
@@ -91,6 +84,7 @@ fun FileTypeGroupView(
         return
     }
 
+    val maxCategoryBytes = grouped.maxOfOrNull { (_, catFiles) -> catFiles.sumOf { it.size } }?.coerceAtLeast(1L) ?: 1L
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
     LazyColumn(
@@ -98,30 +92,33 @@ fun FileTypeGroupView(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items(grouped, key = { it.first.name }) { (category, catFiles) ->
-            var isExpanded by remember { mutableStateOf(false) }
             val icon = category.getIcon()
             val color = category.getColor()
             val totalBytes = catFiles.sumOf { it.size }
+            val progressFraction = (totalBytes.toFloat() / maxCategoryBytes.toFloat()).coerceIn(0.01f, 1f)
 
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable {
+                        haptics.click()
+                        onCategoryClick(category, catFiles)
+                    },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
             ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                haptics.click()
-                                isExpanded = !isExpanded
-                            }
-                            .padding(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -154,57 +151,22 @@ fun FileTypeGroupView(
                         }
 
                         Icon(
-                            imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                            contentDescription = null,
+                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            contentDescription = "View category files",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
-                    AnimatedVisibility(visible = isExpanded) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 6.dp)
-                        ) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            catFiles.forEach { file ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            haptics.click()
-                                            onFileClick(file)
-                                        }
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    FileThumbnail(
-                                        path = file.path,
-                                        category = category,
-                                        size = 32.dp,
-                                        shape = RoundedCornerShape(6.dp),
-                                        lastModified = file.lastModified,
-                                        isDirectory = file.isDirectory
-                                    )
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = file.name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = StorageFormatter.formatBytes(file.size),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    LinearProgressIndicator(
+                        progress = { progressFraction },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
+                        color = color,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        strokeCap = StrokeCap.Round
+                    )
                 }
             }
         }

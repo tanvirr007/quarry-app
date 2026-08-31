@@ -65,6 +65,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.ui.home.HomeItemListBottomSheet
+
+private data class ExploreCategorySheetData(
+    val title: String,
+    val category: StorageCategory,
+    val files: List<app.quarry.tanvir.info.data.database.FileEntity>
+)
 
 @Composable
 fun ExploreScreen(
@@ -77,6 +84,7 @@ fun ExploreScreen(
     val treemapNodes by viewModel.treemapLayoutNodes.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context as? FragmentActivity
+    var activeCategorySheet by remember { mutableStateOf<ExploreCategorySheetData?>(null) }
 
     // Prioritized Back handling: Dialogs -> Details Sheet -> Selection -> Search -> Folder Hierarchy -> System (Home)
     val isFolderViewMode = uiState.viewMode == ExploreViewMode.TREEMAP ||
@@ -85,7 +93,8 @@ fun ExploreScreen(
     val canNavigateUpFolder = isFolderViewMode &&
             uiState.currentPath != Environment.getExternalStorageDirectory().absolutePath
 
-    val hasActiveExploreState = uiState.isDeleteCountdownVisible ||
+    val hasActiveExploreState = activeCategorySheet != null ||
+            uiState.isDeleteCountdownVisible ||
             uiState.activeRenameFile != null ||
             uiState.activeDetailsFile != null ||
             uiState.isSelectionMode ||
@@ -97,6 +106,7 @@ fun ExploreScreen(
     BackHandler(enabled = hasActiveExploreState) {
         haptics.click()
         when {
+            activeCategorySheet != null -> activeCategorySheet = null
             uiState.isDeleteCountdownVisible -> viewModel.dismissDeleteDialog()
             uiState.activeRenameFile != null -> viewModel.dismissRename()
             uiState.activeDetailsFile != null -> viewModel.hideDetails()
@@ -450,7 +460,13 @@ fun ExploreScreen(
                     FileTypeGroupView(
                         files = filesToCategorize,
                         sortOrder = uiState.sortOrder,
-                        onFileClick = { file -> viewModel.showDetails(file) }
+                        onCategoryClick = { category, catFiles ->
+                            activeCategorySheet = ExploreCategorySheetData(
+                                title = category.displayName,
+                                category = category,
+                                files = catFiles
+                            )
+                        }
                     )
                 }
 
@@ -463,6 +479,27 @@ fun ExploreScreen(
                 }
             }
         }
+    }
+
+    // Category Files Bottom Sheet
+    activeCategorySheet?.let { sheetData ->
+        HomeItemListBottomSheet(
+            title = sheetData.title,
+            category = sheetData.category,
+            files = sheetData.files,
+            onFileClick = { file ->
+                viewModel.showDetails(file)
+            },
+            onMoveToTrashSelected = { files, onComplete ->
+                viewModel.moveToTrashBatch(activity, files, onComplete)
+            },
+            onDeleteSelected = { files, onComplete ->
+                viewModel.deletePermanentlyBatch(activity, files, onComplete)
+            },
+            onDismiss = {
+                activeCategorySheet = null
+            }
+        )
     }
 
     // Active File Details Bottom Sheet
