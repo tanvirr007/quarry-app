@@ -28,4 +28,10 @@
     <!-- Permissions -->
     <string name="storage_permission_rationale">Quarry needs broad access to your device storage to scan folders and files, calculate their sizes, build the storage map, and provide file-management features. Everything is processed locally on your device. Nothing is uploaded.</string>
     <string name="grant_storage_access">Grant Storage Access</string>
+
+    <!-- Exit Confirmation -->
+    <string name="exit_dialog_title">Exit Quarry</string>
+    <string name="exit_dialog_message">Do you want to exit the app?</string>
+    <string name="exit_dialog_confirm">Yes</string>
+    <string name="exit_dialog_dismiss">No</string>
 </resources>

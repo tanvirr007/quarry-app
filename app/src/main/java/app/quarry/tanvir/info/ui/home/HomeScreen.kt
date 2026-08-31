@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.activity.compose.BackHandler
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,8 +65,18 @@ fun HomeScreen(
     var renamingFile by remember { mutableStateOf<FileEntity?>(null) }
     var showAppManager by remember { mutableStateOf(false) }
     var appManagerStartSelection by remember { mutableStateOf(false) }
+    var showExitDialog by remember { mutableStateOf(false) }
     val appManagerViewModel: AppManagerViewModel = viewModel()
     val appManagerState by appManagerViewModel.uiState.collectAsStateWithLifecycle()
+
+    val hasActiveHomeScreenOverlay = uiState.activeSheetData != null ||
+        showAppManager ||
+        uiState.selectedDetailFile != null ||
+        renamingFile != null
+
+    BackHandler(enabled = !hasActiveHomeScreenOverlay && !showExitDialog) {
+        showExitDialog = true
+    }
 
     // User Message Toast
     LaunchedEffect(uiState.userMessage) {
@@ -297,6 +308,17 @@ fun HomeScreen(
             onConfirm = { newName ->
                 viewModel.renameFile(activity, file, newName)
                 renamingFile = null
+            }
+        )
+    }
+
+    // Exit Confirmation Dialog
+    if (showExitDialog) {
+        ExitConfirmationDialog(
+            onDismiss = { showExitDialog = false },
+            onConfirmExit = {
+                showExitDialog = false
+                activity?.finish()
             }
         )
     }
