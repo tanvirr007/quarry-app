@@ -20,9 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +52,7 @@ import app.quarry.tanvir.info.domain.scanner.ScanState
 import app.quarry.tanvir.info.ui.explore.FileDetailsBottomSheet
 import app.quarry.tanvir.info.ui.explore.RenameDialog
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -68,6 +71,7 @@ fun HomeScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     val appManagerViewModel: AppManagerViewModel = viewModel()
     val appManagerState by appManagerViewModel.uiState.collectAsStateWithLifecycle()
+    val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
 
     val hasActiveHomeScreenOverlay = uiState.activeSheetData != null ||
         showAppManager ||
@@ -103,13 +107,23 @@ fun HomeScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+    PullToRefreshBox(
+        isRefreshing = uiState.scanState is ScanState.Scanning,
+        onRefresh = {
+            if (uiState.hasStoragePermission && uiState.scanState !is ScanState.Scanning) {
+                haptics.click()
+                viewModel.startScan()
+            }
+        },
+        modifier = modifier.fillMaxSize()
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
         // Permission Banner if required
         if (!uiState.hasStoragePermission) {
             PermissionBanner(
@@ -219,6 +233,7 @@ fun HomeScreen(
         )
 
         Spacer(modifier = Modifier.height(8.dp))
+    }
     }
 
     // Category / Insight Files Detail Sheet (Stays on Home)

@@ -41,12 +41,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +69,7 @@ import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.ui.explore.DeleteCountdownDialog
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CleanupScreen(
     modifier: Modifier = Modifier,
@@ -106,13 +109,23 @@ fun CleanupScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    PullToRefreshBox(
+        isRefreshing = uiState.isStorageScanning,
+        onRefresh = {
+            if (!uiState.isStorageScanning) {
+                haptics.click()
+                viewModel.rescanStorage()
+            }
+        },
+        modifier = modifier.fillMaxSize()
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // Overview Section
         Text(
             text = "Cleanup Overview",
@@ -438,6 +451,7 @@ fun CleanupScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
     }
 
     // Candidate Drill-Down Bottom Sheet
