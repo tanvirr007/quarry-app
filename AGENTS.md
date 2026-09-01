@@ -38,11 +38,12 @@ app/src/main/java/app/quarry/tanvir/info/
 ├── MainActivity.kt               # Single-activity container, theme/onboarding root
 ├── MainViewModel.kt              # App-wide UI state and global preferences holder
 ├── QuarryApp.kt                  # Application class
-├── data/                         # Repositories, Room DAOs, DataStore, file scanners
+├── data/                         # Database, preferences, filesystem, MediaStore & SAF
 │   ├── database/                 # Room database, entities, DAOs (QuarryDatabase, FileDao, FileEntity)
-│   ├── model/                    # Data models, category enums, file items
-│   ├── preferences/              # DataStore user preferences, theme, haptics, keep-screen-on, category visibility
-│   └── repository/               # Repository implementations
+│   ├── filesystem/               # Local file system scanners & size aggregation (FastStorageScanner)
+│   ├── mediastore/               # Android MediaStore content queries & media volume probes
+│   ├── preferences/              # DataStore user preferences (theme, haptics, keep-screen-on, categories)
+│   └── saf/                      # Storage Access Framework helpers & document tree URI management
 ├── domain/                       # Use cases and domain business logic
 │   ├── analyzer/                 # Deep storage analyzer and directory breakdown
 │   ├── app/                      # Installed applications and package space analysis

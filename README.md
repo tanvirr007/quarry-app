@@ -115,9 +115,9 @@ quarry-app/
 │       │   ├── MainActivity.kt   # App root & theme provider
 │       │   ├── MainViewModel.kt  # App UI state & global preference holder
 │       │   ├── QuarryApp.kt      # Application initialization
-│       │   ├── data/             # Database, preferences & repositories
-│       │   ├── domain/           # Analyzer, app analysis, cleanup, duplicates, media, scanner, security, treemap, volumes
-│       │   ├── ui/               # Compose screens & components (cleanup, explore, home, settings, navigation, theme)
+│       │   ├── data/             # Database, preferences, filesystem, MediaStore & SAF
+│       │   ├── domain/           # Analyzer, cleanup, duplicates, file, haptics, media, treemap, volumes
+│       │   ├── ui/               # Compose screens & components (cleanup, components, explore, home, settings)
 │       │   └── worker/           # Background workers
 │       └── res/                  # Drawables, strings, mipmaps
 └── AGENTS.md                     # Agent & developer guidelines
