@@ -2,47 +2,50 @@
 
 ![Quarry Banner](assets/update.png)
 
-# Quarry
-
-**See where your device storage really goes**
-
 <br/>
 
-[![Download Now](https://img.shields.io/badge/Download_Now-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tanvirr007/quarry-app/releases/latest)
-[![Latest Release](https://img.shields.io/github/v/release/tanvirr007/quarry-app?color=4285F4&label=&logo=android&logoColor=white&style=for-the-badge)](https://github.com/tanvirr007/quarry-app/releases/latest)
-
-<br/>
-
-[![Android](https://img.shields.io/badge/Android-12.0%2B%20(API%2031%2B)-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2026.06.01-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Material 3](https://img.shields.io/badge/Material_3-M3-6750A4?style=flat&logo=materialdesign&logoColor=white)](https://m3.material.io)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](LICENSE)
-
-<br/>
+[![Android](https://img.shields.io/badge/Android-12.0%2B%20(API%2031%2B)-2E7D32?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2026.06.01-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Material 3](https://img.shields.io/badge/Material_3-M3-6750A4?style=flat-square&logo=materialdesign&logoColor=white)](https://m3.material.io)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](LICENSE)
 
 </div>
 
 ---
 
+## Index
+
+- [Overview](#overview)
+- [Why Choose Quarry?](#why-choose-quarry)
+- [Screenshots](#screenshots)
+- [Download](#download)
+- [Features](#features)
+- [Tech Stack & Architecture](#tech-stack--architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [CI & Releases](#continuous-integration--releases)
+- [Reporting Issues & Contributing](#reporting-issues--contributing)
+- [License](#license)
+
+---
+
 ## Overview
 
-**Quarry** is a modern, fast, and privacy-first Android storage analyzer and disk cleanup utility built with **Jetpack Compose** and **Material 3**. It is purpose-built to help you see what is eating up your storage, explore files visually with treemaps, and clean up space safely.
+**Quarry** is an offline storage analyzer and visual disk cleanup utility for Android devices.
 
 > [!NOTE]
-> **Quarry is not a general-purpose file manager.** It is dedicated specifically to disk space analysis, visualization, and cleanup—not everyday file management like copying, moving, or archiving. All scans and operations run 100% offline on your device.
+> Quarry is not a regular file manager app.
 
 ---
 
 ## Why Choose Quarry?
 
-Quarry is designed to make understanding and managing your device storage simple, effortless, and private. Here is how it compares:
-
-| Other Storage Tools | Quarry |
+| Others | Quarry |
 | :---: | :---: |
 | Inaccurate sizes on newer Android versions | **Accurate and fully optimized for Android 12–16** |
 | Tiny files are hard to see and tap | **Clear, easy-to-tap visual tiles with minimum size floors** |
-| Ads, background trackers, and network usage | **100% offline with zero ads and complete privacy** |
+| Ads, background trackers, and network usage | **Offline with zero ads and complete privacy** |
 | Complex menus and unnecessary booster gimmicks | **Simple, honest cleanup for duplicates and large files** |
 | Outdated or cluttered design | **Modern, smooth, and clean Material 3 experience** |
 
@@ -50,56 +53,42 @@ Quarry is designed to make understanding and managing your device storage simple
 
 ## Screenshots
 
-| | |
-| :---: | :---: |
-| ![Home](assets/ui/home.png) | ![Explore](assets/ui/explore.png) |
-| ![Cleanup](assets/ui/cleanup.png) | ![Settings](assets/ui/settings.png) |
+<div align="center">
+
+<img src="assets/ui/home.png" width="24%" alt="Home Screen" />
+<img src="assets/ui/explore.png" width="24%" alt="Explore Screen" />
+<img src="assets/ui/cleanup.png" width="24%" alt="Cleanup Screen" />
+<img src="assets/ui/settings.png" width="24%" alt="Settings Screen" />
+
+</div>
 
 ---
 
 ## Download
 
-Quarry is distributed as standalone APK releases on GitHub.
+[![Download Now](https://img.shields.io/badge/Download-Now-blue?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tanvirr007/quarry-app/releases/latest/download/Quarry.apk)
+[![Latest Release](https://img.shields.io/github/v/release/tanvirr007/quarry-app?color=blue&label=&logo=android&logoColor=white&style=for-the-badge)](https://github.com/tanvirr007/quarry-app/releases/latest)
 
-| Platform | Channel | Link |
-| :--- | :--- | :--- |
-| **Android 12.0+ (API 31–36)** | **GitHub Releases (Latest)** | [**Download Latest APK**](https://github.com/tanvirr007/quarry-app/releases/latest) |
-| **All Builds** | **Release Archive** | [**Browse All Releases**](https://github.com/tanvirr007/quarry-app/releases) |
+<br/>
 
 > [!TIP]
-> Always download official builds directly from GitHub Releases to guarantee integrity and safety.
+> Always download official builds directly from the official [tanvirr007/quarry-app](https://github.com/tanvirr007/quarry-app/releases) releases.
 
 ---
 
 ## Features
 
-- **Interactive Treemap Visualization**:
-  - Hardware-accelerated squarified treemaps with guaranteed minimum tile visibility so small files and directories never collapse into unclickable slivers.
-  - Proximity-aware single-tap folder navigation and file inspection.
-  - Distinct, vibrant HSL gradient colors and labels for every file and folder.
-- **Versatile Storage Explorer**:
-  - Switch seamlessly between Treemap, List, Largest Files, Categories/Types, and Folders views.
-  - Breadcrumb navigation with hierarchical directory traversal and system back integration.
-  - Smart search with real-time keyword matching across files and categories.
-  - Compact modal filter sheet with multi-criteria sorting (Size, Name, Date, Type), ascending/descending order, and hidden dotfile visibility.
-  - Multi-select batch actions for Trash and permanent Deletion.
-- **Native File Thumbnails**:
-  - High-performance, offline visual previews for images, video frames, and APK application badges with in-memory LRU caching and zero third-party dependencies.
-- **Smart Cleanup Hub**:
-  - Redesigned Hero overview card with instant potential space recovery metrics.
-  - Identify and safely clean duplicate files with collapsible group sets and recoverable space badges.
-  - Discover large files occupying significant storage.
-  - Locate obsolete APK packages, empty directories, and orphaned caches.
-  - Fast Trash management with confirmation and single-tap purge.
-- **Full-Screen Settings & Management**:
-  - Appearance dialog with live theme preview cards (System, Light, Dark, Dynamic Material You).
-  - Excluded Folders manager with preset chips and custom folder selection.
-  - Storage Volumes overview with capacity statistics and mount path inspection.
-  - **Miscellaneous** — Quick Insights show/hide, Storage Categories visibility (≥4 required), Haptic feedback with strength slider, and Keep Screen On while the app is open.
-- **Biometric Security**: Protect file browsing and sensitive storage details using device biometric authentication or PIN lock.
-- **Personalized Home**: Toggle Quick Insights and curate which Storage Category cards appear on Home; enforce a minimum of four visible categories so the grid never collapses.
-- **Haptics & Display**: Centralized vibration helper with strength control (Low/Medium/High/Strong) backed by `VibrationEffect` amplitude, and a keep-screen-on toggle that uses `FLAG_KEEP_SCREEN_ON`.
-- **100% Offline & Private**: Zero tracking, zero analytics, zero network data transmission. All scanning and analysis stay on your device.
+- **Interactive Treemaps**: Hardware-accelerated squarified treemaps with minimum tile size floors and single-tap folder exploration.
+- **Versatile Explorer**: Browse by treemap, hierarchical list, largest files, categories, and folders with instant search and sorting.
+- **Smart Cleanup Hub**: Detect duplicate files, locate large files, find empty directories or obsolete APKs, and manage Trash safely.
+- **Installed App Analyzer**: Inspect storage used by installed applications (APK size, data, cache) with quick system shortcuts.
+- **Multi-Volume & SD Cards**: Real-time storage stats and mount inspection for internal storage, SD cards, and USB OTG.
+- **Scan Exclusions**: Custom folder whitelist to exclude specific directories from scans and cleanup recommendations.
+- **Native Thumbnails**: Zero-dependency, offline preview generator for images, video frames, and APK badges.
+- **Customizable Dashboard**: Curate category cards, toggle Quick Insights, and monitor storage status at a glance.
+- **Biometric Security**: Protect file browsing and storage details with fingerprint authentication or device PIN.
+- **Haptics & Appearance**: Granular vibration strength control, dynamic Material You colors, and full dark theme support.
+- **Offline & Private**: Zero analytics, zero network requests, and complete on-device privacy.
 
 ---
 
