@@ -121,6 +121,53 @@ fun CleanupScreen(
             modifier = Modifier.padding(start = 4.dp)
         )
 
+        // Live Storage Scan Progress Banner
+        AnimatedVisibility(
+            visible = uiState.isStorageScanning,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.5.dp,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Scanning device storage…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        uiState.storageScanProgress?.let { progress ->
+                            if (progress.filesScanned > 0) {
+                                Text(
+                                    text = "${StorageFormatter.formatFileCount(progress.filesScanned)} (${StorageFormatter.formatBytes(progress.bytesScanned)}) indexed",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Cleanup Overview Hero Card
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -279,8 +326,9 @@ fun CleanupScreen(
                         Button(
                             onClick = {
                                 haptics.click()
-                                viewModel.scanForDuplicates()
+                                viewModel.scanForDuplicates(forceStorageRescan = false)
                             },
+                            enabled = !uiState.isStorageScanning,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {
@@ -326,8 +374,9 @@ fun CleanupScreen(
                             OutlinedButton(
                                 onClick = {
                                     haptics.click()
-                                    viewModel.scanForDuplicates()
+                                    viewModel.scanForDuplicates(forceStorageRescan = true)
                                 },
+                                enabled = !uiState.isStorageScanning && uiState.duplicateScanState !is DuplicateScanState.Scanning,
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text("Rescan")

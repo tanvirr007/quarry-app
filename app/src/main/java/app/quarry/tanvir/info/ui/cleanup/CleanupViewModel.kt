@@ -15,7 +15,9 @@ import app.quarry.tanvir.info.domain.file.TrashItem
 import app.quarry.tanvir.info.domain.file.TrashManager
 import app.quarry.tanvir.info.domain.model.StorageItem
 import app.quarry.tanvir.info.domain.scanner.ExclusionMatcher
+import app.quarry.tanvir.info.domain.scanner.ScanProgress
 import app.quarry.tanvir.info.domain.scanner.ScanRepository
+import app.quarry.tanvir.info.domain.scanner.ScanState
 import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 sealed interface DuplicateScanState {
     data object Idle : DuplicateScanState
@@ -42,6 +45,8 @@ data class CleanupUiState(
     val totalRecoverableBytes: Long = 0L,
     val trashItems: List<TrashItem> = emptyList(),
     val isBiometricEnabled: Boolean = true,
+    val isStorageScanning: Boolean = false,
+    val storageScanProgress: ScanProgress? = null,
     val activeCandidateGroup: CleanupCandidateGroup? = null,
     val selectedItemPaths: Set<String> = emptySet(),
     val activeDeleteItems: List<StorageItem> = emptyList(),
@@ -79,7 +84,17 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     )
 
     val uiState: StateFlow<CleanupUiState> = combine(
-        combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems, prefsRepo.isBiometricAuthEnabled) { dupState, dupGroups, candGroups, trash, biometric ->
+        combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems, prefsRepo.isBiometricAuthEnabled, repository.scanState) { args ->
+            val dupState = args[0] as DuplicateScanState
+            @Suppress("UNCHECKED_CAST")
+            val dupGroups = args[1] as List<DuplicateGroup>
+            @Suppress("UNCHECKED_CAST")
+            val candGroups = args[2] as List<CleanupCandidateGroup>
+            @Suppress("UNCHECKED_CAST")
+            val trash = args[3] as List<TrashItem>
+            val biometric = args[4] as Boolean
+            val repoScanState = args[5] as ScanState
+
             val trashRecoverable = trash.sumOf { it.size }
             val dupRecoverable = dupGroups.sumOf { it.recoverableBytes }
             val candRecoverable = candGroups.flatMap { it.items }.distinctBy { it.path }.sumOf { it.size }
@@ -91,7 +106,9 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
                 candidateGroups = candGroups,
                 totalRecoverableBytes = totalRecoverable,
                 trashItems = trash,
-                isBiometricEnabled = biometric
+                isBiometricEnabled = biometric,
+                isStorageScanning = repoScanState is ScanState.Scanning,
+                storageScanProgress = (repoScanState as? ScanState.Scanning)?.progress
             )
         },
         combine(_activeCandidateGroup, _selectedItemPaths, _activeDeleteItems, _isDeleteCountdownVisible, _isTrashDialogVisible) { group, paths, deleteItems, deleteVis, trashVis ->
@@ -143,11 +160,38 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun scanForDuplicates() {
+    fun rescanStorage() {
+        if (repository.scanState.value !is ScanState.Scanning) {
+            repository.startScan()
+        }
+    }
+
+    fun scanForDuplicates(forceStorageRescan: Boolean = false) {
         if (_duplicateScanState.value is DuplicateScanState.Scanning) return
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                if (forceStorageRescan) {
+                    _duplicateScanState.value = DuplicateScanState.Scanning("Scanning storage…")
+                    if (repository.scanState.value !is ScanState.Scanning) {
+                        repository.startScan()
+                    }
+
+                    // Await transition into Scanning (up to 2 seconds)
+                    try {
+                        withTimeoutOrNull(2000L) {
+                            repository.scanState.first { it is ScanState.Scanning }
+                        }
+                    } catch (_: Exception) {}
+
+                    // Await completion of storage scan
+                    val finishState = repository.scanState.first { it !is ScanState.Scanning }
+                    if (finishState is ScanState.Cancelled || finishState is ScanState.Error) {
+                        _duplicateScanState.value = DuplicateScanState.Error("Storage scan interrupted")
+                        return@launch
+                    }
+                }
+
                 _duplicateScanState.value = DuplicateScanState.Scanning("Clustering identical file sizes…")
                 val db = app.quarry.tanvir.info.data.database.QuarryDatabase.getInstance(getApplication())
                 val rawCandidates = db.fileDao().getPotentialDuplicateSizeCandidates()
