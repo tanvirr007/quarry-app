@@ -2,6 +2,8 @@ name: Feature Request
 description: Suggest an idea, enhancement, or new feature for Quarry
 title: "[Feature]: "
 labels: ["enhancement"]
+assignees:
+  - tanvirr007
 body:
   - type: markdown
     attributes:
