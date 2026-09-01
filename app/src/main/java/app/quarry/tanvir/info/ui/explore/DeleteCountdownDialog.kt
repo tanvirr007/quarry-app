@@ -32,7 +32,11 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextAlign
 import app.quarry.tanvir.info.ui.components.FileThumbnail
+import java.io.File
 
 @Composable
 fun DeleteCountdownDialog(
@@ -46,9 +50,9 @@ fun DeleteCountdownDialog(
     val totalBytes = candidates.sumOf { it.size }
     val isBulk = candidates.size > 1
     val titleText = if (isBulk) {
-        "Delete ${candidates.size} files?"
+        "Delete ${candidates.size} files forever?"
     } else {
-        "Delete \"${candidates.first().name}\"?"
+        "Delete forever?"
     }
 
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
@@ -75,18 +79,23 @@ fun DeleteCountdownDialog(
             Text(
                 text = titleText,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Visual thumbnail preview of files to be deleted
                 if (candidates.size == 1) {
                     val singleFile = candidates.first()
                     val cat = StorageCategory.fromExtension(singleFile.extension)
+                    val parentDir = File(singleFile.path).parent ?: singleFile.path
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -114,16 +123,12 @@ fun DeleteCountdownDialog(
                                 Text(
                                     text = singleFile.name,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = singleFile.path,
+                                    text = parentDir,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -179,7 +184,7 @@ fun DeleteCountdownDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "Total Space to Recover",
+                            text = "Space to Reclaim",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
