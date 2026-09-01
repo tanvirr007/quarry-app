@@ -6,10 +6,18 @@
 
 **See where your device storage really goes**
 
+<br/>
+
+[![Download Now](https://img.shields.io/badge/Download_Now-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tanvirr007/quarry-app/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/tanvirr007/quarry-app?color=4285F4&label=&logo=android&logoColor=white&style=for-the-badge)](https://github.com/tanvirr007/quarry-app/releases/latest)
+
+<br/>
+
 [![Android](https://img.shields.io/badge/Android-12.0%2B%20(API%2031%2B)-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2026.06.01-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Material 3](https://img.shields.io/badge/Material_3-M3-6750A4?style=flat&logo=materialdesign&logoColor=white)](https://m3.material.io)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](LICENSE)
 
 <br/>
 
@@ -46,6 +54,20 @@ Quarry is designed to make understanding and managing your device storage simple
 | :---: | :---: |
 | ![Home](assets/ui/home.png) | ![Explore](assets/ui/explore.png) |
 | ![Cleanup](assets/ui/cleanup.png) | ![Settings](assets/ui/settings.png) |
+
+---
+
+## Download
+
+Quarry is distributed as standalone APK releases on GitHub.
+
+| Platform | Channel | Link |
+| :--- | :--- | :--- |
+| **Android 12.0+ (API 31–36)** | **GitHub Releases (Latest)** | [**Download Latest APK**](https://github.com/tanvirr007/quarry-app/releases/latest) |
+| **All Builds** | **Release Archive** | [**Browse All Releases**](https://github.com/tanvirr007/quarry-app/releases) |
+
+> [!TIP]
+> Always download official builds directly from GitHub Releases to guarantee integrity and safety.
 
 ---
 
@@ -155,6 +177,8 @@ Automated builds and GitHub Releases are powered by GitHub Actions ([`.github/wo
 - **Semantic Versioning**: Automatically calculates version tags based on previous releases and Gradle configuration.
 - **Signed APKs**: Automatically signs release builds when signing secrets are configured.
 - **Telegram Notifications**: Real-time compilation status and release dispatches via Telegram bot integration.
+
+---
 
 ## Reporting Issues & Contributing
 
