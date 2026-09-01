@@ -7,8 +7,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +74,7 @@ import app.quarry.tanvir.info.domain.file.TrashItem
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import app.quarry.tanvir.info.ui.components.FileInfoDialog
 import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
@@ -81,7 +84,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TrashManagementDialog(
     trashItems: List<TrashItem>,
@@ -102,6 +105,7 @@ fun TrashManagementDialog(
     var showEmptyTrashConfirmDialog by remember { mutableStateOf(false) }
     var showBulkRestoreConfirmDialog by remember { mutableStateOf(false) }
     var showBulkDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var detailTrashItem by remember { mutableStateOf<TrashItem?>(null) }
 
     val totalBytes = trashItems.sumOf { it.size }
     val filteredItems = if (searchQuery.isBlank()) {
@@ -446,14 +450,20 @@ fun TrashManagementDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .clickable {
-                                    haptics.selection()
-                                    selectedIds = if (isSelected) {
-                                        selectedIds - item.id
-                                    } else {
-                                        selectedIds + item.id
+                                .combinedClickable(
+                                    onClick = {
+                                        haptics.selection()
+                                        selectedIds = if (isSelected) {
+                                            selectedIds - item.id
+                                        } else {
+                                            selectedIds + item.id
+                                        }
+                                    },
+                                    onLongClick = {
+                                        haptics.longPress()
+                                        detailTrashItem = item
                                     }
-                                },
+                                ),
                             shape = RoundedCornerShape(14.dp),
                             border = if (isSelected) {
                                 BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
@@ -891,6 +901,22 @@ fun TrashManagementDialog(
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    // File Info Dialog for Trash items (triggered by long-press)
+    detailTrashItem?.let { item ->
+        val ext = item.name.substringAfterLast('.', "")
+        val trashCategory = StorageCategory.fromExtension(ext)
+        FileInfoDialog(
+            name = item.name,
+            path = item.originalPath,
+            size = item.size,
+            category = trashCategory,
+            lastModified = item.deletedTimestamp,
+            extension = ext,
+            isDirectory = item.isDirectory,
+            onDismiss = { detailTrashItem = null }
         )
     }
 }

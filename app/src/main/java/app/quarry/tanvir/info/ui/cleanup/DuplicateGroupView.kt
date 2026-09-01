@@ -7,7 +7,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,8 +51,10 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.duplicates.DuplicateGroup
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.model.StorageItem
+import app.quarry.tanvir.info.ui.components.FileInfoDialog
 import app.quarry.tanvir.info.ui.components.FileThumbnail
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DuplicateGroupView(
     groups: List<DuplicateGroup>,
@@ -96,6 +100,7 @@ fun DuplicateGroupView(
                 // By default select all duplicates except the first (oldest/original) item
                 mutableStateOf(group.items.drop(1).map { it.path }.toSet())
             }
+            var detailItem by remember { mutableStateOf<StorageItem?>(null) }
 
             val selectedItems = group.items.filter { selectedPaths.contains(it.path) }
             val selectedBytes = selectedItems.size * group.size
@@ -260,12 +265,18 @@ fun DuplicateGroupView(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(8.dp))
-                                        .clickable {
-                                            haptics.selection()
-                                            val newSet = selectedPaths.toMutableSet()
-                                            if (newSet.contains(item.path)) newSet.remove(item.path) else newSet.add(item.path)
-                                            selectedPaths = newSet
-                                        }
+                                        .combinedClickable(
+                                            onClick = {
+                                                haptics.selection()
+                                                val newSet = selectedPaths.toMutableSet()
+                                                if (newSet.contains(item.path)) newSet.remove(item.path) else newSet.add(item.path)
+                                                selectedPaths = newSet
+                                            },
+                                            onLongClick = {
+                                                haptics.longPress()
+                                                detailItem = item
+                                            }
+                                        )
                                         .padding(vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -364,6 +375,20 @@ fun DuplicateGroupView(
                             }
                         }
                     }
+                }
+
+                // File Info Dialog (triggered by long-press)
+                detailItem?.let { item ->
+                    FileInfoDialog(
+                        name = item.name,
+                        path = item.path,
+                        size = item.size,
+                        category = item.category,
+                        lastModified = item.lastModified,
+                        extension = item.extension,
+                        isDirectory = item.isDirectory,
+                        onDismiss = { detailItem = null }
+                    )
                 }
             }
         }

@@ -2,8 +2,10 @@ package app.quarry.tanvir.info.ui.cleanup
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +44,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,12 +57,13 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.cleanup.CleanupCandidateGroup
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import app.quarry.tanvir.info.ui.components.FileInfoDialog
 import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CleanupCategoryDetailBottomSheet(
     group: CleanupCandidateGroup,
@@ -73,6 +80,7 @@ fun CleanupCategoryDetailBottomSheet(
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
     val selectedItems = group.items.filter { selectedPaths.contains(it.path) }
     val selectedBytes = selectedItems.sumOf { it.size }
+    var detailItem by remember { mutableStateOf<app.quarry.tanvir.info.domain.model.StorageItem?>(null) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -164,10 +172,16 @@ fun CleanupCategoryDetailBottomSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                haptics.selection()
-                                onToggleSelect(item.path)
-                            },
+                            .combinedClickable(
+                                onClick = {
+                                    haptics.selection()
+                                    onToggleSelect(item.path)
+                                },
+                                onLongClick = {
+                                    haptics.longPress()
+                                    detailItem = item
+                                }
+                            ),
                         shape = RoundedCornerShape(12.dp),
                         border = if (isSelected) {
                             BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
@@ -232,6 +246,20 @@ fun CleanupCategoryDetailBottomSheet(
                     }
                 }
             }
+        }
+
+        // File Info Dialog (triggered by long-press)
+        detailItem?.let { item ->
+            FileInfoDialog(
+                name = item.name,
+                path = item.path,
+                size = item.size,
+                category = item.category,
+                lastModified = item.lastModified,
+                extension = item.extension,
+                isDirectory = item.isDirectory,
+                onDismiss = { detailItem = null }
+            )
         }
 
             // Bottom Action Bar (Move to Trash + Clean)
