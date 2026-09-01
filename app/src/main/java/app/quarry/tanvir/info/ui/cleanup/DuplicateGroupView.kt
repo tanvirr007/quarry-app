@@ -220,13 +220,19 @@ fun DuplicateGroupView(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "${selectedItems.size} of ${group.items.size} copies selected",
+                                    text = "${selectedItems.size} of ${group.items.size} selected",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
                                 )
 
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     TextButton(
                                         onClick = {
                                             haptics.selection()
@@ -234,7 +240,12 @@ fun DuplicateGroupView(
                                         },
                                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
-                                        Text("Keep Original", style = MaterialTheme.typography.labelSmall)
+                                        Text(
+                                            text = "Keep Original",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
 
                                     TextButton(
@@ -249,8 +260,10 @@ fun DuplicateGroupView(
                                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
-                                            if (selectedPaths.size == group.items.size) "Deselect All" else "Select All",
-                                            style = MaterialTheme.typography.labelSmall
+                                            text = if (selectedPaths.size == group.items.size) "Deselect All" else "Select All",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
                                     }
                                 }

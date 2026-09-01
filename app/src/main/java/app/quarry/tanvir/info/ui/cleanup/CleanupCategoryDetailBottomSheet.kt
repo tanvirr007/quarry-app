@@ -132,7 +132,11 @@ fun CleanupCategoryDetailBottomSheet(
                         },
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text(if (selectedPaths.size == group.items.size) "Deselect All" else "Select All")
+                        Text(
+                            text = if (selectedPaths.size == group.items.size) "Deselect All" else "Select All",
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
