@@ -52,6 +52,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -109,10 +112,19 @@ fun CleanupScreen(
         }
     }
 
+    var isPullRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.isStorageScanning) {
+        if (!uiState.isStorageScanning) {
+            isPullRefreshing = false
+        }
+    }
+
     PullToRefreshBox(
-        isRefreshing = uiState.isStorageScanning,
+        isRefreshing = isPullRefreshing && uiState.isStorageScanning,
         onRefresh = {
             if (!uiState.isStorageScanning) {
+                isPullRefreshing = true
                 haptics.click()
                 viewModel.rescanStorage()
             }

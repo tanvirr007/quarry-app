@@ -107,10 +107,19 @@ fun HomeScreen(
         }
     }
 
+    var isPullRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.scanState) {
+        if (uiState.scanState !is ScanState.Scanning) {
+            isPullRefreshing = false
+        }
+    }
+
     PullToRefreshBox(
-        isRefreshing = uiState.scanState is ScanState.Scanning,
+        isRefreshing = isPullRefreshing && uiState.scanState is ScanState.Scanning,
         onRefresh = {
             if (uiState.hasStoragePermission && uiState.scanState !is ScanState.Scanning) {
+                isPullRefreshing = true
                 haptics.click()
                 viewModel.startScan()
             }
