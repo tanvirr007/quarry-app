@@ -78,7 +78,7 @@ import app.quarry.tanvir.info.ui.components.FileThumbnail
 import app.quarry.tanvir.info.ui.components.getColor
 import app.quarry.tanvir.info.ui.components.getIcon
 import app.quarry.tanvir.info.ui.components.rememberBlockNestedScrollConnection
-import app.quarry.tanvir.info.ui.explore.DeleteCountdownDialog
+import app.quarry.tanvir.info.ui.components.DeleteConfirmationDialog
 import app.quarry.tanvir.info.ui.explore.FileSortOrder
 import app.quarry.tanvir.info.ui.explore.FilterSortBottomSheet
 import java.text.SimpleDateFormat
@@ -509,7 +509,7 @@ fun HomeItemListBottomSheet(
 
     // Delete Confirmation Dialog
     deleteCandidates?.let { candidates ->
-        DeleteCountdownDialog(
+        DeleteConfirmationDialog(
             candidates = candidates,
             isBiometricAuthRequired = true,
             onDismiss = { deleteCandidates = null },

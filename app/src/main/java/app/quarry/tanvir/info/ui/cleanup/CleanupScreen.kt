@@ -67,7 +67,7 @@ import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.cleanup.CleanupCandidateGroup
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
-import app.quarry.tanvir.info.ui.explore.DeleteCountdownDialog
+import app.quarry.tanvir.info.ui.components.DeleteConfirmationDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -502,7 +502,7 @@ fun CleanupScreen(
             )
         }
 
-        DeleteCountdownDialog(
+        DeleteConfirmationDialog(
             candidates = fileEntities,
             isBiometricAuthRequired = uiState.isBiometricEnabled,
             onDismiss = { viewModel.dismissDeleteDialog() },

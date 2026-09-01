@@ -68,7 +68,7 @@ Quarry is designed to make understanding and managing your device storage simple
   - Identify and safely clean duplicate files with collapsible group sets and recoverable space badges.
   - Discover large files occupying significant storage.
   - Locate obsolete APK packages, empty directories, and orphaned caches.
-  - Fast Trash management with countdown confirmation and single-tap purge.
+  - Fast Trash management with confirmation and single-tap purge.
 - **Full-Screen Settings & Management**:
   - Appearance dialog with live theme preview cards (System, Light, Dark, Dynamic Material You).
   - Excluded Folders manager with preset chips and custom folder selection.

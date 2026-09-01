@@ -92,6 +92,7 @@ app/src/main/java/app/quarry/tanvir/info/
 - **State Collection**: Use `collectAsStateWithLifecycle()` when collecting flows in UI composables to stay lifecycle-aware.
 - **Material 3 Tokens**: Always use `MaterialTheme.colorScheme` and `MaterialTheme.typography` instead of hardcoded hex colors or direct text styling.
 - **Responsive Layout**: Support dynamic window sizing, edge-to-edge system insets (`WindowInsets`, `Scaffold` padding), and dark/light system adaptation.
+- **Shared Components**: Shared dialogs and widgets (e.g., `DeleteConfirmationDialog`, `FileThumbnail`, `QuarryCard`) reside under `ui/components/` to remain reusable across Home, Explore, and Cleanup.
 
 ### Asynchronous Operations & Coroutines
 - **Dispatchers**: Always offload disk I/O, file traversal, and database queries to `Dispatchers.IO`. Keep UI logic on `Dispatchers.Main`.

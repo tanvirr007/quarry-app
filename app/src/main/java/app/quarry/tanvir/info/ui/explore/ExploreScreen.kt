@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.ui.components.DeleteConfirmationDialog
 import app.quarry.tanvir.info.ui.home.HomeItemListBottomSheet
 
 private data class ExploreCategorySheetData(
@@ -532,9 +533,9 @@ fun ExploreScreen(
         )
     }
 
-    // 5-Second Delete Countdown Dialog
+    // Delete Confirmation Dialog
     if (uiState.isDeleteCountdownVisible && uiState.activeDeleteCandidates.isNotEmpty()) {
-        DeleteCountdownDialog(
+        DeleteConfirmationDialog(
             candidates = uiState.activeDeleteCandidates,
             isBiometricAuthRequired = uiState.isBiometricEnabled,
             onDismiss = { viewModel.dismissDeleteDialog() },

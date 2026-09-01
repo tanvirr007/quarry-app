@@ -1,4 +1,4 @@
-package app.quarry.tanvir.info.ui.explore
+package app.quarry.tanvir.info.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -35,11 +35,10 @@ import app.quarry.tanvir.info.domain.model.StorageFormatter
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.style.TextAlign
-import app.quarry.tanvir.info.ui.components.FileThumbnail
 import java.io.File
 
 @Composable
-fun DeleteCountdownDialog(
+fun DeleteConfirmationDialog(
     candidates: List<FileEntity>,
     isBiometricAuthRequired: Boolean = true,
     onDismiss: () -> Unit,
