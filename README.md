@@ -26,6 +26,20 @@
 
 ---
 
+## Why Choose Quarry?
+
+Quarry is designed to make understanding and managing your device storage simple, effortless, and private. Here is how it compares:
+
+| Other Storage Tools | Quarry |
+| :---: | :---: |
+| Inaccurate sizes on newer Android versions | **Accurate and fully optimized for Android 12–16** |
+| Tiny files are hard to see and tap | **Clear, easy-to-tap visual tiles with minimum size floors** |
+| Ads, background trackers, and network usage | **100% offline with zero ads and complete privacy** |
+| Complex menus and unnecessary booster gimmicks | **Simple, honest cleanup for duplicates and large files** |
+| Outdated or cluttered design | **Modern, smooth, and clean Material 3 experience** |
+
+---
+
 ## Screenshots
 
 | | |
