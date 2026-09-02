@@ -9,6 +9,7 @@
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2026.06.01-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Material 3](https://img.shields.io/badge/Material_3-M3-6750A4?style=flat-square&logo=materialdesign&logoColor=white)](https://m3.material.io)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](LICENSE)
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=tanvirr007.quarry-app)
 
 </div>
 
