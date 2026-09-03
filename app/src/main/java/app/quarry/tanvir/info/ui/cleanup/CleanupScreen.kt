@@ -50,6 +50,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,6 +65,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quarry.tanvir.info.data.database.FileEntity
@@ -84,6 +88,20 @@ fun CleanupScreen(
     val activity = context as? FragmentActivity
 
     val haptics = app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics.current
+
+    // Refresh permission status when activity resumes
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshPermissionState()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Prioritized Back handling: Delete Dialog -> Trash Dialog -> Candidate Group Sheet -> System (Home)
     val hasActiveCleanupOverlay = uiState.isDeleteCountdownVisible ||
@@ -123,7 +141,7 @@ fun CleanupScreen(
     PullToRefreshBox(
         isRefreshing = isPullRefreshing && uiState.isStorageScanning,
         onRefresh = {
-            if (!uiState.isStorageScanning) {
+            if (uiState.hasStoragePermission && !uiState.isStorageScanning) {
                 isPullRefreshing = true
                 haptics.click()
                 viewModel.rescanStorage()
@@ -353,7 +371,7 @@ fun CleanupScreen(
                                 haptics.click()
                                 viewModel.scanForDuplicates(forceStorageRescan = false)
                             },
-                            enabled = !uiState.isStorageScanning,
+                            enabled = uiState.hasStoragePermission && !uiState.isStorageScanning,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {
@@ -401,7 +419,7 @@ fun CleanupScreen(
                                     haptics.click()
                                     viewModel.scanForDuplicates(forceStorageRescan = true)
                                 },
-                                enabled = !uiState.isStorageScanning && uiState.duplicateScanState !is DuplicateScanState.Scanning,
+                                enabled = uiState.hasStoragePermission && !uiState.isStorageScanning && uiState.duplicateScanState !is DuplicateScanState.Scanning,
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text("Rescan")

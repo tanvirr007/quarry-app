@@ -19,6 +19,7 @@ import app.quarry.tanvir.info.domain.scanner.ScanProgress
 import app.quarry.tanvir.info.domain.scanner.ScanRepository
 import app.quarry.tanvir.info.domain.scanner.ScanState
 import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
+import app.quarry.tanvir.info.ui.home.checkHasStoragePermission
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,7 +53,8 @@ data class CleanupUiState(
     val activeDeleteItems: List<StorageItem> = emptyList(),
     val isDeleteCountdownVisible: Boolean = false,
     val isTrashDialogVisible: Boolean = false,
-    val userMessage: String? = null
+    val userMessage: String? = null,
+    val hasStoragePermission: Boolean = true
 )
 
 class CleanupViewModel(application: Application) : AndroidViewModel(application) {
@@ -65,6 +67,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     private val fileOps = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
 
+    private val _permissionState = MutableStateFlow(checkHasStoragePermission())
     private val _duplicateScanState = MutableStateFlow<DuplicateScanState>(DuplicateScanState.Idle)
     private val _duplicateGroups = MutableStateFlow<List<DuplicateGroup>>(emptyList())
     private val _candidateGroups = MutableStateFlow<List<CleanupCandidateGroup>>(emptyList())
@@ -84,7 +87,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     )
 
     val uiState: StateFlow<CleanupUiState> = combine(
-        combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems, prefsRepo.isBiometricAuthEnabled, repository.scanState) { args ->
+        combine(_duplicateScanState, _duplicateGroups, _candidateGroups, trashManager.trashItems, prefsRepo.isBiometricAuthEnabled, repository.scanState, _permissionState) { args ->
             val dupState = args[0] as DuplicateScanState
             @Suppress("UNCHECKED_CAST")
             val dupGroups = args[1] as List<DuplicateGroup>
@@ -94,6 +97,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
             val trash = args[3] as List<TrashItem>
             val biometric = args[4] as Boolean
             val repoScanState = args[5] as ScanState
+            val hasPermission = args[6] as Boolean
 
             val trashRecoverable = trash.sumOf { it.size }
             val dupRecoverable = dupGroups.sumOf { it.recoverableBytes }
@@ -108,7 +112,8 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
                 trashItems = trash,
                 isBiometricEnabled = biometric,
                 isStorageScanning = repoScanState is ScanState.Scanning,
-                storageScanProgress = (repoScanState as? ScanState.Scanning)?.progress
+                storageScanProgress = (repoScanState as? ScanState.Scanning)?.progress,
+                hasStoragePermission = hasPermission
             )
         },
         combine(_activeCandidateGroup, _selectedItemPaths, _activeDeleteItems, _isDeleteCountdownVisible, _isTrashDialogVisible) { group, paths, deleteItems, deleteVis, trashVis ->
@@ -147,6 +152,10 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun refreshPermissionState() {
+        _permissionState.value = checkHasStoragePermission()
+    }
+
     fun loadCandidates() {
         viewModelScope.launch(Dispatchers.IO) {
             val allFiles = repository.getAllFilesSync()
@@ -161,12 +170,20 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun rescanStorage() {
+        if (!checkHasStoragePermission()) {
+            _userMessage.value = "Storage permission is required to analyze files"
+            return
+        }
         if (repository.scanState.value !is ScanState.Scanning) {
             repository.startScan()
         }
     }
 
     fun scanForDuplicates(forceStorageRescan: Boolean = false) {
+        if (!checkHasStoragePermission()) {
+            _userMessage.value = "Storage permission is required to analyze files"
+            return
+        }
         if (_duplicateScanState.value is DuplicateScanState.Scanning) return
 
         viewModelScope.launch(Dispatchers.IO) {
