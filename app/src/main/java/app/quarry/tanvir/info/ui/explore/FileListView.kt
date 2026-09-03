@@ -152,23 +152,23 @@ fun FileListView(
                         )
                         Text(
                             text = if (file.isDirectory) {
-                                "${file.directChildrenCount} items · $dateStr"
+                                if (dateStr.isNotEmpty()) "${file.directChildrenCount} items · $dateStr" else "${file.directChildrenCount} items"
                             } else {
-                                "${StorageFormatter.formatBytes(file.size)} · $dateStr"
+                                if (dateStr.isNotEmpty()) dateStr else category.displayName
                             },
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    if (!file.isDirectory) {
-                        Text(
-                            text = StorageFormatter.formatBytes(file.size),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    Text(
+                        text = StorageFormatter.formatBytes(file.size),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (file.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }
