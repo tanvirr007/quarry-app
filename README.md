@@ -36,7 +36,7 @@
 **Quarry** is an offline storage analyzer and visual disk cleanup utility for Android devices.
 
 > [!NOTE]
-> Quarry is not a regular file manager app.
+> Quarry is not a dedicated file manager app.
 
 ---
 
@@ -72,7 +72,7 @@
 
 <br/>
 
-> [!TIP]
+> [!WARNING]
 > Always download official builds directly from the official [tanvirr007/quarry-app](https://github.com/tanvirr007/quarry-app/releases) releases.
 
 ---
@@ -179,17 +179,9 @@ Contributions and bug reports are welcome to make Quarry better.
 - **[Browse All Issues](https://github.com/tanvirr007/quarry-app/issues)**
 
 ### Reporting a Bug
-When reporting a bug via the [Bug Report form](https://github.com/tanvirr007/quarry-app/issues/new?template=bug_report.yml), please provide:
-- **Quarry Version**: The version number or build number from Settings > About (or "Latest release" if unsure).
-- **Device Details**: Device model, manufacturer, and Android OS version / custom ROM.
-- **Permission State**: Storage permission status (e.g. "All Files Access").
-- **Steps to Reproduce**: Clear, numbered step-by-step instructions.
-- **Observed vs. Expected**: What happened versus what you expected to happen.
-- **Log Files & Screenshots**: Drag-and-drop your `.log` files, crash stack traces, screenshots, or screen recordings directly into the issue form.
+- **Bug Reports**: Submit a [Bug Report](https://github.com/tanvirr007/quarry-app/issues/new?template=bug_report.yml) via the issue template and fill in the requested details.
 
-Before opening a new issue, please [search existing issues](https://github.com/tanvirr007/quarry-app/issues) to avoid duplicates.
-
-### Requesting Features
+### Requesting a Feature
 - **Feature Requests**: Submit a [Feature Request](https://github.com/tanvirr007/quarry-app/issues/new?template=feature_request.yml) describing your use case, proposed idea, and any mockups or alternatives.
 
 ---
