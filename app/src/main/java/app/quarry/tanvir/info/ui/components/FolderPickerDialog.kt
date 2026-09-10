@@ -99,12 +99,13 @@ fun FolderPickerDialog(
     QuarryFullScreenDialog(
         onDismissRequest = onDismiss
     ) {
+        val animatedDismiss = LocalAnimatedDismiss.current
         BackHandler {
             haptics.click()
             if (canGoUp) {
                 currentPath = currentDir.parentFile?.absolutePath ?: rootPath
             } else {
-                onDismiss()
+                animatedDismiss()
             }
         }
 
@@ -122,7 +123,7 @@ fun FolderPickerDialog(
                     navigationIcon = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,

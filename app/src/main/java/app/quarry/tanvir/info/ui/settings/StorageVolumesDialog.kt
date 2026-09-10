@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.quarry.tanvir.info.ui.components.LocalAnimatedDismiss
 import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import app.quarry.tanvir.info.domain.model.StorageFormatter
 import app.quarry.tanvir.info.domain.volume.StorageVolumeInfo
@@ -75,9 +76,10 @@ fun StorageVolumesDialog(
     QuarryFullScreenDialog(
         onDismissRequest = onDismiss
     ) {
+        val animatedDismiss = LocalAnimatedDismiss.current
         BackHandler(onBack = {
             haptics.click()
-            onDismiss()
+            animatedDismiss()
         })
 
         Scaffold(
@@ -94,7 +96,7 @@ fun StorageVolumesDialog(
                     navigationIcon = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,

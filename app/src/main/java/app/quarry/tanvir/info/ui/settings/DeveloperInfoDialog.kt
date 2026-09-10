@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.quarry.tanvir.info.R
+import app.quarry.tanvir.info.ui.components.LocalAnimatedDismiss
 import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import java.util.Calendar
 
@@ -103,9 +104,10 @@ fun DeveloperInfoDialog(
     QuarryFullScreenDialog(
         onDismissRequest = onDismiss
     ) {
+        val animatedDismiss = LocalAnimatedDismiss.current
         BackHandler(onBack = {
             haptics.click()
-            onDismiss()
+            animatedDismiss()
         })
 
         Scaffold(
@@ -122,7 +124,7 @@ fun DeveloperInfoDialog(
                     navigationIcon = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,

@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.quarry.tanvir.info.ui.components.LocalAnimatedDismiss
 import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import app.quarry.tanvir.info.ui.components.QuarryM3Slider
 import app.quarry.tanvir.info.domain.haptics.hapticStrengthLabel
@@ -83,9 +84,10 @@ fun MiscellaneousDialog(
     QuarryFullScreenDialog(
         onDismissRequest = onDismiss
     ) {
+        val animatedDismiss = LocalAnimatedDismiss.current
         BackHandler(onBack = {
             haptics.click()
-            onDismiss()
+            animatedDismiss()
         })
 
         Scaffold(
@@ -102,7 +104,7 @@ fun MiscellaneousDialog(
                     navigationIcon = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,

@@ -63,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.quarry.tanvir.info.ui.components.LocalAnimatedDismiss
 import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 
 private val COMMON_PRESETS = listOf(
@@ -111,9 +112,10 @@ fun ExclusionsDialog(
     QuarryFullScreenDialog(
         onDismissRequest = onDismiss
     ) {
+        val animatedDismiss = LocalAnimatedDismiss.current
         BackHandler(onBack = {
             haptics.click()
-            onDismiss()
+            animatedDismiss()
         })
 
         Scaffold(
@@ -130,7 +132,7 @@ fun ExclusionsDialog(
                     navigationIcon = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,

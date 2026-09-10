@@ -270,7 +270,8 @@ fun OnboardingDialog(
             dismissOnClickOutside = false,
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
-        )
+        ),
+        animated = false
     ) {
         OnboardingScreen(
             onCompleted = onCompleted

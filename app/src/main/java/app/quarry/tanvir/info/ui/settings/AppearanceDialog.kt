@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.isSystemInDarkTheme
+import app.quarry.tanvir.info.ui.components.LocalAnimatedDismiss
 import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 
@@ -80,9 +81,10 @@ fun AppearanceDialog(
         onDismissRequest = onDismiss,
         isDarkTheme = isDark
     ) {
+        val animatedDismiss = LocalAnimatedDismiss.current
         BackHandler(onBack = {
             haptics.click()
-            onDismiss()
+            animatedDismiss()
         })
 
         Scaffold(
@@ -99,7 +101,7 @@ fun AppearanceDialog(
                     navigationIcon = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,

@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.quarry.tanvir.info.ui.components.LocalAnimatedDismiss
 import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.ui.components.getColor
@@ -53,9 +54,10 @@ fun CategoryVisibilityDialog(
     QuarryFullScreenDialog(
         onDismissRequest = onDismiss
     ) {
+        val animatedDismiss = LocalAnimatedDismiss.current
         BackHandler(onBack = {
             haptics.click()
-            onDismiss()
+            animatedDismiss()
         })
         Scaffold(
             topBar = {
@@ -64,7 +66,7 @@ fun CategoryVisibilityDialog(
                     navigationIcon = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(Icons.Rounded.Close, contentDescription = "Close")
                         }
@@ -72,7 +74,7 @@ fun CategoryVisibilityDialog(
                     actions = {
                         IconButton(onClick = {
                             haptics.click()
-                            onDismiss()
+                            animatedDismiss()
                         }) {
                             Icon(Icons.Rounded.Check, contentDescription = "Done")
                         }
