@@ -66,12 +66,12 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.ui.components.QuarryFullScreenDialog
 
 private val COMMON_PRESETS = listOf(
-    "/Android/data",
-    "/Android/obb",
-    ".thumbnails",
     ".git",
-    ".cache",
     ".temp",
+    ".cache",
+    ".thumbnails",
+    "/Android/obb",
+    "/Android/data",
     "DCIM/.thumbnails"
 )
 
@@ -189,12 +189,12 @@ fun ExclusionsDialog(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Privacy & Scan Filters",
+                                text = "How It Works",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Excluded directories are completely bypassed during storage analysis and duplicate searches.",
+                                text = "Excluded directories are completely bypassed during storage analysis and duplicate searches",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -234,7 +234,7 @@ fun ExclusionsDialog(
                                 onValueChange = { inputPath = it },
                                 placeholder = {
                                     Text(
-                                        text = "e.g. /Android/data, .git, .cache",
+                                        text = "e.g. .git, .cache",
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         style = MaterialTheme.typography.bodySmall
