@@ -1,6 +1,6 @@
 package app.quarry.tanvir.info.ui.cleanup
 
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -125,7 +125,7 @@ fun CleanupScreen(
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            QuarryToast.show(context, msg)
             viewModel.clearUserMessage()
         }
     }

@@ -1,7 +1,7 @@
 package app.quarry.tanvir.info.ui.explore
 
 import android.os.Environment
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -120,7 +120,7 @@ fun ExploreScreen(
     // User Message Toast
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            QuarryToast.show(context, msg)
             viewModel.clearUserMessage()
         }
     }

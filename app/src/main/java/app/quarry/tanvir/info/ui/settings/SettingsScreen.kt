@@ -54,7 +54,7 @@ import app.quarry.tanvir.info.data.preferences.ThemeMode
 
 import android.content.pm.PackageManager
 import android.os.Build
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.activity.compose.BackHandler
 import androidx.fragment.app.FragmentActivity
 
@@ -111,7 +111,7 @@ fun SettingsScreen(
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            QuarryToast.show(context, msg)
             viewModel.clearUserMessage()
         }
     }

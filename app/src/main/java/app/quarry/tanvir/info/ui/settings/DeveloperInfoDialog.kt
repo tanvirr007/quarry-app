@@ -7,7 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -402,7 +402,7 @@ private fun openUrl(context: Context, url: String) {
         }
         context.startActivity(intent)
     } catch (e: Exception) {
-        Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show()
+        QuarryToast.show(context, "Unable to open link")
     }
 }
 
@@ -422,6 +422,6 @@ private fun copyToClipboard(context: Context, text: String, message: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
     val clip = ClipData.newPlainText("Quarry Developer Info", text)
     clipboard?.setPrimaryClip(clip)
-    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    QuarryToast.show(context, message)
 }
 

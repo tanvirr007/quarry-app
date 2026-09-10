@@ -39,7 +39,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.Sort
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -130,7 +130,7 @@ fun AppManagerBottomSheet(
     val context = LocalContext.current
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            QuarryToast.show(context, it)
             viewModel.clearUserMessage()
         }
     }

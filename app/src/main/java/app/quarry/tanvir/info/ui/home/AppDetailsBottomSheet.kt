@@ -3,7 +3,7 @@ package app.quarry.tanvir.info.ui.home
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -158,7 +158,7 @@ fun AppDetailsBottomSheet(
                         haptics.click()
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                         clipboard?.setPrimaryClip(ClipData.newPlainText("Package Name", app.packageName))
-                        Toast.makeText(context, "Package name copied", Toast.LENGTH_SHORT).show()
+                        QuarryToast.show(context, "Package name copied")
                     }
                 ) {
                     Icon(

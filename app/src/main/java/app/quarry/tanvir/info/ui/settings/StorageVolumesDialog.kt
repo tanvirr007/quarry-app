@@ -3,7 +3,7 @@ package app.quarry.tanvir.info.ui.settings
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -310,7 +310,7 @@ fun StorageVolumesDialog(
                                         haptics.click()
                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                                         clipboard?.setPrimaryClip(ClipData.newPlainText("Volume Path", volume.path))
-                                        Toast.makeText(context, "Path copied to clipboard", Toast.LENGTH_SHORT).show()
+                                        QuarryToast.show(context, "Path copied to clipboard")
                                     }
                                     .padding(horizontal = 10.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,

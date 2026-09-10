@@ -7,7 +7,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.webkit.MimeTypeMap
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.core.content.FileProvider
 import app.quarry.tanvir.info.data.database.FileEntity
 import app.quarry.tanvir.info.domain.model.StorageCategory
@@ -219,7 +219,7 @@ class FileOperationsManager(
 
     private fun showToast(message: String) {
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            QuarryToast.show(context, message)
         }
     }
 

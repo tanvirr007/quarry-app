@@ -3,7 +3,7 @@ package app.quarry.tanvir.info.ui.components
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
+import app.quarry.tanvir.info.ui.components.QuarryToast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -138,7 +138,7 @@ fun FileInfoDialog(
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     val clip = ClipData.newPlainText("File Path", path)
                                     clipboard.setPrimaryClip(clip)
-                                    Toast.makeText(context, "Path copied to clipboard", Toast.LENGTH_SHORT).show()
+                                    QuarryToast.show(context, "Path copied to clipboard")
                                 },
                                 modifier = Modifier.size(28.dp)
                             ) {
