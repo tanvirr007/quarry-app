@@ -1,11 +1,7 @@
 package app.quarry.tanvir.info.ui.home
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -137,132 +133,122 @@ fun StorageOverviewCard(
                     }
                 }
 
-                AnimatedContent(
-                    targetState = isMultiVolume,
-                    transitionSpec = {
-                        fadeIn(tween(300)) togetherWith fadeOut(tween(200))
-                    },
-                    label = "volumeSelectorTransition"
-                ) { multiVolume ->
-                    if (multiVolume) {
-                        // Multi-volume selector pill
-                        Box {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                    .clickable {
+                // Right side: storage usage % and action chevron / volume switcher
+                Box {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .then(
+                                if (isMultiVolume) {
+                                    Modifier.clickable {
                                         haptics.click()
                                         dropdownExpanded = true
                                     }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                                } else if (onClick != null) {
+                                    Modifier.clickable {
+                                        haptics.click()
+                                        onClick()
+                                    }
+                                } else Modifier
+                            )
+                            .padding(2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "${(usedPercentageAnim * 100).toInt()}% used",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        if (isMultiVolume) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .padding(2.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = volumeIcon,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = selectedVolume?.name ?: overview.volumeName,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    maxLines = 1
-                                )
                                 Icon(
                                     imageVector = Icons.Rounded.ArrowDropDown,
                                     contentDescription = "Switch storage volume",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = dropdownExpanded,
-                                onDismissRequest = { dropdownExpanded = false }
-                            ) {
-                                availableVolumes.forEach { vol ->
-                                    val isSelected = vol.id == selectedVolume?.id
-                                    val itemIcon = when (vol.deviceType) {
-                                        StorageDeviceType.SD_CARD -> Icons.Rounded.SdCard
-                                        StorageDeviceType.USB_OTG -> Icons.Rounded.Usb
-                                        else -> Icons.Rounded.Smartphone
-                                    }
-
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(
-                                                    text = vol.name,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                                Text(
-                                                    text = if (vol.totalBytes > 0) {
-                                                        "${StorageFormatter.formatBytes(vol.freeBytes)} free of ${StorageFormatter.formatBytes(vol.totalBytes)}"
-                                                    } else {
-                                                        "Storage Access Framework"
-                                                    },
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = itemIcon,
-                                                contentDescription = null,
-                                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        },
-                                        trailingIcon = if (isSelected) {
-                                            {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                        } else null,
-                                        onClick = {
-                                            haptics.click()
-                                            dropdownExpanded = false
-                                            onSelectVolume?.invoke(vol)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        // Single volume detected: standard "x% used >" chip
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "${(usedPercentageAnim * 100).toInt()}% used",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            if (onClick != null) {
-                                Icon(
-                                    imageVector = Icons.Rounded.ChevronRight,
-                                    contentDescription = "Explore files",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        } else if (onClick != null) {
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = "Explore files",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    if (isMultiVolume) {
+                        DropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false }
+                        ) {
+                            availableVolumes.forEach { vol ->
+                                val isSelected = vol.id == selectedVolume?.id
+                                val itemIcon = when (vol.deviceType) {
+                                    StorageDeviceType.SD_CARD -> Icons.Rounded.SdCard
+                                    StorageDeviceType.USB_OTG -> Icons.Rounded.Usb
+                                    else -> Icons.Rounded.Smartphone
+                                }
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                text = vol.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                            Text(
+                                                text = if (vol.totalBytes > 0) {
+                                                    "${StorageFormatter.formatBytes(vol.freeBytes)} free of ${StorageFormatter.formatBytes(vol.totalBytes)}"
+                                                } else {
+                                                    "Storage Access Framework"
+                                                },
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = itemIcon,
+                                            contentDescription = null,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    },
+                                    trailingIcon = if (isSelected) {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Check,
+                                                contentDescription = "Selected",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    } else null,
+                                    onClick = {
+                                        haptics.click()
+                                        dropdownExpanded = false
+                                        onSelectVolume?.invoke(vol)
+                                    }
                                 )
                             }
                         }
