@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.StorageOverviewData
 import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
@@ -100,6 +101,7 @@ fun StorageOverviewCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
+                    modifier = Modifier.weight(1f, fill = false),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -121,80 +123,44 @@ fun StorageOverviewCard(
                         Text(
                             text = overview.volumeName,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        if (overview.totalFiles > 0) {
-                            Text(
-                                text = StorageFormatter.formatFileCount(overview.totalFiles),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = if (overview.totalFiles > 0) {
+                                StorageFormatter.formatFileCount(overview.totalFiles)
+                            } else {
+                                "0 files"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
-                // Right side: storage usage % and action chevron / volume switcher
-                Box {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .then(
-                                if (isMultiVolume) {
-                                    Modifier.clickable {
-                                        haptics.click()
-                                        dropdownExpanded = true
-                                    }
-                                } else if (onClick != null) {
-                                    Modifier.clickable {
-                                        haptics.click()
-                                        onClick()
-                                    }
-                                } else Modifier
-                            )
-                            .padding(2.dp)
-                    ) {
+                // Right side: storage usage % (single volume) or dropdown icon button (multi-volume)
+                if (isMultiVolume) {
+                    Box {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .size(36.dp)
+                                .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                .clickable {
+                                    haptics.click()
+                                    dropdownExpanded = true
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "${(usedPercentageAnim * 100).toInt()}% used",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        if (isMultiVolume) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                    .padding(2.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.ArrowDropDown,
-                                    contentDescription = "Switch storage volume",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        } else if (onClick != null) {
                             Icon(
-                                imageVector = Icons.Rounded.ChevronRight,
-                                contentDescription = "Explore files",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.size(20.dp)
+                                imageVector = Icons.Rounded.ArrowDropDown,
+                                contentDescription = "Switch storage volume",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
-                    }
 
-                    if (isMultiVolume) {
                         DropdownMenu(
                             expanded = dropdownExpanded,
                             onDismissRequest = { dropdownExpanded = false }
@@ -251,6 +217,44 @@ fun StorageOverviewCard(
                                     }
                                 )
                             }
+                        }
+                    }
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .then(
+                                if (onClick != null) {
+                                    Modifier.clickable {
+                                        haptics.click()
+                                        onClick()
+                                    }
+                                } else Modifier
+                            )
+                            .padding(2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "${(usedPercentageAnim * 100).toInt()}% used",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        if (onClick != null) {
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = "Explore files",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
                 }
