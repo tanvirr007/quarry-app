@@ -140,9 +140,9 @@ object StorageAnalyzer {
             val diff = latest.usedBytes - previous.usedBytes
             val formattedDiff = app.quarry.tanvir.info.domain.model.StorageFormatter.formatBytes(Math.abs(diff))
             growthText = if (diff > 0) {
-                "+$formattedDiff since last scan"
+                "$formattedDiff added since last scan"
             } else if (diff < 0) {
-                "-$formattedDiff since last scan"
+                "$formattedDiff freed since last scan"
             } else {
                 "No change since last scan"
             }

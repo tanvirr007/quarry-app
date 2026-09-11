@@ -23,7 +23,6 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.SdCard
 import androidx.compose.material.icons.rounded.Smartphone
-import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -297,24 +296,13 @@ fun StorageOverviewCard(
 
             // Storage Growth Indicator
             if (overview.storageGrowthText != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                Text(
+                    text = overview.storageGrowthText,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 2.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.TrendingUp,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = overview.storageGrowthText,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                )
             }
         }
     }
