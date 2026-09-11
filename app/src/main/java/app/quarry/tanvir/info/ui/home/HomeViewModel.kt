@@ -231,6 +231,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     init {
+        viewModelScope.launch {
+            prefsRepo.selectedVolumeId.collect { volId ->
+                val detected = _availableVolumes.value.ifEmpty { volumeManager.getDetectedVolumes() }
+                val match = detected.find { it.id == volId } ?: detected.find { it.isPrimary } ?: detected.firstOrNull()
+                if (match != null && _selectedVolume.value?.id != match.id) {
+                    _selectedVolume.value = match
+                }
+            }
+        }
         refreshVolumes()
         checkAndTriggerInitialScan()
         loadAppsInfo()
@@ -255,6 +264,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _selectedVolume.value = volume
             prefsRepo.setSelectedVolumeId(volume.id)
+            _activeSheetData.value = null
+            _selectedDetailFile.value = null
+
+            // If this volume has not been indexed yet, immediately trigger initial scan
+            val totalFiles = repository.getTotalFileCount(volume.id).first()
+            if (totalFiles == 0L && repository.scanState.value is ScanState.Idle && checkHasStoragePermission()) {
+                startScan()
+            }
         }
     }
 

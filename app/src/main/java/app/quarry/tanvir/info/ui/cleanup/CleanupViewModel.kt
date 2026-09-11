@@ -142,6 +142,15 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
+            prefsRepo.selectedVolumeId.collect {
+                // Immediately reset duplicate scan results and active group states when switching storage
+                _duplicateGroups.value = emptyList()
+                _duplicateScanState.value = DuplicateScanState.Idle
+                _activeCandidateGroup.value = null
+                _selectedItemPaths.value = emptySet()
+            }
+        }
+        viewModelScope.launch(Dispatchers.IO) {
             prefsRepo.selectedVolumeId.flatMapLatest { volId ->
                 combine(
                     repository.getAllFiles(volId),

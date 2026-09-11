@@ -133,9 +133,19 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                 val detected = volumeManager.getDetectedVolumes()
                 val vol = detected.find { it.id == volId } ?: detected.find { it.isPrimary } ?: detected.firstOrNull()
                 if (vol != null) {
+                    val isNewVolume = _activeVolume.value?.id != vol.id
                     _activeVolume.value = vol
                     _rootPath.value = vol.path
                     _currentPath.value = vol.path
+                    if (isNewVolume) {
+                        _selectedPaths.value = emptySet()
+                        _activeDetailsFile.value = null
+                        _activeRenameFile.value = null
+                        _activeDeleteCandidates.value = emptyList()
+                        _isDeleteCountdownVisible.value = false
+                        _searchQuery.value = ""
+                        _selectedCategory.value = null
+                    }
                 }
             }
         }
