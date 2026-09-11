@@ -67,7 +67,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ScanRepository.getInstance(application)
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
-    private val volumeManager = StorageVolumeManager(application)
+    private val volumeManager = StorageVolumeManager.getInstance(application)
     private val fileOperationsManager = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
     private val appManager = AppManager(application)
@@ -231,6 +231,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     init {
+        viewModelScope.launch {
+            volumeManager.observeVolumeChanges().collect { detected ->
+                _availableVolumes.value = detected
+                val currentSelectedId = _selectedVolume.value?.id
+                    ?: try { prefsRepo.selectedVolumeId.first() } catch (_: Exception) { "internal_storage" }
+                val match = detected.find { it.id == currentSelectedId }
+                if (match != null) {
+                    if (_selectedVolume.value?.id != match.id) {
+                        _selectedVolume.value = match
+                    }
+                } else {
+                    // Selected volume is no longer detected (ejected/unplugged)
+                    val fallback = detected.find { it.isPrimary } ?: detected.firstOrNull()
+                    if (fallback != null) {
+                        _selectedVolume.value = fallback
+                        prefsRepo.setSelectedVolumeId(fallback.id)
+                    }
+                }
+            }
+        }
         viewModelScope.launch {
             prefsRepo.selectedVolumeId.collect { volId ->
                 val detected = _availableVolumes.value.ifEmpty { volumeManager.getDetectedVolumes() }

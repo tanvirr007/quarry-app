@@ -5,9 +5,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.quarry.tanvir.info.data.preferences.ThemeMode
 import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
+import app.quarry.tanvir.info.domain.volume.StorageVolumeManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -25,6 +27,22 @@ sealed interface MainUiState {
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
+    private val volumeManager = StorageVolumeManager.getInstance(application)
+
+    init {
+        viewModelScope.launch {
+            volumeManager.observeVolumeChanges().collect { volumes ->
+                val currentSelectedId = try { prefsRepo.selectedVolumeId.first() } catch (_: Exception) { "internal_storage" }
+                val stillExists = volumes.any { it.id == currentSelectedId }
+                if (!stillExists) {
+                    val fallback = volumes.find { it.isPrimary } ?: volumes.firstOrNull()
+                    if (fallback != null) {
+                        prefsRepo.setSelectedVolumeId(fallback.id)
+                    }
+                }
+            }
+        }
+    }
 
     val uiState: StateFlow<MainUiState> = combine(
         prefsRepo.isOnboardingCompleted,

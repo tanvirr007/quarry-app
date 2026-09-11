@@ -43,7 +43,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
     private val repository = ScanRepository.getInstance(application)
-    private val volumeManager = StorageVolumeManager(application)
+    private val volumeManager = StorageVolumeManager.getInstance(application)
     private val securityManager = BiometricSecurityManager(application)
 
     private val _detectedVolumes = MutableStateFlow<List<StorageVolumeInfo>>(emptyList())
@@ -115,6 +115,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     init {
         loadVolumes()
+        viewModelScope.launch {
+            volumeManager.observeVolumeChanges().collect {
+                _detectedVolumes.value = it
+            }
+        }
     }
 
     fun loadVolumes() {

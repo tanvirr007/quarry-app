@@ -65,7 +65,7 @@ class CleanupViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository = ScanRepository.getInstance(application)
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
-    private val volumeManager = StorageVolumeManager(application)
+    private val volumeManager = StorageVolumeManager.getInstance(application)
     private val duplicateDetector = FastDuplicateDetector()
     private val cleanupEngine = DefaultCleanupEngine(duplicateDetector)
     private val trashManager = TrashManager.getInstance(application, repository)

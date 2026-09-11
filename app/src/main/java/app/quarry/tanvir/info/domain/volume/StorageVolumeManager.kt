@@ -1,10 +1,20 @@
 package app.quarry.tanvir.info.domain.volume
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.Environment
 import android.os.storage.StorageManager
+import android.os.storage.StorageVolume
+import androidx.core.content.ContextCompat
 import app.quarry.tanvir.info.data.filesystem.FastStorageScanner
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import java.io.File
 
 enum class VolumeAccessMode(val title: String) {
@@ -38,6 +48,17 @@ data class StorageVolumeInfo(
 
 class StorageVolumeManager(private val context: Context) {
 
+    companion object {
+        @Volatile
+        private var INSTANCE: StorageVolumeManager? = null
+
+        fun getInstance(context: Context): StorageVolumeManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: StorageVolumeManager(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
+
     fun getDetectedVolumes(): List<StorageVolumeInfo> {
         val volumeList = mutableListOf<StorageVolumeInfo>()
         val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as? StorageManager
@@ -67,6 +88,11 @@ class StorageVolumeManager(private val context: Context) {
                     resolveAccessibleDirectory(vol.uuid)
                 }
 
+                // If non-primary volume directory doesn't exist or is null, it is unmounted/unplugged
+                if (!isPrimary && (dir == null || !dir.exists())) {
+                    continue
+                }
+
                 val total: Long
                 val free: Long
                 val used: Long
@@ -88,6 +114,11 @@ class StorageVolumeManager(private val context: Context) {
                     free = 0L
                     used = 0L
                     isDirectAccess = false
+                }
+
+                // If non-primary volume reports 0 bytes total, it is not an active mounted volume
+                if (!isPrimary && total <= 0L) {
+                    continue
                 }
 
                 val accessMode = if (isDirectAccess) {
@@ -220,5 +251,101 @@ class StorageVolumeManager(private val context: Context) {
         // Return the standard FUSE path for display even if not readable,
         // so the UI shows a meaningful path instead of a generated ID.
         return if (storagePath.exists()) storagePath else rawPath.takeIf { it.exists() }
+    }
+
+    /**
+     * Emits the list of currently detected volumes and actively monitors media state changes,
+     * StorageManager callbacks, USB device attach/detach broadcasts, and periodic sanity checks.
+     * When an external drive is unplugged or connected while the user is actively on any screen,
+     * this flow immediately emits the refreshed volume list.
+     */
+    fun observeVolumeChanges(): Flow<List<StorageVolumeInfo>> = callbackFlow {
+        // Emit current volumes immediately upon collection
+        trySend(getDetectedVolumes())
+
+        val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as? StorageManager
+        var volumeCallback: StorageManager.StorageVolumeCallback? = null
+
+        if (storageManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val cb = object : StorageManager.StorageVolumeCallback() {
+                override fun onStateChanged(volume: StorageVolume) {
+                    trySend(getDetectedVolumes())
+                }
+            }
+            try {
+                storageManager.registerStorageVolumeCallback(context.mainExecutor, cb)
+                volumeCallback = cb
+            } catch (_: Exception) {}
+        }
+
+        val mediaReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                trySend(getDetectedVolumes())
+            }
+        }
+
+        val usbReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                trySend(getDetectedVolumes())
+            }
+        }
+
+        val mediaFilter = IntentFilter().apply {
+            addAction(Intent.ACTION_MEDIA_MOUNTED)
+            addAction(Intent.ACTION_MEDIA_UNMOUNTED)
+            addAction(Intent.ACTION_MEDIA_EJECT)
+            addAction(Intent.ACTION_MEDIA_REMOVED)
+            addAction(Intent.ACTION_MEDIA_BAD_REMOVAL)
+            addAction(Intent.ACTION_MEDIA_CHECKING)
+            addAction(Intent.ACTION_MEDIA_SHARED)
+            addDataScheme("file")
+        }
+
+        val usbFilter = IntentFilter().apply {
+            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
+
+        try {
+            ContextCompat.registerReceiver(
+                context,
+                mediaReceiver,
+                mediaFilter,
+                ContextCompat.RECEIVER_EXPORTED
+            )
+        } catch (_: Exception) {
+            try {
+                context.registerReceiver(mediaReceiver, mediaFilter)
+            } catch (_: Exception) {}
+        }
+
+        try {
+            ContextCompat.registerReceiver(
+                context,
+                usbReceiver,
+                usbFilter,
+                ContextCompat.RECEIVER_EXPORTED
+            )
+        } catch (_: Exception) {
+            try {
+                context.registerReceiver(usbReceiver, usbFilter)
+            } catch (_: Exception) {}
+        }
+
+        awaitClose {
+            if (storageManager != null && volumeCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                try {
+                    storageManager.unregisterStorageVolumeCallback(volumeCallback)
+                } catch (_: Exception) {}
+            }
+            try {
+                context.unregisterReceiver(mediaReceiver)
+            } catch (_: Exception) {}
+            try {
+                context.unregisterReceiver(usbReceiver)
+            } catch (_: Exception) {}
+        }
+    }.distinctUntilChanged { old, new ->
+        old.size == new.size && old.zip(new).all { (a, b) -> a.id == b.id && a.path == b.path }
     }
 }

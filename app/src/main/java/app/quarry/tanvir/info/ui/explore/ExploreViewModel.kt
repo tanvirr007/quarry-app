@@ -107,7 +107,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository = ScanRepository.getInstance(application)
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
-    private val volumeManager = StorageVolumeManager(application)
+    private val volumeManager = StorageVolumeManager.getInstance(application)
     private val fileOps = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
 
