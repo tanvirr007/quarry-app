@@ -669,6 +669,7 @@ private enum class SortCriterion(
             FileSortOrder.SIZE_DESC, FileSortOrder.SIZE_ASC -> SIZE
             FileSortOrder.NAME_ASC, FileSortOrder.NAME_DESC -> NAME
             FileSortOrder.DATE_DESC, FileSortOrder.DATE_ASC -> DATE
+            FileSortOrder.TYPE -> NAME
         }
     }
 }

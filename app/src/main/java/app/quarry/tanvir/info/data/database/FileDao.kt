@@ -126,4 +126,75 @@ interface FileDao {
             insertBatch(chunk)
         }
     }
+
+    @Query("DELETE FROM files WHERE volumeId = :volumeId")
+    suspend fun clearForVolume(volumeId: String)
+
+    @Transaction
+    suspend fun replaceFilesForVolume(volumeId: String, files: List<FileEntity>) {
+        clearForVolume(volumeId)
+        files.chunked(500).forEach { chunk ->
+            insertBatch(chunk)
+        }
+    }
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId")
+    fun getAllFiles(volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId")
+    suspend fun getAllFilesSync(volumeId: String): List<FileEntity>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND isDirectory = 0")
+    fun getAllNonDirectoryFiles(volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND isDirectory = 0")
+    suspend fun getAllNonDirectoryFilesSync(volumeId: String): List<FileEntity>
+
+    @Query("SELECT COUNT(*) FROM files WHERE volumeId = :volumeId AND isDirectory = 0")
+    fun getTotalFileCount(volumeId: String): Flow<Long>
+
+    @Query("SELECT SUM(size) FROM files WHERE volumeId = :volumeId AND isDirectory = 0")
+    fun getTotalScannedBytes(volumeId: String): Flow<Long?>
+
+    @Query("SELECT category, SUM(size) AS totalBytes, COUNT(*) AS fileCount FROM files WHERE volumeId = :volumeId AND isDirectory = 0 GROUP BY category")
+    fun getCategoryStats(volumeId: String): Flow<List<CategoryStat>>
+
+    @Query("SELECT category, SUM(size) AS totalBytes, COUNT(*) AS fileCount FROM files WHERE volumeId = :volumeId AND isDirectory = 0 GROUP BY category")
+    suspend fun getCategoryStatsSync(volumeId: String): List<CategoryStat>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND parentPath = :parentPath ORDER BY isDirectory DESC, size DESC")
+    fun getChildren(parentPath: String, volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND parentPath = :parentPath ORDER BY isDirectory DESC, size DESC")
+    suspend fun getChildrenSync(parentPath: String, volumeId: String): List<FileEntity>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND isDirectory = 0 ORDER BY size DESC LIMIT :limit")
+    fun getLargestFiles(limit: Int, volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND category = :category AND isDirectory = 0 ORDER BY size DESC")
+    fun getFilesByCategory(category: String, volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND (name LIKE '%' || :query || '%' OR path LIKE '%' || :query || '%') ORDER BY isDirectory DESC, size DESC LIMIT 200")
+    fun searchFiles(query: String, volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND isScreenshot = 1 AND isDirectory = 0 ORDER BY lastModified DESC")
+    fun getScreenshots(volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND isDownload = 1 AND isDirectory = 0 ORDER BY lastModified DESC")
+    fun getDownloads(volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND category = 'APKS' AND isDirectory = 0 ORDER BY size DESC")
+    fun getApkFiles(volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND size >= :minSizeBytes AND isDirectory = 0 ORDER BY size DESC")
+    fun getLargeFiles(minSizeBytes: Long, volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND lastModified <= :beforeTimestamp AND isDirectory = 0 ORDER BY lastModified ASC")
+    fun getOldFiles(beforeTimestamp: Long, volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND isDirectory = 1 AND directChildrenCount = 0")
+    fun getEmptyFolders(volumeId: String): Flow<List<FileEntity>>
+
+    @Query("SELECT * FROM files WHERE volumeId = :volumeId AND size IN (SELECT size FROM files WHERE volumeId = :volumeId AND isDirectory = 0 GROUP BY size HAVING COUNT(*) > 1) AND isDirectory = 0 ORDER BY size DESC")
+    suspend fun getPotentialDuplicateSizeCandidates(volumeId: String): List<FileEntity>
 }

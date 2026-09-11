@@ -42,6 +42,11 @@ class ScanRepository(
     val latestSnapshot: Flow<ScanSnapshotEntity?> = database.scanSnapshotDao().getLatestSnapshot()
     val allSnapshots: Flow<List<ScanSnapshotEntity>> = database.scanSnapshotDao().getAllSnapshots()
 
+    fun getCategoryStats(volumeId: String): Flow<List<CategoryStat>> = database.fileDao().getCategoryStats(volumeId)
+    fun getTotalFileCount(volumeId: String): Flow<Long> = database.fileDao().getTotalFileCount(volumeId)
+    fun getTotalScannedBytes(volumeId: String): Flow<Long?> = database.fileDao().getTotalScannedBytes(volumeId)
+    fun getSnapshotsForVolume(volumePath: String): Flow<List<ScanSnapshotEntity>> = database.scanSnapshotDao().getSnapshotsForVolume(volumePath)
+
     fun getAllFiles(): Flow<List<FileEntity>> = database.fileDao().getAllFiles()
     suspend fun getAllFilesSync(): List<FileEntity> = database.fileDao().getAllFilesSync()
     fun getAllNonDirectoryFiles(): Flow<List<FileEntity>> = database.fileDao().getAllNonDirectoryFiles()
@@ -57,7 +62,27 @@ class ScanRepository(
     fun getOldFiles(beforeTimestamp: Long): Flow<List<FileEntity>> = database.fileDao().getOldFiles(beforeTimestamp)
     fun getEmptyFolders(): Flow<List<FileEntity>> = database.fileDao().getEmptyFolders()
 
-    fun startScan(rootDirectory: File = Environment.getExternalStorageDirectory()) {
+    fun getAllFiles(volumeId: String): Flow<List<FileEntity>> = database.fileDao().getAllFiles(volumeId)
+    suspend fun getAllFilesSync(volumeId: String): List<FileEntity> = database.fileDao().getAllFilesSync(volumeId)
+    fun getAllNonDirectoryFiles(volumeId: String): Flow<List<FileEntity>> = database.fileDao().getAllNonDirectoryFiles(volumeId)
+    suspend fun getAllNonDirectoryFilesSync(volumeId: String): List<FileEntity> = database.fileDao().getAllNonDirectoryFilesSync(volumeId)
+    fun getChildren(parentPath: String, volumeId: String): Flow<List<FileEntity>> = database.fileDao().getChildren(parentPath, volumeId)
+    fun getFilesByCategory(category: String, volumeId: String): Flow<List<FileEntity>> = database.fileDao().getFilesByCategory(category, volumeId)
+    fun getLargestFiles(limit: Int = 100, volumeId: String): Flow<List<FileEntity>> = database.fileDao().getLargestFiles(limit, volumeId)
+    fun searchFiles(query: String, volumeId: String): Flow<List<FileEntity>> = database.fileDao().searchFiles(query, volumeId)
+    fun getScreenshots(volumeId: String): Flow<List<FileEntity>> = database.fileDao().getScreenshots(volumeId)
+    fun getDownloads(volumeId: String): Flow<List<FileEntity>> = database.fileDao().getDownloads(volumeId)
+    fun getApkFiles(volumeId: String): Flow<List<FileEntity>> = database.fileDao().getApkFiles(volumeId)
+    fun getLargeFiles(minSizeBytes: Long = 50 * 1024 * 1024L, volumeId: String): Flow<List<FileEntity>> = database.fileDao().getLargeFiles(minSizeBytes, volumeId)
+    fun getOldFiles(beforeTimestamp: Long, volumeId: String): Flow<List<FileEntity>> = database.fileDao().getOldFiles(beforeTimestamp, volumeId)
+    fun getEmptyFolders(volumeId: String): Flow<List<FileEntity>> = database.fileDao().getEmptyFolders(volumeId)
+    suspend fun getPotentialDuplicateSizeCandidates(volumeId: String): List<FileEntity> = database.fileDao().getPotentialDuplicateSizeCandidates(volumeId)
+
+    fun startScan(
+        rootDirectory: File = Environment.getExternalStorageDirectory(),
+        volumeId: String = "internal_storage",
+        volumeName: String = "Internal Storage"
+    ) {
         if (_scanState.value is ScanState.Scanning) return
 
         scanJob?.cancel()
@@ -73,6 +98,8 @@ class ScanRepository(
 
                 scanner.scanStorage(
                     rootDirectory = rootDirectory,
+                    volumeId = volumeId,
+                    volumeName = volumeName,
                     estimatedTotalBytes = estimatedTotalBytes,
                     includeHiddenFiles = scanHidden,
                     excludedPaths = excluded
@@ -82,11 +109,11 @@ class ScanRepository(
                             _scanState.value = ScanState.Scanning(update.progress)
                         }
                         is ScanProgressUpdate.Finished -> {
-                            // Persist to Room
-                            database.fileDao().replaceAllFiles(update.result.files)
+                            // Persist to Room for this volume
+                            database.fileDao().replaceFilesForVolume(volumeId, update.result.files)
 
                             // Save Snapshot
-                            val stats = database.fileDao().getCategoryStatsSync()
+                            val stats = database.fileDao().getCategoryStatsSync(volumeId)
                             val statsMap = stats.associate { it.category to it.totalBytes }
 
                             val totalDevice = FastStorageScanner.getTotalStorageBytes(rootDirectory)
@@ -95,7 +122,7 @@ class ScanRepository(
 
                             val snapshot = ScanSnapshotEntity(
                                 volumePath = rootDirectory.absolutePath,
-                                volumeName = "Internal Storage",
+                                volumeName = volumeName,
                                 totalDeviceBytes = totalDevice,
                                 usedBytes = usedDevice,
                                 freeBytes = freeDevice,

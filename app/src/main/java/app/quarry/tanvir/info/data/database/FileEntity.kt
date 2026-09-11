@@ -8,6 +8,8 @@ import androidx.room.PrimaryKey
     tableName = "files",
     indices = [
         Index(value = ["path"], unique = true),
+        Index(value = ["volumeId"]),
+        Index(value = ["volumeId", "isDirectory"]),
         Index(value = ["parentPath"]),
         Index(value = ["category"]),
         Index(value = ["size"]),
@@ -19,6 +21,7 @@ import androidx.room.PrimaryKey
 data class FileEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val volumeId: String = "internal_storage",
     val path: String,
     val name: String,
     val size: Long,

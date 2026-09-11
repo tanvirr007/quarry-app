@@ -38,6 +38,12 @@ interface ScanSnapshotDao {
     @Query("SELECT * FROM scan_snapshots ORDER BY timestamp DESC")
     fun getAllSnapshots(): Flow<List<ScanSnapshotEntity>>
 
+    @Query("SELECT * FROM scan_snapshots WHERE volumePath = :volumePath ORDER BY timestamp DESC")
+    fun getSnapshotsForVolume(volumePath: String): Flow<List<ScanSnapshotEntity>>
+
+    @Query("SELECT * FROM scan_snapshots WHERE volumePath = :volumePath ORDER BY timestamp DESC")
+    suspend fun getSnapshotsForVolumeSync(volumePath: String): List<ScanSnapshotEntity>
+
     @Query("SELECT * FROM scan_snapshots ORDER BY timestamp DESC")
     suspend fun getAllSnapshotsSync(): List<ScanSnapshotEntity>
 

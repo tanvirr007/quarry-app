@@ -34,6 +34,7 @@ class UserPreferencesRepository private constructor(private val context: Context
     private val HAPTICS_ENABLED_KEY = booleanPreferencesKey("haptics_enabled")
     private val HAPTIC_STRENGTH_KEY = intPreferencesKey("haptic_strength")
     private val KEEP_SCREEN_ON_KEY = booleanPreferencesKey("keep_screen_on")
+    private val SELECTED_VOLUME_ID_KEY = stringPreferencesKey("selected_volume_id")
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
         val raw = preferences[THEME_KEY] ?: ThemeMode.SYSTEM.name
@@ -89,6 +90,16 @@ class UserPreferencesRepository private constructor(private val context: Context
 
     val isKeepScreenOn: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[KEEP_SCREEN_ON_KEY] ?: false
+    }
+
+    val selectedVolumeId: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[SELECTED_VOLUME_ID_KEY] ?: "internal_storage"
+    }
+
+    suspend fun setSelectedVolumeId(volumeId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[SELECTED_VOLUME_ID_KEY] = volumeId
+        }
     }
 
     suspend fun setThemeMode(mode: ThemeMode) {

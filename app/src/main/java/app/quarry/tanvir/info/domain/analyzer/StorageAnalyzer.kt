@@ -42,6 +42,7 @@ object StorageAnalyzer {
         freeBytes: Long,
         categoryStats: List<CategoryStat>,
         snapshots: List<ScanSnapshotEntity>,
+        isPrimary: Boolean = true,
         largeFilesSize: Long = 0L,
         largeFilesCount: Long = 0L,
         apksSize: Long = 0L,
@@ -59,7 +60,8 @@ object StorageAnalyzer {
         val statsMap = categoryStats.associate { it.category to it }
 
         var totalFilesCount = 0L
-        val categoryDataList = StorageCategory.entries.map { category ->
+        val effectiveCategories = if (isPrimary) StorageCategory.entries else StorageCategory.entries.filter { it != StorageCategory.APPS }
+        val categoryDataList = effectiveCategories.map { category ->
             val (catBytes, catCount) = if (category == StorageCategory.APPS) {
                 appsSize to appsCount
             } else {
@@ -129,11 +131,12 @@ object StorageAnalyzer {
             )
         }
 
-        // Calculate growth comparison if snapshots are available
+        // Calculate growth comparison if snapshots for this specific volume are available (Option 1)
         var growthText: String? = null
-        if (snapshots.size >= 2) {
-            val latest = snapshots[0]
-            val previous = snapshots[1]
+        val volumeSnapshots = snapshots.filter { it.volumePath == volumePath }
+        if (volumeSnapshots.size >= 2) {
+            val latest = volumeSnapshots[0]
+            val previous = volumeSnapshots[1]
             val diff = latest.usedBytes - previous.usedBytes
             val formattedDiff = app.quarry.tanvir.info.domain.model.StorageFormatter.formatBytes(Math.abs(diff))
             growthText = if (diff > 0) {

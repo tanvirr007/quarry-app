@@ -83,7 +83,7 @@
 - **Versatile Explorer**: Browse by treemap, hierarchical list, largest files, categories, and folders with instant search and sorting.
 - **Smart Cleanup Hub**: Detect duplicate files, locate large files, find empty directories or obsolete APKs, and manage Trash safely.
 - **Installed App Analyzer**: Inspect storage used by installed applications (APK size, data, cache) with quick system shortcuts.
-- **Multi-Volume & SD Cards**: Real-time storage stats and mount inspection for internal storage, SD cards, and USB OTG.
+- **Multi-Volume & Removable Media**: Universal storage support for internal storage, SD cards, MicroSD, USB flash drives / pendrives, and USB OTG with isolated disk analysis, treemap exploration, and duplicate detection.
 - **Scan Exclusions**: Custom folder whitelist to exclude specific directories from scans and cleanup recommendations.
 - **Native Thumbnails**: Zero-dependency, offline preview generator for images, video frames, and APK badges.
 - **Customizable Dashboard**: Curate category cards, toggle Quick Insights, and monitor storage status at a glance.

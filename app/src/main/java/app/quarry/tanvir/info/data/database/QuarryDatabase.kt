@@ -10,7 +10,7 @@ import androidx.room.RoomDatabase
         FileEntity::class,
         ScanSnapshotEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class QuarryDatabase : RoomDatabase() {

@@ -19,16 +19,24 @@ import app.quarry.tanvir.info.domain.model.StorageCategory
 import app.quarry.tanvir.info.domain.scanner.ScanRepository
 import app.quarry.tanvir.info.domain.scanner.ScanState
 import app.quarry.tanvir.info.domain.security.BiometricSecurityManager
+import app.quarry.tanvir.info.domain.volume.StorageVolumeInfo
+import app.quarry.tanvir.info.domain.volume.StorageVolumeManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 
 data class HomeSheetData(
     val title: String,
@@ -50,17 +58,22 @@ data class HomeUiState(
     val isQuickInsightsEnabled: Boolean = true,
     val enabledCategories: Set<String> = emptySet(),
     val isHapticsEnabled: Boolean = true,
-    val hapticStrength: Int = 60
+    val hapticStrength: Int = 60,
+    val availableVolumes: List<StorageVolumeInfo> = emptyList(),
+    val selectedVolume: StorageVolumeInfo? = null
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ScanRepository.getInstance(application)
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
+    private val volumeManager = StorageVolumeManager(application)
     private val fileOperationsManager = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
     private val appManager = AppManager(application)
     private val _permissionState = MutableStateFlow(checkHasStoragePermission())
+    private val _availableVolumes = MutableStateFlow<List<StorageVolumeInfo>>(emptyList())
+    private val _selectedVolume = MutableStateFlow<StorageVolumeInfo?>(null)
     private val _activeSheetData = MutableStateFlow<HomeSheetData?>(null)
     private val _selectedDetailFile = MutableStateFlow<FileEntity?>(null)
     private val _userMessage = MutableStateFlow<String?>(null)
@@ -69,66 +82,87 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var activeSheetCollectJob: Job? = null
     private var appsLoadJob: Job? = null
 
+    private data class VolumeScannedData(
+        val categoryStats: List<CategoryStat> = emptyList(),
+        val largeFiles: List<FileEntity> = emptyList(),
+        val apks: List<FileEntity> = emptyList(),
+        val screenshots: List<FileEntity> = emptyList()
+    )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val volumeScannedData: Flow<VolumeScannedData> = _selectedVolume.flatMapLatest { vol ->
+        if (vol == null) {
+            flowOf(VolumeScannedData())
+        } else {
+            combine(
+                repository.getCategoryStats(vol.id),
+                repository.getLargeFiles(minSizeBytes = 50 * 1024 * 1024L, volumeId = vol.id),
+                repository.getApkFiles(vol.id),
+                repository.getScreenshots(vol.id)
+            ) { stats, large, apks, screenshots ->
+                VolumeScannedData(stats, large, apks, screenshots)
+            }
+        }
+    }
+
     val uiState: StateFlow<HomeUiState> = combine(
         combine(
             repository.scanState,
-            repository.categoryStats,
+            volumeScannedData,
             repository.allSnapshots,
-            repository.getLargeFiles(),
-            repository.getApkFiles(),
-            repository.getScreenshots(),
             _permissionState,
             _appsSize,
             _appsCount,
             prefsRepo.isQuickInsightsEnabled,
             prefsRepo.enabledCategories,
             prefsRepo.isHapticsEnabled,
-            prefsRepo.hapticStrength
+            prefsRepo.hapticStrength,
+            _availableVolumes,
+            _selectedVolume
         ) { args ->
-            @Suppress("UNCHECKED_CAST")
             val scanState = args[0] as ScanState
-            @Suppress("UNCHECKED_CAST")
-            val categoryStats = args[1] as List<CategoryStat>
+            val scannedData = args[1] as VolumeScannedData
             @Suppress("UNCHECKED_CAST")
             val snapshots = args[2] as List<ScanSnapshotEntity>
+            val hasPermission = args[3] as Boolean
+            val appsSize = args[4] as Long
+            val appsCount = args[5] as Long
+            val quickInsightsEnabled = args[6] as Boolean
             @Suppress("UNCHECKED_CAST")
-            val largeFiles = args[3] as List<FileEntity>
+            val enabledCats = args[7] as Set<String>
+            val hapticsEnabled = args[8] as Boolean
+            val hapticStrength = args[9] as Int
             @Suppress("UNCHECKED_CAST")
-            val apks = args[4] as List<FileEntity>
-            @Suppress("UNCHECKED_CAST")
-            val screenshots = args[5] as List<FileEntity>
-            val hasPermission = args[6] as Boolean
-            val appsSize = args[7] as Long
-            val appsCount = args[8] as Long
-            val quickInsightsEnabled = args[9] as Boolean
-            @Suppress("UNCHECKED_CAST")
-            val enabledCats = args[10] as Set<String>
-            val hapticsEnabled = args[11] as Boolean
-            val hapticStrength = args[12] as Int
+            val availableVols = args[10] as List<StorageVolumeInfo>
+            val currentVol = args[11] as? StorageVolumeInfo
 
-            val rootDir = Environment.getExternalStorageDirectory()
-            val totalBytes = FastStorageScanner.getTotalStorageBytes(rootDir)
-            val freeBytes = FastStorageScanner.getFreeStorageBytes(rootDir)
+            val rootDir = if (currentVol != null) File(currentVol.path) else Environment.getExternalStorageDirectory()
+            val totalBytes = if (currentVol != null && currentVol.totalBytes > 0) currentVol.totalBytes else FastStorageScanner.getTotalStorageBytes(rootDir)
+            val freeBytes = if (currentVol != null && currentVol.totalBytes > 0) currentVol.freeBytes else FastStorageScanner.getFreeStorageBytes(rootDir)
 
-            val largeFilesSize = largeFiles.sumOf { it.size }
-            val apksSize = apks.sumOf { it.size }
-            val screenshotsSize = screenshots.sumOf { it.size }
+            val largeFilesSize = scannedData.largeFiles.sumOf { it.size }
+            val apksSize = scannedData.apks.sumOf { it.size }
+            val screenshotsSize = scannedData.screenshots.sumOf { it.size }
+            val isPrimary = currentVol?.isPrimary ?: true
+            val effectiveAppsSize = if (isPrimary) appsSize else 0L
+            val effectiveAppsCount = if (isPrimary) appsCount else 0L
 
             val overview = StorageAnalyzer.calculateOverview(
-                volumeName = "Internal Storage",
-                volumePath = rootDir.absolutePath,
+                volumeName = currentVol?.name ?: "Internal Storage",
+                volumePath = currentVol?.path ?: rootDir.absolutePath,
                 totalBytes = totalBytes,
                 freeBytes = freeBytes,
-                categoryStats = categoryStats,
+                categoryStats = scannedData.categoryStats,
                 snapshots = snapshots,
+                isPrimary = isPrimary,
                 largeFilesSize = largeFilesSize,
-                largeFilesCount = largeFiles.size.toLong(),
+                largeFilesCount = scannedData.largeFiles.size.toLong(),
                 apksSize = apksSize,
-                apksCount = apks.size.toLong(),
+                apksCount = scannedData.apks.size.toLong(),
                 screenshotsSize = screenshotsSize,
-                screenshotsCount = screenshots.size.toLong(),
-                appsSize = appsSize,
-                appsCount = appsCount
+                screenshotsCount = scannedData.screenshots.size.toLong(),
+                appsSize = effectiveAppsSize,
+                appsCount = effectiveAppsCount
             )
 
             val allCats = StorageCategory.entries.map { it.name }.toSet()
@@ -140,7 +174,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 if (filtered.size < 4) overview.categoryBreakdown else filtered
             }
             val visibleInsights = if (quickInsightsEnabled) overview.quickInsights else emptyList()
-            // Pack: overview + visibles + flags in a single object via 7-tuple map not ideal, use custom holder
+
             OverviewWithVisibility(
                 overview = overview,
                 visibleCategories = visibleCategories,
@@ -150,7 +184,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 isQuickInsightsEnabled = quickInsightsEnabled,
                 enabledCategories = effectiveEnabled,
                 isHapticsEnabled = hapticsEnabled,
-                hapticStrength = hapticStrength
+                hapticStrength = hapticStrength,
+                availableVolumes = availableVols,
+                selectedVolume = currentVol
             )
         },
         _activeSheetData,
@@ -170,7 +206,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             isQuickInsightsEnabled = vis.isQuickInsightsEnabled,
             enabledCategories = vis.enabledCategories,
             isHapticsEnabled = vis.isHapticsEnabled,
-            hapticStrength = vis.hapticStrength
+            hapticStrength = vis.hapticStrength,
+            availableVolumes = vis.availableVolumes,
+            selectedVolume = vis.selectedVolume
         )
     }.stateIn(
         scope = viewModelScope,
@@ -187,12 +225,37 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val isQuickInsightsEnabled: Boolean,
         val enabledCategories: Set<String>,
         val isHapticsEnabled: Boolean,
-        val hapticStrength: Int
+        val hapticStrength: Int,
+        val availableVolumes: List<StorageVolumeInfo> = emptyList(),
+        val selectedVolume: StorageVolumeInfo? = null
     )
 
     init {
+        refreshVolumes()
         checkAndTriggerInitialScan()
         loadAppsInfo()
+    }
+
+    fun refreshVolumes() {
+        val detected = volumeManager.getDetectedVolumes()
+        _availableVolumes.value = detected
+        viewModelScope.launch {
+            val savedId = try { prefsRepo.selectedVolumeId.first() } catch (_: Exception) { "internal_storage" }
+            val match = detected.find { it.id == savedId } ?: detected.find { it.isPrimary } ?: detected.firstOrNull()
+            if (match != null) {
+                _selectedVolume.value = match
+                if (match.id != savedId) {
+                    prefsRepo.setSelectedVolumeId(match.id)
+                }
+            }
+        }
+    }
+
+    fun selectVolume(volume: StorageVolumeInfo) {
+        viewModelScope.launch {
+            _selectedVolume.value = volume
+            prefsRepo.setSelectedVolumeId(volume.id)
+        }
     }
 
     private fun loadAppsInfo() {
@@ -217,7 +280,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             _userMessage.value = "Storage permission is required to analyze files"
             return
         }
-        repository.startScan()
+        val currentVol = _selectedVolume.value
+        val rootDir = if (currentVol != null) File(currentVol.path) else Environment.getExternalStorageDirectory()
+        val volId = currentVol?.id ?: "internal_storage"
+        val volName = currentVol?.name ?: "Internal Storage"
+        repository.startScan(
+            rootDirectory = rootDir,
+            volumeId = volId,
+            volumeName = volName
+        )
     }
 
     fun cancelScan() {
@@ -228,6 +299,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val hasPermission = checkHasStoragePermission()
         val previous = _permissionState.value
         _permissionState.value = hasPermission
+        refreshVolumes()
         if (hasPermission && (!previous || repository.scanState.value is ScanState.Idle)) {
             checkAndTriggerInitialScan()
         }
@@ -238,9 +310,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         if (!checkHasStoragePermission()) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val totalFiles = repository.totalFiles.first()
+                val volId = _selectedVolume.value?.id ?: "internal_storage"
+                val totalFiles = repository.getTotalFileCount(volId).first()
                 if (totalFiles == 0L && repository.scanState.value is ScanState.Idle) {
-                    repository.startScan()
+                    startScan()
                 }
             } catch (e: Exception) {
                 // Ignore failure during initial check
@@ -250,8 +323,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectCategory(category: StorageCategory, startInSelectionMode: Boolean = false) {
         activeSheetCollectJob?.cancel()
+        val volId = _selectedVolume.value?.id ?: "internal_storage"
         activeSheetCollectJob = viewModelScope.launch(Dispatchers.IO) {
-            repository.getFilesByCategory(category.name).collect { files ->
+            repository.getFilesByCategory(category.name, volId).collect { files ->
                 _activeSheetData.value = HomeSheetData(
                     title = category.displayName,
                     category = category,
@@ -264,12 +338,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectInsight(insight: QuickInsight, startInSelectionMode: Boolean = false) {
         activeSheetCollectJob?.cancel()
+        val volId = _selectedVolume.value?.id ?: "internal_storage"
         activeSheetCollectJob = viewModelScope.launch(Dispatchers.IO) {
             val flow = when (insight.id) {
-                "large_files" -> repository.getLargeFiles()
-                "apks" -> repository.getApkFiles()
-                "screenshots" -> repository.getScreenshots()
-                else -> repository.getFilesByCategory(insight.category.name)
+                "large_files" -> repository.getLargeFiles(minSizeBytes = 50 * 1024 * 1024L, volumeId = volId)
+                "apks" -> repository.getApkFiles(volId)
+                "screenshots" -> repository.getScreenshots(volId)
+                else -> repository.getFilesByCategory(insight.category.name, volId)
             }
             flow.collect { files ->
                 _activeSheetData.value = HomeSheetData(

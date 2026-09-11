@@ -1,9 +1,14 @@
 package app.quarry.tanvir.info.ui.home
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,16 +22,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.SdCard
+import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,12 +50,17 @@ import androidx.compose.ui.unit.dp
 import app.quarry.tanvir.info.domain.analyzer.StorageOverviewData
 import app.quarry.tanvir.info.domain.haptics.LocalQuarryHaptics
 import app.quarry.tanvir.info.domain.model.StorageFormatter
+import app.quarry.tanvir.info.domain.volume.StorageDeviceType
+import app.quarry.tanvir.info.domain.volume.StorageVolumeInfo
 import app.quarry.tanvir.info.ui.components.getColor
 
 @Composable
 fun StorageOverviewCard(
     overview: StorageOverviewData,
     modifier: Modifier = Modifier,
+    availableVolumes: List<StorageVolumeInfo> = emptyList(),
+    selectedVolume: StorageVolumeInfo? = null,
+    onSelectVolume: ((StorageVolumeInfo) -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
     val usedPercentageAnim by animateFloatAsState(
@@ -50,6 +69,14 @@ fun StorageOverviewCard(
         label = "usedPercentage"
     )
     val haptics = LocalQuarryHaptics.current
+    val isMultiVolume = availableVolumes.size > 1
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    val volumeIcon = when (selectedVolume?.deviceType) {
+        StorageDeviceType.SD_CARD -> Icons.Rounded.SdCard
+        StorageDeviceType.USB_OTG -> Icons.Rounded.Usb
+        else -> Icons.Rounded.Smartphone
+    }
 
     Card(
         onClick = {
@@ -70,7 +97,7 @@ fun StorageOverviewCard(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header: Volume Name + Status Chip
+            // Header: Volume Name + Status Chip / Volume Selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -88,7 +115,7 @@ fun StorageOverviewCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Memory,
+                            imageVector = volumeIcon,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp)
@@ -110,30 +137,135 @@ fun StorageOverviewCard(
                     }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "${(usedPercentageAnim * 100).toInt()}% used",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    if (onClick != null) {
-                        Icon(
-                            imageVector = Icons.Rounded.ChevronRight,
-                            contentDescription = "Explore files",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.size(20.dp)
-                        )
+                AnimatedContent(
+                    targetState = isMultiVolume,
+                    transitionSpec = {
+                        fadeIn(tween(300)) togetherWith fadeOut(tween(200))
+                    },
+                    label = "volumeSelectorTransition"
+                ) { multiVolume ->
+                    if (multiVolume) {
+                        // Multi-volume selector pill
+                        Box {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .clickable {
+                                        haptics.click()
+                                        dropdownExpanded = true
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = volumeIcon,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = selectedVolume?.name ?: overview.volumeName,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1
+                                )
+                                Icon(
+                                    imageVector = Icons.Rounded.ArrowDropDown,
+                                    contentDescription = "Switch storage volume",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = dropdownExpanded,
+                                onDismissRequest = { dropdownExpanded = false }
+                            ) {
+                                availableVolumes.forEach { vol ->
+                                    val isSelected = vol.id == selectedVolume?.id
+                                    val itemIcon = when (vol.deviceType) {
+                                        StorageDeviceType.SD_CARD -> Icons.Rounded.SdCard
+                                        StorageDeviceType.USB_OTG -> Icons.Rounded.Usb
+                                        else -> Icons.Rounded.Smartphone
+                                    }
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(
+                                                    text = vol.name,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                                Text(
+                                                    text = if (vol.totalBytes > 0) {
+                                                        "${StorageFormatter.formatBytes(vol.freeBytes)} free of ${StorageFormatter.formatBytes(vol.totalBytes)}"
+                                                    } else {
+                                                        "Storage Access Framework"
+                                                    },
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = itemIcon,
+                                                contentDescription = null,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        },
+                                        trailingIcon = if (isSelected) {
+                                            {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        } else null,
+                                        onClick = {
+                                            haptics.click()
+                                            dropdownExpanded = false
+                                            onSelectVolume?.invoke(vol)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Single volume detected: standard "x% used >" chip
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "${(usedPercentageAnim * 100).toInt()}% used",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            if (onClick != null) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ChevronRight,
+                                    contentDescription = "Explore files",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

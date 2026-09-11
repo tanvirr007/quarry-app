@@ -92,7 +92,7 @@ fun ExploreScreen(
             uiState.viewMode == ExploreViewMode.LIST ||
             uiState.viewMode == ExploreViewMode.FOLDERS
     val canNavigateUpFolder = isFolderViewMode &&
-            uiState.currentPath != Environment.getExternalStorageDirectory().absolutePath
+            uiState.currentPath != uiState.rootPath
 
     val hasActiveExploreState = activeCategorySheet != null ||
             uiState.isDeleteCountdownVisible ||
@@ -233,7 +233,7 @@ fun ExploreScreen(
         if (uiState.viewMode == ExploreViewMode.TREEMAP || uiState.viewMode == ExploreViewMode.LIST || uiState.viewMode == ExploreViewMode.FOLDERS) {
             BreadcrumbBar(
                 currentPath = uiState.currentPath,
-                rootPath = Environment.getExternalStorageDirectory().absolutePath,
+                rootPath = uiState.rootPath,
                 onNavigateToSegment = { targetPath ->
                     viewModel.navigateToDirectory(targetPath)
                 },

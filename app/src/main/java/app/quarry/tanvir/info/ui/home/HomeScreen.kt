@@ -90,12 +90,13 @@ fun HomeScreen(
         }
     }
 
-    // Refresh permission status when activity resumes
+    // Refresh permission status and volumes when activity resumes
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshPermissionState()
+                viewModel.refreshVolumes()
                 if (showAppManager) {
                     appManagerViewModel.refresh()
                 }
@@ -160,6 +161,9 @@ fun HomeScreen(
         // Storage Overview Card
         StorageOverviewCard(
             overview = uiState.overview,
+            availableVolumes = uiState.availableVolumes,
+            selectedVolume = uiState.selectedVolume,
+            onSelectVolume = { vol -> viewModel.selectVolume(vol) },
             onClick = onNavigateToExplore
         )
 

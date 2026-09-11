@@ -26,6 +26,8 @@ class FastStorageScanner {
 
     fun scanStorage(
         rootDirectory: File = Environment.getExternalStorageDirectory(),
+        volumeId: String = "internal_storage",
+        volumeName: String = "Internal Storage",
         estimatedTotalBytes: Long = getUsedStorageBytes(rootDirectory),
         includeHiddenFiles: Boolean = false,
         excludedPaths: Set<String> = emptySet()
@@ -108,6 +110,7 @@ class FastStorageScanner {
                         directFilesAndFoldersCount++
 
                         val fileEntity = FileEntity(
+                            volumeId = volumeId,
                             path = path,
                             name = child.name,
                             size = fileSize,
@@ -165,8 +168,9 @@ class FastStorageScanner {
             }
 
             val dirEntity = FileEntity(
+                volumeId = volumeId,
                 path = dirPath,
-                name = if (dirPath == rootDirectory.absolutePath) "Internal Storage" else dir.name,
+                name = if (dirPath == rootDirectory.absolutePath) volumeName else dir.name,
                 size = dirSize,
                 isDirectory = true,
                 category = StorageCategory.OTHER.name,

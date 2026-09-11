@@ -14,6 +14,8 @@ import app.quarry.tanvir.info.domain.treemap.TreemapEngine
 import app.quarry.tanvir.info.domain.treemap.TreemapNode
 import app.quarry.tanvir.info.domain.treemap.TreemapRect
 import app.quarry.tanvir.info.data.preferences.UserPreferencesRepository
+import app.quarry.tanvir.info.domain.volume.StorageVolumeInfo
+import app.quarry.tanvir.info.domain.volume.StorageVolumeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,10 +41,11 @@ enum class ExploreViewMode(val title: String) {
 enum class FileSortOrder(val displayName: String) {
     SIZE_DESC("Size: Largest first"),
     SIZE_ASC("Size: Smallest first"),
-    NAME_ASC("Name: A → Z"),
-    NAME_DESC("Name: Z → A"),
+    NAME_ASC("Name: A to Z"),
+    NAME_DESC("Name: Z to A"),
     DATE_DESC("Date: Newest first"),
-    DATE_ASC("Date: Oldest first");
+    DATE_ASC("Date: Oldest first"),
+    TYPE("File Type");
 
     fun comparator(keepDirectoriesFirst: Boolean = false): Comparator<FileEntity> {
         val baseComparator = when (this) {
@@ -52,6 +55,7 @@ enum class FileSortOrder(val displayName: String) {
             NAME_DESC -> compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name }
             DATE_DESC -> compareByDescending { it.lastModified }
             DATE_ASC -> compareBy { it.lastModified }
+            TYPE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.extension }
         }
         return if (keepDirectoriesFirst) {
             compareByDescending<FileEntity> { it.isDirectory }.then(baseComparator)
@@ -62,11 +66,11 @@ enum class FileSortOrder(val displayName: String) {
 }
 
 private data class ExploreBaseState(
+    val root: String,
     val path: String,
     val mode: ExploreViewMode,
     val query: String,
-    val category: StorageCategory?,
-    val sortOrder: FileSortOrder
+    val category: StorageCategory?
 )
 
 private data class DialogState(
@@ -78,6 +82,7 @@ private data class DialogState(
 )
 
 data class ExploreUiState(
+    val rootPath: String = Environment.getExternalStorageDirectory().absolutePath,
     val currentPath: String = Environment.getExternalStorageDirectory().absolutePath,
     val viewMode: ExploreViewMode = ExploreViewMode.TREEMAP,
     val searchQuery: String = "",
@@ -102,11 +107,14 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository = ScanRepository.getInstance(application)
     private val prefsRepo = UserPreferencesRepository.getInstance(application)
+    private val volumeManager = StorageVolumeManager(application)
     private val fileOps = FileOperationsManager(application, repository)
     private val securityManager = BiometricSecurityManager(application)
 
     private val defaultRootPath = Environment.getExternalStorageDirectory().absolutePath
 
+    private val _activeVolume = MutableStateFlow<StorageVolumeInfo?>(null)
+    private val _rootPath = MutableStateFlow(defaultRootPath)
     private val _currentPath = MutableStateFlow(defaultRootPath)
     private val _viewMode = MutableStateFlow(ExploreViewMode.TREEMAP)
     private val _searchQuery = MutableStateFlow("")
@@ -118,6 +126,20 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private val _activeDeleteCandidates = MutableStateFlow<List<FileEntity>>(emptyList())
     private val _isDeleteCountdownVisible = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
+
+    init {
+        viewModelScope.launch {
+            prefsRepo.selectedVolumeId.collect { volId ->
+                val detected = volumeManager.getDetectedVolumes()
+                val vol = detected.find { it.id == volId } ?: detected.find { it.isPrimary } ?: detected.firstOrNull()
+                if (vol != null) {
+                    _activeVolume.value = vol
+                    _rootPath.value = vol.path
+                    _currentPath.value = vol.path
+                }
+            }
+        }
+    }
 
     private fun filterHiddenAndExcluded(
         files: List<FileEntity>,
@@ -135,8 +157,12 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private val filteredLargestFiles: StateFlow<List<FileEntity>> = combine(
-        repository.getLargestFiles(100),
+        _activeVolume.flatMapLatest { vol ->
+            val volId = vol?.id ?: "internal_storage"
+            repository.getLargestFiles(100, volId)
+        },
         prefsRepo.scanHiddenFiles,
         prefsRepo.excludedFolders,
         _sortOrder
@@ -149,8 +175,12 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val allFiles: StateFlow<List<FileEntity>> = combine(
-        repository.getAllFiles(),
+        _activeVolume.flatMapLatest { vol ->
+            val volId = vol?.id ?: "internal_storage"
+            repository.getAllFiles(volId)
+        },
         prefsRepo.scanHiddenFiles,
         prefsRepo.excludedFolders,
         _sortOrder
@@ -191,9 +221,10 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     )
 
     val uiState: StateFlow<ExploreUiState> = combine(
-        combine(_currentPath, _viewMode, _searchQuery, _selectedCategory, _sortOrder) { path, mode, query, cat, sort ->
-            ExploreBaseState(path, mode, query, cat, sort)
+        combine(_rootPath, _currentPath, _viewMode, _searchQuery, _selectedCategory) { root, path, mode, query, cat ->
+            ExploreBaseState(root, path, mode, query, cat)
         },
+        _sortOrder,
         combine(prefsRepo.scanHiddenFiles, prefsRepo.isBiometricAuthEnabled) { hidden, biometric ->
             Pair(hidden, biometric)
         },
@@ -203,13 +234,14 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         combine(_userMessage, filteredLargestFiles, searchResultsFlow) { msg, largest, searchResults ->
             Triple(msg, largest, searchResults)
         }
-    ) { base, prefs, dialogs, msgLargestSearch ->
+    ) { base, sortOrder, prefs, dialogs, msgLargestSearch ->
         ExploreUiState(
+            rootPath = base.root,
             currentPath = base.path,
             viewMode = base.mode,
             searchQuery = base.query,
             selectedCategory = base.category,
-            sortOrder = base.sortOrder,
+            sortOrder = sortOrder,
             showHiddenFiles = prefs.first,
             isBiometricEnabled = prefs.second,
             selectedPaths = dialogs.selected,
@@ -230,7 +262,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val directoryFiles: StateFlow<List<FileEntity>> = combine(
-        _currentPath.flatMapLatest { path -> repository.getChildren(path) },
+        combine(_currentPath, _activeVolume) { path, vol ->
+            path to (vol?.id ?: "internal_storage")
+        }.flatMapLatest { (path, volId) ->
+            repository.getChildren(path, volId)
+        },
         prefsRepo.scanHiddenFiles,
         prefsRepo.excludedFolders,
         _sortOrder
@@ -243,8 +279,12 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val allCategorizedFiles: StateFlow<List<FileEntity>> = combine(
-        repository.getAllNonDirectoryFiles(),
+        _activeVolume.flatMapLatest { vol ->
+            val volId = vol?.id ?: "internal_storage"
+            repository.getAllNonDirectoryFiles(volId)
+        },
         prefsRepo.scanHiddenFiles,
         prefsRepo.excludedFolders,
         _sortOrder
@@ -306,9 +346,10 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
 
     fun navigateUp(): Boolean {
         val current = _currentPath.value
-        if (current == defaultRootPath || current == "/" || current.isEmpty()) return false
-        val parent = File(current).parent ?: defaultRootPath
-        if (parent.startsWith(defaultRootPath) || parent == defaultRootPath) {
+        val root = _rootPath.value
+        if (current == root || current == "/" || current.isEmpty()) return false
+        val parent = File(current).parent ?: root
+        if (parent.startsWith(root) || parent == root) {
             navigateToDirectory(parent)
             return true
         }

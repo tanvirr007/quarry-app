@@ -13,6 +13,12 @@ enum class VolumeAccessMode(val title: String) {
     NOT_CONNECTED("Not Connected")
 }
 
+enum class StorageDeviceType {
+    INTERNAL,
+    SD_CARD,
+    USB_OTG
+}
+
 data class StorageVolumeInfo(
     val id: String,
     val name: String,
@@ -26,7 +32,8 @@ data class StorageVolumeInfo(
     val supportsTreemap: Boolean,
     val supportsDuplicateScan: Boolean,
     val supportsTrash: Boolean,
-    val statusDescription: String
+    val statusDescription: String,
+    val deviceType: StorageDeviceType = StorageDeviceType.INTERNAL
 )
 
 class StorageVolumeManager(private val context: Context) {
@@ -90,6 +97,11 @@ class StorageVolumeManager(private val context: Context) {
                 }
 
                 val id = if (isPrimary) "internal_storage" else (vol.uuid ?: "external_${vol.hashCode()}")
+                val deviceType = when {
+                    isPrimary -> StorageDeviceType.INTERNAL
+                    name.contains("usb", ignoreCase = true) || vol.uuid?.contains("usb", ignoreCase = true) == true -> StorageDeviceType.USB_OTG
+                    else -> StorageDeviceType.SD_CARD
+                }
 
                 volumeList.add(
                     StorageVolumeInfo(
@@ -111,7 +123,8 @@ class StorageVolumeManager(private val context: Context) {
                             "Direct filesystem access available. Full Treemap and duplicate scanning enabled."
                         } else {
                             "Storage Access Framework (SAF) mode. Browse, search, and delete supported."
-                        }
+                        },
+                        deviceType = deviceType
                     )
                 )
             }
@@ -138,7 +151,8 @@ class StorageVolumeManager(private val context: Context) {
                     supportsTreemap = true,
                     supportsDuplicateScan = true,
                     supportsTrash = true,
-                    statusDescription = "Full feature support: Interactive Treemap, duplicate detection, cleanup, and trash restoration."
+                    statusDescription = "Full feature support: Interactive Treemap, duplicate detection, cleanup, and trash restoration.",
+                    deviceType = StorageDeviceType.INTERNAL
                 )
             )
         }

@@ -71,6 +71,7 @@ fun FileTypeGroupView(
         FileSortOrder.NAME_DESC -> baseGrouped.sortedByDescending { (category, _) -> category.displayName }
         FileSortOrder.DATE_DESC -> baseGrouped.sortedByDescending { (_, catFiles) -> catFiles.maxOfOrNull { it.lastModified } ?: 0L }
         FileSortOrder.DATE_ASC -> baseGrouped.sortedBy { (_, catFiles) -> catFiles.minOfOrNull { it.lastModified } ?: 0L }
+        FileSortOrder.TYPE -> baseGrouped.sortedBy { (category, _) -> category.displayName }
     }
 
     if (grouped.isEmpty()) {
